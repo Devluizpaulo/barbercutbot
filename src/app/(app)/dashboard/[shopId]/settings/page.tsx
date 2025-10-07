@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Building, Clock, CreditCard, Link as LinkIcon, User, Trash2, Save, FileText, MapPin, Search } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
   return (
@@ -33,11 +34,12 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="hours">Horários</TabsTrigger>
           <TabsTrigger value="payment">Pagamentos</TabsTrigger>
           <TabsTrigger value="integrations">Integrações</TabsTrigger>
+          <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="account">Conta</TabsTrigger>
         </TabsList>
 
@@ -202,6 +204,42 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <FileText />
+                    Documentos
+                </CardTitle>
+                <CardDescription>
+                    Acesse os termos de serviço e outros documentos importantes da plataforma.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Termos de Uso</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Contrato de Prestação de Serviços</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                        </p>
+                    </CardContent>
+                </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="account">
           <Card className="border-destructive">
             <CardHeader>
@@ -228,4 +266,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
