@@ -1,4 +1,6 @@
 
+import { Timestamp } from 'firebase/firestore';
+
 export type BarberShop = {
   id: string;
   name: string;
@@ -11,15 +13,15 @@ export type BarberShop = {
 export type Appointment = {
   id: string;
   barberShopId: string;
-  customerId: string;
-  barberId: string;
-  startTime: string; // Stored as ISO string or Firestore Timestamp string
-  endTime: string;   // Stored as ISO string or Firestore Timestamp string
-  serviceIds: string[];
+  customerId: string; // Should reference a document in the Customers collection
+  barberId: string; // Should reference a document in the Barbers collection
+  serviceIds: string[]; // Should reference documents in the Services collection
+  startTime: Timestamp | Date | string;
+  endTime: Timestamp | Date | string;
   notes?: string;
   price?: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
-  createdAt: Date;
+  createdAt: Timestamp | Date;
 };
 
 export type Customer = {
@@ -30,7 +32,7 @@ export type Customer = {
   phone?: string;
   email?: string;
   notes?: string;
-  createdAt: Date;
+  createdAt: Timestamp | Date;
 };
 
 export type Barber = {
@@ -41,7 +43,7 @@ export type Barber = {
   phone?: string;
   email?: string;
   bio?: string;
-  createdAt: Date;
+  createdAt: Timestamp | Date;
 };
 
 export type Service = {
@@ -51,23 +53,38 @@ export type Service = {
   description?: string;
   price: number;
   duration: number; // in minutes
-  createdAt: Date;
+  createdAt: Timestamp | Date;
 };
 
 export type FinancialRecord = {
   id: string;
   barberShopId: string;
-  date: string; // Stored as ISO string or Firestore Timestamp string
+  date: Timestamp | Date | string;
   type: 'income' | 'expense';
   description: string;
   amount: number;
-  createdAt: Date;
+  category: string;
+  paymentMethod?: string;
+  isRecurring?: boolean;
+  createdAt: Timestamp | Date;
 };
+
+export type Supplier = {
+  id: string;
+  barberShopId: string;
+  name: string;
+  contactPerson?: string;
+  phone: string;
+  category: string;
+  notes?: string;
+  createdAt: Timestamp | Date;
+};
+
 
 export type UserProfile = {
   id: string; // This is the Firebase UID
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: Date;
+  createdAt: Timestamp | Date;
 };
