@@ -17,7 +17,7 @@ export type Appointment = {
   endTime: string;   // Stored as ISO string or Firestore Timestamp string
   serviceIds: string[];
   notes?: string;
-  createdAt: string; // Stored as ISO string or Firestore Timestamp string
+  createdAt: Date;
   price?: number;
 };
 
@@ -70,4 +70,3 @@ export type UserProfile = {
   email: string;
   createdAt: Date;
 };
-

@@ -1,8 +1,9 @@
 
 "use client"
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import type { FinancialRecord } from '@/lib/types';
 import {
@@ -22,27 +23,37 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle, PlusCircle, MoreHorizontal } from "lucide-react"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { monthlyRevenue } from "@/lib/data"
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { AddTransactionForm } from './add-transaction-form';
 
+
+// Chart data is still mocked as aggregation would require backend functions
+const financialData = [
+  { month: "Jan", income: 4230, expense: 2200 },
+  { month: "Fev", income: 3890, expense: 2000 },
+  { month: "Mar", income: 4500, expense: 2500 },
+  { month: "Abr", income: 4880, expense: 2600 },
+  { month: "Mai", income: 5120, expense: 2800 },
+  { month: "Jun", income: 5500, expense: 3000 },
+  { month: "Jul", income: 5800, expense: 3100 },
+  { month: "Ago", income: 6200, expense: 3300 },
+  { month: "Set", income: 5900, expense: 3200 },
+  { month: "Out", income: 6500, expense: 3500 },
+  { month: "Nov", income: 6800, expense: 3700 },
+  { month: "Dez", income: 7200, expense: 3900 },
+];
 
 const chartConfig = {
   income: {
@@ -55,14 +66,9 @@ const chartConfig = {
   },
 }
 
-// Chart data is still mocked as aggregation would require backend functions
-const financialData = monthlyRevenue.map(item => ({
-  month: item.month,
-  income: item.revenue,
-  expense: Math.floor(Math.random() * (item.revenue * 0.7) + (item.revenue * 0.2)),
-}))
 
 export default function FinancePage() {
+  const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -71,29 +77,35 @@ export default function FinancePage() {
     if (!firestore || !shopId) return null;
     return query(
       collection(firestore, `/barberShops/${shopId}/financialRecords`),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
+      limit(100) // Limit to last 100 transactions for performance
     );
   }, [firestore, shopId]);
 
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
-  const financialRecords = transactions || [];
-
-  const { totalIncome, totalExpense } = financialRecords.reduce(
-    (acc, record) => {
-      if (record.type === 'income') {
-        acc.totalIncome += record.amount;
-      } else {
-        acc.totalExpense += record.amount;
-      }
-      return acc;
-    },
-    { totalIncome: 0, totalExpense: 0 }
-  );
+  const { totalIncome, totalExpense, netProfit, recentTransactions } = useMemo(() => {
+    const records = transactions || [];
+    const totals = records.reduce(
+      (acc, record) => {
+        if (record.type === 'income') {
+          acc.totalIncome += record.amount;
+        } else {
+          acc.totalExpense += record.amount;
+        }
+        return acc;
+      },
+      { totalIncome: 0, totalExpense: 0 }
+    );
+    const netProfit = totals.totalIncome - totals.totalExpense;
+    const recent = records.slice(0, 5);
+    return { ...totals, netProfit, recentTransactions: recent };
+  }, [transactions]);
+  
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
             Finanças
@@ -102,127 +114,126 @@ export default function FinancePage() {
             Acompanhe a receita e as despesas da sua barbearia.
           </p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Transação
-        </Button>
+        <Dialog open={isAddTransactionOpen} onOpenChange={setAddTransactionOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Transação
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Nova Transação</DialogTitle>
+            </DialogHeader>
+            <AddTransactionForm 
+              shopId={shopId} 
+              onSuccess={() => setAddTransactionOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-slate-900 text-white">
-          <CardHeader>
-            <CardTitle>Total</CardTitle>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <ArrowUpRight className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">R${(totalIncome - totalExpense).toLocaleString('pt-BR')}</div>
-            <p className="text-xs text-muted-foreground">+22% do último mês</p>
-            <AreaChart data={financialData.slice(0,6)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
-                <defs>
-                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="income" stroke="hsl(var(--primary))" fill="url(#colorIncome)" strokeWidth={2} />
-            </AreaChart>
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
+              <div className="text-2xl font-bold">R${totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            )}
+            <p className="text-xs text-muted-foreground">Total de entradas registradas.</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Rascunhos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Despesas Totais</CardTitle>
+            <ArrowDownLeft className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-             <div className="text-3xl font-bold">R$137.6k</div>
-            <p className="text-xs text-muted-foreground">+5% do último mês</p>
-             <AreaChart data={financialData.slice(2,8)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
-                <defs>
-                    <linearGradient id="colorDraft" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="income" stroke="hsl(var(--chart-4))" fill="url(#colorDraft)" strokeWidth={2} />
-            </AreaChart>
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
+              <div className="text-2xl font-bold">R${totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            )}
+            <p className="text-xs text-muted-foreground">Total de saídas registradas.</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Pagos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             <div className="text-3xl font-bold">R${totalIncome.toLocaleString('pt-BR')}</div>
-            <p className="text-xs text-muted-foreground">+15% do último mês</p>
-            <AreaChart data={financialData.slice(4,10)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
-                <defs>
-                    <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-5))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-5))" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="income" stroke="hsl(var(--chart-5))" fill="url(#colorPaid)" strokeWidth={2} />
-            </AreaChart>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Abertos</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="text-3xl font-bold">R${totalExpense.toLocaleString('pt-BR')}</div>
-             <p className="text-xs text-muted-foreground">+10% do último mês</p>
-             <AreaChart data={financialData.slice(1,7)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
-                <defs>
-                    <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="income" stroke="hsl(var(--primary))" fill="url(#colorOpen)" strokeWidth={2} />
-            </AreaChart>
+             {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
+              <div className="text-2xl font-bold">R${netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+            )}
+             <p className="text-xs text-muted-foreground">Receita total menos despesas.</p>
           </CardContent>
         </Card>
       </div>
       
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="font-headline">Pagamentos</CardTitle>
-             <Select defaultValue="monthly">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a fruit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Mensal</SelectItem>
-                <SelectItem value="yearly">Anual</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[350px] w-full">
-              <BarChart accessibilityLayer data={financialData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                />
-                 <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  tickFormatter={(value) => `R$${value / 1000}k`}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar dataKey="income" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-        </CardContent>
-      </Card>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+              <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Number(value) / 1000}k`} />
+                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                    <Area type="monotone" dataKey="income" stackId="1" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2), 0.3)" name="Receita" />
+                    <Area type="monotone" dataKey="expense" stackId="1" stroke="hsl(var(--chart-5))" fill="hsl(var(--chart-5), 0.3)" name="Despesa" />
+                </AreaChart>
+              </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-1">
+           <CardHeader>
+              <CardTitle className="font-headline">Transações Recentes</CardTitle>
+              <CardDescription>As últimas 5 transações registradas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                   {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                      </TableRow>
+                    ))}
+                    {recentTransactions.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>
+                          <div className="font-medium">{record.description}</div>
+                          <Badge variant={record.type === 'income' ? 'secondary' : 'destructive'} className="capitalize mt-1">{record.type === 'income' ? 'Receita' : 'Despesa'}</Badge>
+                        </TableCell>
+                         <TableCell>{format(new Date(record.date), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                        <TableCell className={`text-right font-medium ${record.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                          R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!isLoading && recentTransactions.length === 0 && (
+                       <TableRow>
+                          <TableCell colSpan={3} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
+                       </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
