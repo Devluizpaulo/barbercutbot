@@ -59,16 +59,17 @@ const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
 const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
+
 const KeypadButton = ({ children, onClick, className }: { children: React.ReactNode, onClick: () => void, className?: string }) => (
-  <Button
-    type="button"
-    variant="outline"
-    className={cn("h-16 text-2xl font-bold", className)}
-    onClick={onClick}
-  >
-    {children}
-  </Button>
-);
+    <Button
+      type="button"
+      variant="outline"
+      className={cn("h-16 text-2xl font-bold", className)}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
 
 export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProps) {
   const { toast } = useToast();
@@ -331,8 +332,8 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
               />
             )}
 
-            <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
+            <div className="flex justify-end pt-4 md:hidden">
+              <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
                 {isSubmitting && (
                   <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 )}
@@ -341,11 +342,21 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             </div>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-4 gap-y-1 gap-x-2">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
-                <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
-            ))}
-            <KeypadButton onClick={() => handleKeypadPress('backspace')}><Delete /></KeypadButton>
+        <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-3 grid-rows-4 gap-2">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
+                    <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
+                ))}
+                <KeypadButton onClick={() => handleKeypadPress('backspace')}><Delete /></KeypadButton>
+            </div>
+            <div className="hidden md:flex justify-end">
+                 <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
+                    {isSubmitting && (
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Salvar Transação
+                </Button>
+            </div>
         </div>
       </form>
     </Form>

@@ -122,7 +122,7 @@ export default function FinancePage() {
               Adicionar Transação
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Adicionar Nova Transação</DialogTitle>
             </DialogHeader>
