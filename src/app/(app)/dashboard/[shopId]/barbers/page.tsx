@@ -23,7 +23,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -34,6 +33,7 @@ import {
 import { AddBarberForm } from './add-barber-form';
 import { barbers as mockedBarbers } from '@/lib/data';
 import type { Barber } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function BarbersPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -114,7 +114,15 @@ export default function BarbersPage() {
             <TableBody>
               {barbers.map((barber) => (
                 <TableRow key={barber.id}>
-                  <TableCell className="font-medium">{`${barber.firstName} ${barber.lastName}`}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={barber.avatar} alt={`${barber.firstName} ${barber.lastName}`} />
+                        <AvatarFallback>{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span>{`${barber.firstName} ${barber.lastName}`}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="hidden md:table-cell space-y-1">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Mail className="h-4 w-4" />

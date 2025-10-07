@@ -141,12 +141,13 @@ export type Barber = {
   email: string;
   phone: string;
   bio: string;
+  avatar: string;
 };
 
 export const barbers: Barber[] = [
-    { id: 'barber-1', firstName: 'Carlos', lastName: 'Alberto', email: 'carlos.alberto@example.com', phone: '(11) 91111-1111', bio: 'Especialista em cortes clássicos e barba.' },
-    { id: 'barber-2', firstName: 'Roberto', lastName: 'Almeida', email: 'roberto.almeida@example.com', phone: '(11) 92222-2222', bio: 'Focado em tendências modernas e degradês.' },
-    { id: 'barber-3', firstName: 'Fernanda', lastName: 'Lima', email: 'fernanda.lima@example.com', phone: '(11) 93333-3333', bio: 'Especialista em coloração e penteados.' },
+    { id: 'barber-1', firstName: 'Carlos', lastName: 'Alberto', email: 'carlos.alberto@example.com', phone: '(11) 91111-1111', bio: 'Especialista em cortes clássicos e barba.', avatar: 'https://picsum.photos/seed/barber-1/100/100' },
+    { id: 'barber-2', firstName: 'Roberto', lastName: 'Almeida', email: 'roberto.almeida@example.com', phone: '(11) 92222-2222', bio: 'Focado em tendências modernas e degradês.', avatar: 'https://picsum.photos/seed/barber-2/100/100' },
+    { id: 'barber-3', firstName: 'Fernanda', lastName: 'Lima', email: 'fernanda.lima@example.com', phone: '(11) 93333-3333', bio: 'Especialista em coloração e penteados.', avatar: 'https://picsum.photos/seed/barber-3/100/100' },
 ];
 
 export type Service = {

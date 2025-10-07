@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LoaderCircle, Mail, PenSquare, Phone, User } from 'lucide-react';
+import { LoaderCircle, Mail, PenSquare, Phone, User, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Barber } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -25,6 +26,7 @@ const formSchema = z.object({
   email: z.string().email('Email inválido.').optional().or(z.literal('')),
   phone: z.string().optional(),
   bio: z.string().optional(),
+  avatar: z.string().url('URL inválida.').optional().or(z.literal('')),
 });
 
 type AddBarberFormValues = z.infer<typeof formSchema>;
@@ -46,10 +48,13 @@ export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormP
       email: '',
       phone: '',
       bio: '',
+      avatar: '',
     },
   });
 
   const { isSubmitting } = form.formState;
+  const avatarUrl = form.watch('avatar');
+  const firstName = form.watch('firstName');
 
   const onSubmit = async (values: AddBarberFormValues) => {
     // NOTE: Database functionality is disabled for simulation.
@@ -67,6 +72,36 @@ export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormP
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={avatarUrl} alt={firstName} />
+            <AvatarFallback>
+                {firstName ? firstName.charAt(0) : <User className="h-8 w-8" />}
+            </AvatarFallback>
+          </Avatar>
+           <FormField
+            control={form.control}
+            name="avatar"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>URL da Foto</FormLabel>
+                <div className="relative">
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <FormControl>
+                    <Input
+                      placeholder="https://exemplo.com/foto.jpg"
+                      {...field}
+                      className="pl-10"
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}

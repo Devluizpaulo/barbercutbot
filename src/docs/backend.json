@@ -78,21 +78,6 @@
             "type": "string"
           }
         },
-        "price": {
-          "type": "number",
-          "description": "The final price of the appointment, which could be different from the sum of services."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the appointment.",
-          "enum": [
-            "pending",
-            "confirmed",
-            "completed",
-            "cancelled",
-            "no-show"
-          ]
-        },
         "notes": {
           "type": "string",
           "description": "Additional notes for the appointment."
@@ -104,8 +89,7 @@
         "customerId",
         "barberId",
         "startTime",
-        "endTime",
-        "status"
+        "endTime"
       ]
     },
     "Customer": {
@@ -185,6 +169,11 @@
         "bio": {
           "type": "string",
           "description": "A brief biography of the barber."
+        },
+        "avatarUrl": {
+            "type": "string",
+            "description": "URL for the barber's profile picture.",
+            "format": "uri"
         }
       },
       "required": [
