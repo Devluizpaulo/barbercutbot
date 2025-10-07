@@ -16,9 +16,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Search } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'O nome é obrigatório.' }),
@@ -130,94 +130,113 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome</FormLabel>
-                <FormControl>
-                  <Input placeholder="João" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sobrenome</FormLabel>
-                <FormControl>
-                  <Input placeholder="Silva" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-            control={form.control}
-            name="nickname"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Apelido</FormLabel>
-                <FormControl>
-                  <Input placeholder="Jão" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="joao.silva@email.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-           <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Telefone</FormLabel>
-                <FormControl>
-                    <Input placeholder="(11) 99999-9999" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+        <Tabs defaultValue="main">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="main">Informações Principais</TabsTrigger>
+            <TabsTrigger value="address">Endereço (Opcional)</TabsTrigger>
+          </TabsList>
+          <TabsContent value="main" className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input placeholder="João" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sobrenome</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Silva" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
-            control={form.control}
-            name="whatsapp"
-            render={({ field }) => (
+                control={form.control}
+                name="nickname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apelido</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Jão" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
                 <FormItem>
-                <FormLabel>WhatsApp</FormLabel>
-                <FormControl>
-                    <Input placeholder="(11) 99999-9999" {...field} />
-                </FormControl>
-                <FormMessage />
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="joao.silva@email.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
-        </div>
-
-        <Separator className="my-6" />
-
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium">Endereço (Opcional)</h3>
-             <FormField
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                        <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="whatsapp"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>WhatsApp</FormLabel>
+                    <FormControl>
+                        <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observações</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Cliente prefere corte na tesoura..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+          <TabsContent value="address" className="mt-4 space-y-4">
+            <FormField
                 control={form.control}
                 name="cep"
                 render={({ field }) => (
@@ -236,7 +255,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                 </FormItem>
                 )}
             />
-             <FormField
+              <FormField
                 control={form.control}
                 name="address"
                 render={({ field }) => (
@@ -263,7 +282,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                     </FormItem>
                     )}
                 />
-                 <FormField
+                  <FormField
                     control={form.control}
                     name="complement"
                     render={({ field }) => (
@@ -318,26 +337,9 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                     )}
                 />
             </div>
-        </div>
-
-        <Separator className="my-6" />
-
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observações</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Cliente prefere corte na tesoura..."
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          </TabsContent>
+        </Tabs>
+        
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && (
