@@ -23,6 +23,8 @@ import {
   LogOut,
   User,
   Scissors,
+  ClipboardList,
+  Truck,
 } from "lucide-react";
 import { shops } from "@/lib/data";
 import { Logo } from "@/components/logo";
@@ -42,6 +44,8 @@ export default function ShopLayout({
     { href: `/dashboard/${shopId}/appointments`, label: "Agendamentos", icon: Calendar },
     { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
     { href: `/dashboard/${shopId}/barbers`, label: "Barbeiros", icon: Scissors },
+    { href: `/dashboard/${shopId}/services`, label: "Serviços", icon: ClipboardList },
+    { href: `/dashboard/${shopId}/suppliers`, label: "Fornecedores", icon: Truck },
     { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: CreditCard },
   ];
 

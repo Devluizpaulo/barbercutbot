@@ -148,3 +148,34 @@ export const barbers: Barber[] = [
     { id: 'barber-2', firstName: 'Roberto', lastName: 'Almeida', email: 'roberto.almeida@example.com', phone: '(11) 92222-2222', bio: 'Focado em tendências modernas e degradês.' },
     { id: 'barber-3', firstName: 'Fernanda', lastName: 'Lima', email: 'fernanda.lima@example.com', phone: '(11) 93333-3333', bio: 'Especialista em coloração e penteados.' },
 ];
+
+export type Service = {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    duration: number; // in minutes
+};
+
+export const services: Service[] = [
+    { id: 'service-1', name: 'Corte de Cabelo', description: 'Corte clássico ou moderno, na tesoura ou máquina.', price: 50, duration: 30 },
+    { id: 'service-2', name: 'Barba', description: 'Modelagem e aparo da barba com toalha quente.', price: 35, duration: 25 },
+    { id: 'service-3', name: 'Corte + Barba', description: 'Pacote completo de corte de cabelo e barba.', price: 80, duration: 55 },
+    { id: 'service-4', name: 'Degradê', description: 'Corte com efeito degradê (fade) preciso.', price: 60, duration: 40 },
+    { id: 'service-5', name: 'Pintura Capilar', description: 'Coloração completa do cabelo.', price: 120, duration: 60 },
+];
+
+export type Supplier = {
+    id: string;
+    name: string;
+    contactPerson: string;
+    phone: string;
+    category: string;
+    notes: string;
+};
+
+export const suppliers: Supplier[] = [
+    { id: 'supplier-1', name: 'Cosméticos Pro', contactPerson: 'Fernanda Costa', phone: '(11) 98888-1111', category: 'Produtos de Cabelo', notes: 'Entrega rápida, sempre às terças. Ótimos preços em pomadas.' },
+    { id: 'supplier-2', name: 'Lâminas & Cia', contactPerson: 'Ricardo Alves', phone: '(21) 97777-2222', category: 'Equipamentos', notes: 'Fornecedor principal de lâminas e navalhas. Pedir com 1 semana de antecedência.' },
+    { id: 'supplier-3', name: 'Toalhas & Uniformes', contactPerson: 'Beatriz Martins', phone: '(31) 96666-3333', category: 'Uniformes', notes: 'Uniformes personalizados. Boa qualidade, mas prazo de entrega longo.' },
+];
