@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { doc, collection, query, where } from 'firebase/firestore';
 import {
   ArrowLeft,
@@ -36,25 +37,24 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export default function ClientDetailsPage({
-  params,
-}: {
-  params: { shopId: string; clientId: string };
-}) {
+export default function ClientDetailsPage() {
+  const params = useParams();
+  const shopId = params.shopId as string;
+  const clientId = params.clientId as string;
   const firestore = useFirestore();
 
   const clientRef = useMemoFirebase(() => {
     if (!firestore) return null;
-    return doc(firestore, `/barberShops/${params.shopId}/customers/${params.clientId}`);
-  }, [firestore, params.shopId, params.clientId]);
+    return doc(firestore, `/barberShops/${shopId}/customers/${clientId}`);
+  }, [firestore, shopId, clientId]);
 
   const appointmentsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
-      collection(firestore, `/barberShops/${params.shopId}/appointments`),
-      where('customerId', '==', params.clientId)
+      collection(firestore, `/barberShops/${shopId}/appointments`),
+      where('customerId', '==', clientId)
     );
-  }, [firestore, params.shopId, params.clientId]);
+  }, [firestore, shopId, clientId]);
 
   const { data: client, isLoading: isClientLoading, error: clientError } = useDoc<Customer>(clientRef);
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
@@ -87,7 +87,7 @@ export default function ClientDetailsPage({
             {clientError ? "Ocorreu um erro ao carregar o cliente." : "Cliente não encontrado."}
         </p>
         <Button asChild variant="link">
-          <Link href={`/dashboard/${params.shopId}/clients`}>
+          <Link href={`/dashboard/${shopId}/clients`}>
             Voltar para clientes
           </Link>
         </Button>
@@ -99,7 +99,7 @@ export default function ClientDetailsPage({
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href={`/dashboard/${params.shopId}/clients`}>
+          <Link href={`/dashboard/${shopId}/clients`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

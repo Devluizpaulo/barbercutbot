@@ -1,5 +1,6 @@
 "use client"
 
+import { useParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -30,8 +31,10 @@ const chartConfig = {
   },
 }
 
-export default function ShopDashboardPage({ params }: { params: { shopId: string } }) {
-  const shop = shops.find((s) => s.id === params.shopId);
+export default function ShopDashboardPage() {
+  const params = useParams();
+  const shopId = params.shopId as string;
+  const shop = shops.find((s) => s.id === shopId);
 
   return (
     <div className="flex flex-col gap-8">

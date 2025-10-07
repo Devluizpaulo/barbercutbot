@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { collection, query, where } from 'firebase/firestore';
 import {
   Search,
@@ -40,21 +41,19 @@ import {
 } from '@/components/ui/dialog';
 import { AddClientForm } from './add-client-form';
 
-export default function ClientsPage({
-  params,
-}: {
-  params: { shopId: string };
-}) {
+export default function ClientsPage() {
   const [isAddClientOpen, setAddClientOpen] = useState(false);
   const firestore = useFirestore();
+  const params = useParams();
+  const shopId = params.shopId as string;
 
   const clientsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !shopId) return null;
     return query(
-      collection(firestore, `/barberShops/${params.shopId}/customers`),
-      where('barberShopId', '==', params.shopId)
+      collection(firestore, `/barberShops/${shopId}/customers`),
+      where('barberShopId', '==', shopId)
     );
-  }, [firestore, params.shopId]);
+  }, [firestore, shopId]);
 
   const {
     data: clients,
@@ -92,7 +91,7 @@ export default function ClientsPage({
                     <DialogTitle>Adicionar Novo Cliente</DialogTitle>
                   </DialogHeader>
                   <AddClientForm
-                    shopId={params.shopId}
+                    shopId={shopId}
                     onSuccess={() => setAddClientOpen(false)}
                   />
                 </DialogContent>
@@ -146,7 +145,7 @@ export default function ClientsPage({
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">
                     <Link
-                      href={`/dashboard/${params.shopId}/clients/${client.id}`}
+                      href={`/dashboard/${shopId}/clients/${client.id}`}
                       className="hover:underline"
                     >
                       {client.firstName} {client.lastName}
@@ -161,7 +160,7 @@ export default function ClientsPage({
                   <TableCell>
                     <Button variant="ghost" size="icon" asChild>
                       <Link
-                        href={`/dashboard/${params.shopId}/clients/${client.id}`}
+                        href={`/dashboard/${shopId}/clients/${client.id}`}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Link>
