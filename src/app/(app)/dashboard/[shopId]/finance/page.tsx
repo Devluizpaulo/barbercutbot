@@ -1,10 +1,12 @@
 
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { transactions as mockedTransactions, revenueByService, revenueByPaymentMethod } from '@/lib/data';
 import type { Transaction as FinancialRecord } from '@/lib/data';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 import {
   Card,
@@ -31,7 +33,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal } from "lucide-react"
+import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal, Download } from "lucide-react"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -64,6 +66,21 @@ export default function FinancePage() {
 
   const transactions = mockedTransactions;
   const isLoading = false;
+
+  const serviceChartRef = useRef<HTMLDivElement>(null);
+  const paymentChartRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPdf = (chartRef: React.RefObject<HTMLDivElement>, fileName: string) => {
+    if (!chartRef.current) return;
+    html2canvas(chartRef.current).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'px', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${fileName}.pdf`);
+    });
+  };
 
   const { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords } = useMemo(() => {
     const records = transactions || [];
@@ -166,10 +183,15 @@ export default function FinancePage() {
             </p>
         </div>
         <div className="grid gap-8 md:grid-cols-2">
-            <Card>
-                <CardHeader>
+            <Card ref={serviceChartRef}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
                     <CardTitle>Receita por Serviço</CardTitle>
                     <CardDescription>Performance de vendas dos principais serviços.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(serviceChartRef, 'relatorio-receita-servico')}>
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent>
                      <ChartContainer config={serviceChartConfig} className="w-full h-[250px]">
@@ -183,10 +205,15 @@ export default function FinancePage() {
                     </ChartContainer>
                 </CardContent>
             </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Forma de Pagamento</CardTitle>
-                    <CardDescription>Distribuição da receita por forma de pagamento.</CardDescription>
+            <Card ref={paymentChartRef}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Forma de Pagamento</CardTitle>
+                      <CardDescription>Distribuição da receita por forma de pagamento.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(paymentChartRef, 'relatorio-forma-pagamento')}>
+                      <Download className="h-4 w-4" />
+                    </Button>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                     <ChartContainer config={{}} className="w-full h-[250px]">
@@ -288,5 +315,3 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
       </Table>
   )
 }
-
-    
