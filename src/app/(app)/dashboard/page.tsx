@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
     const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-muted/40">
        <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
           <Shield className="h-8 w-8"/> Painel do Administrador

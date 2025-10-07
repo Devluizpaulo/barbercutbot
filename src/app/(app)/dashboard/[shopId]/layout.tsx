@@ -1,12 +1,11 @@
 
+
 "use client";
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import {
-  SidebarProvider,
   Sidebar,
-  SidebarInset,
   SidebarHeader,
   SidebarFooter,
   SidebarContent,
@@ -44,8 +43,7 @@ export default function ShopLayout({
   ];
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-[calc(100vh-4rem-1px)] w-full">
+      <div className="flex flex-1">
         <Sidebar>
           <SidebarHeader>
             <h2 className="text-lg font-semibold tracking-tight font-headline truncate px-2">
@@ -99,10 +97,9 @@ export default function ShopLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="max-w-full">
+        <div className="flex-1 p-4 md:p-8 bg-muted/40">
           {children}
-        </SidebarInset>
+        </div>
       </div>
-    </SidebarProvider>
   );
 }

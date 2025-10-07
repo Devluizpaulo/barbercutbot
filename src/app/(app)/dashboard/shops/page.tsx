@@ -1,4 +1,5 @@
 
+
 import Link from "next/link";
 import {
   Card,
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   return (
-    <div>
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-muted/40">
       <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Selecione uma Barbearia</h1>
       <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {shops.map((shop) => (
