@@ -10,7 +10,6 @@ import {
   User,
   Scissors,
   DollarSign,
-  PenSquare,
   AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
