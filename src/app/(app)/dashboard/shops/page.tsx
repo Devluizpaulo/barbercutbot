@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { shops } from "@/lib/data";
-import { Building, Calendar, Users, Lock } from "lucide-react";
+import { Building, Calendar, Users, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
@@ -29,7 +29,7 @@ export default function Dashboard() {
                 </div>
                  <Button variant="ghost" size="icon" asChild>
                     <Link href={`/dashboard/${shop.id}`}>
-                        <Lock className="h-5 w-5" />
+                        <ChevronRight className="h-5 w-5" />
                     </Link>
                 </Button>
               </div>
