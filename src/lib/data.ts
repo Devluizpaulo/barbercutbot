@@ -1,3 +1,4 @@
+
 import { addDays, format, subDays, subHours, subMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -8,13 +9,16 @@ export type Shop = {
   owner: string;
   todayAppointments: number;
   totalClients: number;
+  status: 'Ativo' | 'Inativo';
+  plan: 'Básico' | 'Pro' | 'Premium';
+  totalRevenue: number;
 };
 
 export const shops: Shop[] = [
-  { id: 'shop-1', name: 'Corte Clássico', location: 'Centro, SP', owner: 'João da Silva', todayAppointments: 5, totalClients: 124 },
-  { id: 'shop-2', name: 'Barbearia Moderna', location: 'Zona Sul, RJ', owner: 'Maria Oliveira', todayAppointments: 8, totalClients: 250 },
-  { id: 'shop-3', name: 'Escolha do Cavalheiro', location: 'Belo Horizonte, MG', owner: 'Carlos Pereira', todayAppointments: 12, totalClients: 480 },
-  { id: 'shop-4', name: 'O Ponto do Barbeiro', location: 'Curitiba, PR', owner: 'Ana Souza', todayAppointments: 3, totalClients: 89 },
+  { id: 'shop-1', name: 'Corte Clássico', location: 'Centro, SP', owner: 'João da Silva', todayAppointments: 5, totalClients: 124, status: 'Ativo', plan: 'Pro', totalRevenue: 5250.00 },
+  { id: 'shop-2', name: 'Barbearia Moderna', location: 'Zona Sul, RJ', owner: 'Maria Oliveira', todayAppointments: 8, totalClients: 250, status: 'Ativo', plan: 'Premium', totalRevenue: 8900.50 },
+  { id: 'shop-3', name: 'Escolha do Cavalheiro', location: 'Belo Horizonte, MG', owner: 'Carlos Pereira', todayAppointments: 12, totalClients: 480, status: 'Ativo', plan: 'Premium', totalRevenue: 12300.00 },
+  { id: 'shop-4', name: 'O Ponto do Barbeiro', location: 'Curitiba, PR', owner: 'Ana Souza', todayAppointments: 3, totalClients: 89, status: 'Inativo', plan: 'Básico', totalRevenue: 2100.75 },
 ];
 
 export type Client = {
