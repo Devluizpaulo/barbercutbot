@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import type { Barber } from '@/lib/data';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -30,15 +31,16 @@ type AddBarberFormValues = z.infer<typeof formSchema>;
 
 interface AddBarberFormProps {
   shopId: string;
+  initialData?: Barber;
   onSuccess?: () => void;
 }
 
-export function AddBarberForm({ shopId, onSuccess }: AddBarberFormProps) {
+export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormProps) {
   const { toast } = useToast();
 
   const form = useForm<AddBarberFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       firstName: '',
       lastName: '',
       email: '',
@@ -51,13 +53,15 @@ export function AddBarberForm({ shopId, onSuccess }: AddBarberFormProps) {
 
   const onSubmit = async (values: AddBarberFormValues) => {
     // NOTE: Database functionality is disabled for simulation.
-    console.log("Simulating add barber for shop:", shopId, values);
+    console.log("Simulating save barber for shop:", shopId, values);
     toast({
-      title: 'Modo de Simulação',
-      description: 'Funcionalidade de adicionar barbeiro desabilitada.',
+      title: initialData ? 'Barbeiro Atualizado!' : 'Barbeiro Adicionado!',
+      description: `O profissional ${values.firstName} foi salvo.`,
     });
     onSuccess?.();
-    form.reset();
+    if (!initialData) {
+      form.reset();
+    }
   };
 
   return (

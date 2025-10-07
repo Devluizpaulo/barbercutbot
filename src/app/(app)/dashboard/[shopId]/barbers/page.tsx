@@ -3,13 +3,10 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { PlusCircle, Search, Mail, Phone, MoreVertical } from 'lucide-react';
+import { PlusCircle, Search, Mail, Phone, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -36,14 +33,31 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddBarberForm } from './add-barber-form';
 import { barbers as mockedBarbers } from '@/lib/data';
+import type { Barber } from '@/lib/data';
 
 export default function BarbersPage() {
-  const [isAddBarberOpen, setAddBarberOpen] = useState(false);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [selectedBarber, setSelectedBarber] = useState<Barber | undefined>(undefined);
   const params = useParams();
   const shopId = params.shopId as string;
 
   // Replace with actual data fetching
   const barbers = mockedBarbers;
+
+  const handleEdit = (barber: Barber) => {
+    setSelectedBarber(barber);
+    setFormOpen(true);
+  };
+
+  const handleAddNew = () => {
+    setSelectedBarber(undefined);
+    setFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    setFormOpen(false);
+    setSelectedBarber(undefined);
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -61,23 +75,24 @@ export default function BarbersPage() {
              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
              <Input placeholder="Buscar barbeiro..." className="pl-8 w-full md:w-[200px] lg:w-[320px]" />
            </div>
-          <Dialog open={isAddBarberOpen} onOpenChange={setAddBarberOpen}>
+          <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedBarber(undefined); setFormOpen(isOpen); }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={handleAddNew}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Barbeiro
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl">
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Barbeiro</DialogTitle>
+                <DialogTitle>{selectedBarber ? 'Editar Barbeiro' : 'Adicionar Novo Barbeiro'}</DialogTitle>
                 <p className="text-sm text-muted-foreground pt-1">
                   Preencha os detalhes do novo profissional.
                 </p>
               </DialogHeader>
               <AddBarberForm
                 shopId={shopId}
-                onSuccess={() => setAddBarberOpen(false)}
+                initialData={selectedBarber}
+                onSuccess={handleFormSuccess}
               />
             </DialogContent>
           </Dialog>
@@ -100,12 +115,12 @@ export default function BarbersPage() {
               {barbers.map((barber) => (
                 <TableRow key={barber.id}>
                   <TableCell className="font-medium">{`${barber.firstName} ${barber.lastName}`}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                  <TableCell className="hidden md:table-cell space-y-1">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Mail className="h-4 w-4" />
                       <span>{barber.email}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Phone className="h-4 w-4" />
                       <span>{barber.phone}</span>
                     </div>
@@ -119,9 +134,12 @@ export default function BarbersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Editar</DropdownMenuItem>
-                        <DropdownMenuItem>Ver Agendamentos</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500">
+                        <DropdownMenuItem onClick={() => handleEdit(barber)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                          <Trash2 className="mr-2 h-4 w-4" />
                           Remover
                         </DropdownMenuItem>
                       </DropdownMenuContent>
