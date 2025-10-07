@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, LoaderCircle, Delete } from 'lucide-react';
+import { Calendar as CalendarIcon, LoaderCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,7 +58,6 @@ interface AddTransactionFormProps {
 const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
 const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
-
 
 const KeypadButton = ({ children, onClick, className }: { children: React.ReactNode, onClick: () => void, className?: string }) => (
     <Button
@@ -100,18 +99,22 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             currentAmountString = '0';
         }
     } else {
-        if (currentAmountString === '000' && key !== '00') {
+        if (currentAmountString === '0' && key !== '00') {
              currentAmountString = key;
         } else {
              currentAmountString += key;
         }
     }
     
-    const numericValue = parseInt(currentAmountString.slice(-6), 10) || 0;
+    // Ensure the string doesn't get excessively long
+    currentAmountString = currentAmountString.padStart(3, '0').slice(-6);
+
+    const numericValue = parseInt(currentAmountString, 10) || 0;
     const newAmount = numericValue / 100;
 
     form.setValue('amount', newAmount, { shouldValidate: true });
   };
+
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      console.log("Simulating add transaction:", values);
@@ -331,15 +334,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 )}
               />
             )}
-
-            <div className="flex justify-end pt-4 md:hidden">
-              <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
-                {isSubmitting && (
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Salvar Transação
-              </Button>
-            </div>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -347,16 +341,14 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                     <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
                 ))}
-                <KeypadButton onClick={() => handleKeypadPress('backspace')}><Delete /></KeypadButton>
+                <KeypadButton onClick={() => handleKeypadPress('backspace')}><Trash2 /></KeypadButton>
             </div>
-            <div className="hidden md:flex justify-end">
-                 <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
-                    {isSubmitting && (
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Salvar Transação
-                </Button>
-            </div>
+            <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
+                {isSubmitting && (
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Salvar Transação
+            </Button>
         </div>
       </form>
     </Form>
