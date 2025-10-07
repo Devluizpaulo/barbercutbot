@@ -122,7 +122,7 @@ export default function FinancePage() {
               Adicionar Transação
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Adicionar Nova Transação</DialogTitle>
             </DialogHeader>
@@ -275,3 +275,5 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
       </Table>
   )
 }
+
+    
