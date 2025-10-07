@@ -56,7 +56,7 @@ export type Service = {
 export type FinancialRecord = {
   id: string;
   barberShopId: string;
-  date: Date;
+  date: string; // Stored as ISO string or Firestore Timestamp string
   type: 'income' | 'expense';
   description: string;
   amount: number;
@@ -70,3 +70,4 @@ export type UserProfile = {
   email: string;
   createdAt: Date;
 };
+

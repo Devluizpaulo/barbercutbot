@@ -1,5 +1,10 @@
+
 "use client"
 
+import { useParams } from 'next/navigation';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import type { FinancialRecord } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -18,8 +23,11 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
-import { transactions, monthlyRevenue } from "@/lib/data"
-import { DollarSign, ArrowUpRight, ArrowDownLeft } from "lucide-react"
+import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle } from "lucide-react"
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { monthlyRevenue } from "@/lib/data"
+
 
 const chartConfig = {
   income: {
@@ -32,6 +40,7 @@ const chartConfig = {
   },
 }
 
+// Chart data is still mocked as aggregation would require backend functions
 const financialData = monthlyRevenue.map(item => ({
   month: item.month,
   income: item.revenue,
@@ -39,8 +48,33 @@ const financialData = monthlyRevenue.map(item => ({
 }))
 
 export default function FinancePage() {
-  const totalIncome = transactions.filter(t => t.type === 'Receita').reduce((acc, t) => acc + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'Despesa').reduce((acc, t) => acc + t.amount, 0);
+  const params = useParams();
+  const shopId = params.shopId as string;
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!firestore || !shopId) return null;
+    return query(
+      collection(firestore, `/barberShops/${shopId}/financialRecords`),
+      orderBy('date', 'desc')
+    );
+  }, [firestore, shopId]);
+
+  const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
+
+  const financialRecords = transactions || [];
+
+  const { totalIncome, totalExpense } = financialRecords.reduce(
+    (acc, record) => {
+      if (record.type === 'income') {
+        acc.totalIncome += record.amount;
+      } else {
+        acc.totalExpense += record.amount;
+      }
+      return acc;
+    },
+    { totalIncome: 0, totalExpense: 0 }
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -60,7 +94,11 @@ export default function FinancePage() {
             <ArrowUpRight className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R${totalIncome.toLocaleString('pt-BR')}</div>
+            {isLoading ? (
+                <Skeleton className="h-8 w-32" />
+            ) : (
+                <div className="text-2xl font-bold">R${totalIncome.toLocaleString('pt-BR')}</div>
+            )}
             <p className="text-xs text-muted-foreground">+15% do último mês</p>
           </CardContent>
         </Card>
@@ -70,7 +108,11 @@ export default function FinancePage() {
             <ArrowDownLeft className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R${totalExpense.toLocaleString('pt-BR')}</div>
+             {isLoading ? (
+                <Skeleton className="h-8 w-32" />
+            ) : (
+                <div className="text-2xl font-bold">R${totalExpense.toLocaleString('pt-BR')}</div>
+            )}
             <p className="text-xs text-muted-foreground">+5% do último mês</p>
           </CardContent>
         </Card>
@@ -80,7 +122,11 @@ export default function FinancePage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R${(totalIncome - totalExpense).toLocaleString('pt-BR')}</div>
+             {isLoading ? (
+                <Skeleton className="h-8 w-32" />
+            ) : (
+                <div className="text-2xl font-bold">R${(totalIncome - totalExpense).toLocaleString('pt-BR')}</div>
+            )}
             <p className="text-xs text-muted-foreground">+22% do último mês</p>
           </CardContent>
         </Card>
@@ -90,7 +136,7 @@ export default function FinancePage() {
         <CardHeader>
             <CardTitle className="font-headline">Receita vs. Despesas</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pl-2">
              <ChartContainer config={chartConfig} className="h-[350px] w-full">
               <LineChart
                 accessibilityLayer
@@ -148,18 +194,34 @@ export default function FinancePage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {transactions.slice(0, 10).map((transaction) => (
+                     {isLoading && (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {financialRecords.slice(0, 10).map((transaction) => (
                         <TableRow key={transaction.id}>
-                            <TableCell className="text-muted-foreground">{transaction.date}</TableCell>
+                            <TableCell className="text-muted-foreground">{format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
                             <TableCell>
-                                <Badge variant={transaction.type === 'Receita' ? 'outline' : 'destructive'}>{transaction.type}</Badge>
+                                <Badge variant={transaction.type === 'income' ? 'outline' : 'destructive'}>
+                                  {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                                </Badge>
                             </TableCell>
-                            <TableCell className={`text-right font-mono ${transaction.type === 'Receita' ? 'text-green-500' : 'text-red-500'}`}>
-                                {transaction.type === 'Receita' ? '+' : '-'}R${transaction.amount.toFixed(2)}
+                            <TableCell className={`text-right font-mono ${transaction.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                                {transaction.type === 'income' ? '+' : '-'}R${transaction.amount.toFixed(2)}
                             </TableCell>
                         </TableRow>
                     ))}
+                    {!isLoading && financialRecords.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                Nenhuma transação encontrada.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </CardContent>
