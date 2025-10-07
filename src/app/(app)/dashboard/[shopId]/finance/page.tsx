@@ -14,6 +14,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
 import {
   Table,
@@ -379,7 +380,17 @@ export default function FinancePage() {
 }
 
 function TransactionsTable({ transactions, isLoading }: { transactions: FinancialRecord[], isLoading: boolean }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  const paginatedTransactions = transactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
+    <>
       <Table>
           <TableHeader>
               <TableRow>
@@ -396,7 +407,7 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
                   <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
                 </TableRow>
               ))}
-              {transactions.map((record) => (
+              {paginatedTransactions.map((record) => (
                 <TableRow key={record.id}>
                   <TableCell>
                     <div className="font-medium">{record.description}</div>
@@ -425,15 +436,40 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
                   </TableCell>
                 </TableRow>
               ))}
-              {!isLoading && transactions.length === 0 && (
+              {!isLoading && paginatedTransactions.length === 0 && (
                  <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">Nenhuma transação encontrada para este período.</TableCell>
                  </TableRow>
               )}
           </TableBody>
       </Table>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+            <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+                <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                >
+                    Anterior
+                </Button>
+                <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                >
+                    Próxima
+                </Button>
+            </div>
+        </div>
+      )}
+    </>
   )
 }
-
     
     
