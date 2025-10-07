@@ -17,13 +17,11 @@ import { ptBR } from 'date-fns/locale';
 import {
   collection,
   doc,
-  updateDoc,
-  deleteDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 
-import type { Appointment } from '@/lib/types';
+import type { Appointment, Customer, Barber } from '@/lib/types';
 import { updateAppointmentStatus } from '@/lib/actions';
 
 import {
@@ -93,17 +91,36 @@ export default function AppointmentsPage() {
   const shopId = params.shopId as string;
 
   const firestore = useFirestore();
-  const appointmentsCollection = collection(
-    firestore,
-    'barberShops',
-    shopId,
-    'appointments'
+
+  const appointmentsCollection = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'barberShops', shopId, 'appointments') : null),
+    [firestore, shopId]
   );
+  
   const {
     data: appointments,
     isLoading,
     error,
   } = useCollection<Appointment>(appointmentsCollection);
+
+  // Fetch related customer and barber data to display names
+  const { data: customers } = useCollection<Customer>(
+    useMemoFirebase(() => (firestore ? collection(firestore, 'barberShops', shopId, 'customers') : null), [firestore, shopId])
+  );
+  const { data: barbers } = useCollection<Barber>(
+    useMemoFirebase(() => (firestore ? collection(firestore, 'barberShops', shopId, 'barbers') : null), [firestore, shopId])
+  );
+  
+  const getCustomerName = (customerId: string) => {
+    const customer = customers?.find(c => c.id === customerId);
+    return customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente não encontrado';
+  };
+
+  const getBarberName = (barberId: string) => {
+    const barber = barbers?.find(b => b.id === barberId);
+    return barber ? `${barber.firstName} ${barber.lastName}` : 'Barbeiro não encontrado';
+  };
+
 
   const handleEdit = (appointment: AppointmentWithId) => {
     setSelectedAppointment(appointment);
@@ -263,14 +280,14 @@ export default function AppointmentsPage() {
                       <TableRow key={appointment.id}>
                         <TableCell>
                           <div className="font-medium">
-                            {appointment.customerId}
+                            {getCustomerName(appointment.customerId)}
                           </div>
                           <div className="text-sm text-muted-foreground md:hidden">
-                            {appointment.barberId}
+                            {getBarberName(appointment.barberId)}
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {appointment.barberId}
+                          {getBarberName(appointment.barberId)}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {format(

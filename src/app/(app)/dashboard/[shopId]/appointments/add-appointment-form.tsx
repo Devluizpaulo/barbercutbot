@@ -56,10 +56,10 @@ import {
   collection,
   addDoc,
   doc,
-  setDoc,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { Customer, Service, Barber, Appointment } from '@/lib/types';
 import { useEffect } from 'react';
 
@@ -95,15 +95,15 @@ export function AddAppointmentForm({
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const { data: customers } = useCollection<Customer>(
-    collection(firestore, 'barberShops', shopId, 'customers')
-  );
-  const { data: services } = useCollection<Service>(
-    collection(firestore, 'barberShops', shopId, 'services')
-  );
-  const { data: barbers } = useCollection<Barber>(
-    collection(firestore, 'barberShops', shopId, 'barbers')
-  );
+  const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId]);
+  const { data: customers } = useCollection<Customer>(customersCollection);
+
+  const servicesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId]);
+  const { data: services } = useCollection<Service>(servicesCollection);
+
+  const barbersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId]);
+  const { data: barbers } = useCollection<Barber>(barbersCollection);
+
 
   const form = useForm<AddAppointmentFormValues>({
     resolver: zodResolver(formSchema),
@@ -153,6 +153,15 @@ export function AddAppointmentForm({
   }, [selectedService, form]);
 
   const onSubmit = async (values: AddAppointmentFormValues) => {
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro de conexão',
+        description: 'Não foi possível conectar ao banco de dados.',
+      });
+      return;
+    }
+    
     try {
       const [hours, minutes] = values.time.split(':').map(Number);
       const startTime = new Date(values.date);
@@ -161,7 +170,7 @@ export function AddAppointmentForm({
       const serviceDuration = selectedService?.duration || 0;
       const endTime = new Date(startTime.getTime() + serviceDuration * 60000);
 
-      const submissionData: Omit<Appointment, 'createdAt'> = {
+      const submissionData: Omit<Appointment, 'id' | 'createdAt'> = {
         customerId: values.customerId,
         serviceIds: [values.serviceId],
         barberId: values.barberId,
@@ -458,4 +467,3 @@ export function AddAppointmentForm({
     </Form>
   );
 }
-

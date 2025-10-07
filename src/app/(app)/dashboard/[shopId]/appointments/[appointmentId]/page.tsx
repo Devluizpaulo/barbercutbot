@@ -16,7 +16,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { doc, Timestamp } from 'firebase/firestore';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import {
   Card,
@@ -36,19 +36,31 @@ export default function AppointmentDetailsPage() {
   const firestore = useFirestore();
 
   // Create document reference
-  const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointmentId);
+  const appointmentRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null),
+    [firestore, shopId, appointmentId]
+  );
   const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
 
   // Fetch related data based on IDs from the appointment
-  const { data: customer } = useDoc<Customer>(
-    appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null
+  const customerRef = useMemoFirebase(
+    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null),
+    [firestore, shopId, appointment]
   );
-  const { data: barber } = useDoc<Barber>(
-    appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null
+  const { data: customer } = useDoc<Customer>(customerRef);
+
+  const barberRef = useMemoFirebase(
+    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null),
+    [firestore, shopId, appointment]
   );
-  const { data: service } = useDoc<Service>(
-    appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null
+  const { data: barber } = useDoc<Barber>(barberRef);
+  
+  const serviceRef = useMemoFirebase(
+    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null),
+    [firestore, shopId, appointment]
   );
+  const { data: service } = useDoc<Service>(serviceRef);
+
 
   if (isLoading) {
     return (
@@ -219,4 +231,3 @@ export default function AppointmentDetailsPage() {
     </div>
   );
 }
-
