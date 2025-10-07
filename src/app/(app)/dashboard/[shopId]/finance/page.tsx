@@ -89,7 +89,7 @@ export default function FinancePage() {
       { totalIncome: 0, totalExpense: 0 }
     );
     const netProfit = totals.totalIncome - totals.totalExpense;
-    const recent = records.slice(0, 5);
+    const recent = records.slice(0, 10); // Show more recent transactions
     return { ...totals, netProfit, recentTransactions: recent };
   }, [transactions]);
   
@@ -163,8 +163,8 @@ export default function FinancePage() {
         </Card>
       </div>
       
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="lg:col-span-1">
+      <div className="grid gap-8 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
           <CardHeader>
               <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
           </CardHeader>
@@ -181,25 +181,23 @@ export default function FinancePage() {
               </ChartContainer>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2">
            <CardHeader>
               <CardTitle className="font-headline">Transações Recentes</CardTitle>
-              <CardDescription>As últimas 5 transações registradas.</CardDescription>
+              <CardDescription>As últimas transações registradas.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Data</TableHead>
+                        <TableHead>Detalhes</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                    {isLoading && Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32" /><div className="mt-1"><Skeleton className="h-4 w-24" /></div></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                       </TableRow>
                     ))}
@@ -207,17 +205,20 @@ export default function FinancePage() {
                       <TableRow key={record.id}>
                         <TableCell>
                           <div className="font-medium">{record.description}</div>
-                          <Badge variant={record.type === 'Receita' ? 'secondary' : 'destructive'} className="capitalize mt-1">{record.type}</Badge>
+                          <div className="text-sm text-muted-foreground">{record.date}</div>
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            <Badge variant="outline">{record.category}</Badge>
+                            {record.paymentMethod && <Badge variant="secondary">{record.paymentMethod}</Badge>}
+                          </div>
                         </TableCell>
-                         <TableCell>{record.date}</TableCell>
                         <TableCell className={`text-right font-medium ${record.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`}>
-                          R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {record.type === 'Despesa' && '-'}R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                       </TableRow>
                     ))}
                     {!isLoading && recentTransactions.length === 0 && (
                        <TableRow>
-                          <TableCell colSpan={3} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
+                          <TableCell colSpan={2} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
                        </TableRow>
                     )}
                 </TableBody>

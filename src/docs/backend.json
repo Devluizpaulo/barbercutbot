@@ -1,0 +1,452 @@
+{
+  "entities": {
+    "BarberShop": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BarberShop",
+      "type": "object",
+      "description": "Represents a barber shop within the SaaS application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the barber shop."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the barber shop."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to the User who owns the barber shop. (Relationship: User 1:N BarberShop)"
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the barber shop."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the barber shop."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the barber shop.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "ownerId"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents an appointment scheduled at a barber shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the appointment."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop where the appointment is scheduled. (Relationship: BarberShop 1:N Appointment)"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to the Customer who scheduled the appointment. (Relationship: Customer 1:N Appointment)"
+        },
+        "barberId": {
+          "type": "string",
+          "description": "Reference to the Barber assigned to the appointment. (Relationship: Barber 1:N Appointment)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time of the appointment.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time of the appointment.",
+          "format": "date-time"
+        },
+        "serviceIds": {
+          "type": "array",
+          "description": "References to Services provided during the appointment. (Relationship: Service N:N Appointment)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes for the appointment."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "customerId",
+        "barberId",
+        "startTime",
+        "endTime"
+      ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer of a barber shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the customer."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop the customer belongs to. (Relationship: BarberShop 1:N Customer)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the customer."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the customer."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the customer."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the customer.",
+          "format": "email"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the customer."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Barber": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Barber",
+      "type": "object",
+      "description": "Represents a barber working at a barber shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the barber."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop the barber belongs to. (Relationship: BarberShop 1:N Barber)"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the barber."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the barber."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the barber."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the barber.",
+          "format": "email"
+        },
+        "bio": {
+          "type": "string",
+          "description": "A brief biography of the barber."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "Represents a service offered by a barber shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the service."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop that offers the service. (Relationship: BarberShop 1:N Service)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the service."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the service."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the service."
+        },
+        "duration": {
+          "type": "number",
+          "description": "Duration of the service in minutes."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "name",
+        "price",
+        "duration"
+      ]
+    },
+    "FinancialRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialRecord",
+      "type": "object",
+      "description": "Represents a financial record for a barber shop, including income and expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the financial record."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop the record belongs to. (Relationship: BarberShop 1:N FinancialRecord)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the financial record.",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of financial record.",
+          "enum": [
+            "income",
+            "expense"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the transaction."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The monetary value of the transaction."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the income (e.g., 'Venda de Serviço', 'Venda de Produto') or expense (e.g., 'Aluguel', 'Fornecedores')."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Method of payment for an income record (e.g., 'Dinheiro', 'Cartão de Crédito', 'Pix'). Only applicable if type is 'income'."
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Indicates if an expense is recurring (e.g., monthly rent). Only applicable if type is 'expense'."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "date",
+        "type",
+        "description",
+        "amount",
+        "category"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the SaaS application.  Note: Authentication details (passwords, etc.) should be managed by Firebase Authentication and are NOT included here.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.  This is the Firebase UID."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. This collection uses path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}",
+        "definition": {
+          "entityName": "BarberShop",
+          "schema": {
+            "$ref": "#/backend/entities/BarberShop"
+          },
+          "description": "Stores barber shop data. The `ownerId` field links back to the user who owns the shop.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "Unique identifier for the barber shop."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer data for a specific barber shop. Includes denormalized 'barberShopId' for authorization independence.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "customerId",
+              "description": "The ID of the customer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/barbers/{barberId}",
+        "definition": {
+          "entityName": "Barber",
+          "schema": {
+            "$ref": "#/backend/entities/Barber"
+          },
+          "description": "Stores barber data for a specific barber shop. Includes denormalized 'barberShopId' for authorization independence.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "barberId",
+              "description": "The ID of the barber."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/appointments/{appointmentId}",
+        "definition": {
+          "entityName": "Appointment",
+          "schema": {
+            "$ref": "#/backend/entities/Appointment"
+          },
+          "description": "Stores appointment data for a specific barber shop. Includes denormalized 'barberShopId' for authorization independence.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "appointmentId",
+              "description": "The ID of the appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Stores service data for a specific barber shop. Includes denormalized 'barberShopId' for authorization independence.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "serviceId",
+              "description": "The ID of the service."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/financialRecords/{financialRecordId}",
+        "definition": {
+          "entityName": "FinancialRecord",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialRecord"
+          },
+          "description": "Stores financial records for a specific barber shop. Includes denormalized 'barberShopId' for authorization independence.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "financialRecordId",
+              "description": "The ID of the financial record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
+  }
+}]}
