@@ -22,6 +22,7 @@ import {
   Shield,
   LogOut,
   User,
+  Scissors,
 } from "lucide-react";
 import { shops } from "@/lib/data";
 import { Logo } from "@/components/logo";
@@ -40,6 +41,7 @@ export default function ShopLayout({
     { href: `/dashboard/${shopId}`, label: "Visão Geral", icon: LayoutDashboard },
     { href: `/dashboard/${shopId}/appointments`, label: "Agendamentos", icon: Calendar },
     { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
+    { href: `/dashboard/${shopId}/barbers`, label: "Barbeiros", icon: Scissors },
     { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: CreditCard },
   ];
 
@@ -55,7 +57,7 @@ export default function ShopLayout({
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
                     <SidebarMenuButton
-                      isActive={pathname === item.href}
+                      isActive={pathname.startsWith(item.href) && (item.href.length === pathname.length || pathname[item.href.length] === '/')}
                       tooltip={item.label}
                       className="justify-start"
                     >
