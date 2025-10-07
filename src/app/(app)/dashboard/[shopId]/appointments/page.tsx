@@ -25,7 +25,7 @@ import { ptBR } from "date-fns/locale"
 
 export default function AppointmentsPage() {
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-8 mt-8">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
