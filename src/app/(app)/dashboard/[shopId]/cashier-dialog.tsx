@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -28,6 +27,7 @@ import { ptBR } from 'date-fns/locale';
 import { AddTransactionForm } from './finance/add-transaction-form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { DollarSign } from 'lucide-react';
 
 interface CashierDialogProps {
   open: boolean;
@@ -78,13 +78,17 @@ export function CashierDialog({ open, onOpenChange }: CashierDialogProps) {
                 <CardContent className="space-y-4">
                      <div className="space-y-2">
                         <Label htmlFor="opening-balance">Saldo Inicial (R$)</Label>
-                        <Input
-                            id="opening-balance"
-                            type="number"
-                            placeholder="Ex: 150.00"
-                            value={openingBalance}
-                            onChange={(e) => setOpeningBalance(e.target.value)}
-                        />
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                              id="opening-balance"
+                              type="number"
+                              placeholder="Ex: 150.00"
+                              value={openingBalance}
+                              onChange={(e) => setOpeningBalance(e.target.value)}
+                              className="pl-10"
+                          />
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter>

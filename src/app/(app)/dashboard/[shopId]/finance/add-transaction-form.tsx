@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -29,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, LoaderCircle, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, LoaderCircle, Trash2, Coins, BookText, LayoutList, Banknote } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
@@ -193,15 +192,18 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Valor (R$)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text"
-                      readOnly
-                      placeholder="0,00" 
-                      className="h-14 text-3xl text-center font-bold"
-                      value={field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 text-muted-foreground" />
+                    <FormControl>
+                      <Input 
+                        type="text"
+                        readOnly
+                        placeholder="0,00" 
+                        className="h-20 text-4xl text-center font-bold pl-16"
+                        value={field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -213,9 +215,12 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="Ex: Corte de cabelo" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <BookText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                          <Textarea placeholder="Ex: Corte de cabelo" {...field} className="pl-10" />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                     </FormItem>
                 )}
@@ -227,18 +232,21 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{transactionType === 'income' ? 'Serviço' : 'Categoria'}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={transactionType === 'income' ? 'Selecione um serviço' : 'Selecione uma categoria'} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(transactionType === 'income' ? incomeCategories : expenseCategories).map(cat => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <LayoutList className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="pl-10">
+                              <SelectValue placeholder={transactionType === 'income' ? 'Selecione um serviço' : 'Selecione uma categoria'} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(transactionType === 'income' ? incomeCategories : expenseCategories).map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -251,18 +259,21 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a forma de pagamento" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {paymentMethods.map(method => (
-                          <SelectItem key={method} value={method}>{method}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                     <div className="relative">
+                       <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="pl-10">
+                              <SelectValue placeholder="Selecione a forma de pagamento" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {paymentMethods.map(method => (
+                              <SelectItem key={method} value={method}>{method}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -295,13 +306,13 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             )}
         </div>
 
-        <div className="flex flex-col justify-between gap-2">
+        <div className="flex flex-col justify-between gap-6">
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
                   <FormItem className="flex flex-col p-2 gap-2">
-                  <FormLabel>Data</FormLabel>
+                  <FormLabel>Data da Transação</FormLabel>
                   <Popover>
                       <PopoverTrigger asChild>
                       <FormControl>
