@@ -63,7 +63,7 @@ const KeypadButton = ({ children, onClick, className }: { children: React.ReactN
   <Button
     type="button"
     variant="outline"
-    className={cn("h-16 text-2xl font-bold text-foreground", className)}
+    className={cn("h-16 text-2xl font-bold", className)}
     onClick={onClick}
   >
     {children}
@@ -112,7 +112,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     form.setValue('amount', newAmount, { shouldValidate: true });
   };
 
-
   const onSubmit = async (values: AddTransactionFormValues) => {
      console.log("Simulating add transaction:", values);
      toast({
@@ -151,8 +150,9 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                           htmlFor="income"
                           className={cn(
                             "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                            "data-[state=checked]:border-green-500 data-[state=checked]:bg-green-50 data-[state=checked]:text-green-800",
-                            "dark:data-[state=checked]:bg-green-950 dark:data-[state=checked]:text-green-200 dark:data-[state=checked]:border-green-700"
+                            field.value === 'income' 
+                            ? "border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200 dark:border-green-700"
+                            : "hover:bg-accent hover:text-accent-foreground"
                           )}
                         >
                           Receita
@@ -166,8 +166,9 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                           htmlFor="expense"
                            className={cn(
                             "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                            "data-[state=checked]:border-destructive data-[state=checked]:bg-red-50 data-[state=checked]:text-red-800",
-                            "dark:data-[state=checked]:bg-red-950 dark:data-[state=checked]:text-red-200 dark:data-[state=checked]:border-red-700"
+                            field.value === 'expense'
+                            ? "border-destructive bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200 dark:border-red-700"
+                            : "hover:bg-accent hover:text-accent-foreground"
                            )}
                         >
                           Despesa
@@ -329,7 +330,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 )}
               />
             )}
-
 
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
