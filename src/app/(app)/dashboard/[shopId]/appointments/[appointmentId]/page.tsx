@@ -15,9 +15,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { doc, Timestamp } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -28,39 +25,22 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { appointments, clients, barbers, services } from '@/lib/data';
+import type { Appointment, Client, Barber, Service } from '@/lib/data';
 
 export default function AppointmentDetailsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const appointmentId = params.appointmentId as string;
-  const firestore = useFirestore();
 
-  // Create document reference
-  const appointmentRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null),
-    [firestore, shopId, appointmentId]
-  );
-  const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
+  // Simulate fetching data
+  const appointment = appointments.find(a => a.id === appointmentId);
+  const customer = clients.find(c => appointment?.clientName.includes(c.name.split(' ')[0]));
+  const barber = barbers.find(b => appointment?.barber.includes(b.firstName));
+  const service = services.find(s => s.name === appointment?.service);
 
-  // Fetch related data based on IDs from the appointment
-  const customerRef = useMemoFirebase(
-    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null),
-    [firestore, shopId, appointment]
-  );
-  const { data: customer } = useDoc<Customer>(customerRef);
-
-  const barberRef = useMemoFirebase(
-    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null),
-    [firestore, shopId, appointment]
-  );
-  const { data: barber } = useDoc<Barber>(barberRef);
-  
-  const serviceRef = useMemoFirebase(
-    () => (firestore && appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null),
-    [firestore, shopId, appointment]
-  );
-  const { data: service } = useDoc<Service>(serviceRef);
-
+  const isLoading = false;
+  const error = null;
 
   if (isLoading) {
     return (
@@ -88,7 +68,7 @@ export default function AppointmentDetailsPage() {
         <AlertCircle className="mx-auto h-10 w-10 text-destructive mb-4" />
         <h2 className="text-xl font-semibold mb-2">Agendamento não encontrado</h2>
         <p className="text-muted-foreground mb-4">
-          {error ? error.message : 'O agendamento que você está procurando não existe.'}
+          {error ? 'Ocorreu um erro' : 'O agendamento que você está procurando não existe.'}
         </p>
         <Button asChild>
           <Link href={`/dashboard/${shopId}/appointments`}>
@@ -102,25 +82,14 @@ export default function AppointmentDetailsPage() {
 
   const getStatusVariant = (status: Appointment['status']) => {
     switch (status) {
-      case 'completed': return 'secondary';
-      case 'cancelled': return 'destructive';
-      case 'confirmed': return 'default';
+      case 'Concluído': return 'secondary';
+      case 'Cancelado': return 'destructive';
+      case 'Confirmado': return 'default';
       default: return 'outline';
     }
   };
-  
-  const getStatusLabel = (status: Appointment['status']) => {
-      const labels: Record<Appointment['status'], string> = {
-          pending: "Pendente",
-          confirmed: "Confirmado",
-          completed: "Concluído",
-          cancelled: "Cancelado",
-          'no-show': "Não Compareceu"
-      };
-      return labels[status] || "Desconhecido";
-  }
 
-  const startTime = (appointment.startTime as Timestamp).toDate();
+  const startTime = appointment.dateTime;
 
   return (
     <div className="flex flex-col gap-8">
@@ -137,12 +106,12 @@ export default function AppointmentDetailsPage() {
               Detalhes do Agendamento
             </h1>
             <p className="text-muted-foreground">
-              Agendamento de {customer ? `${customer.firstName} ${customer.lastName}` : '...'}
+              Agendamento de {customer ? `${customer.name}` : '...'}
             </p>
           </div>
         </div>
         <Badge variant={getStatusVariant(appointment.status)} className="w-fit text-base">
-          {getStatusLabel(appointment.status)}
+          {appointment.status}
         </Badge>
       </div>
 
@@ -169,7 +138,7 @@ export default function AppointmentDetailsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">
-              {customer ? `${customer.firstName} ${customer.lastName}` : <Skeleton className="h-6 w-3/4" />}
+              {customer ? `${customer.name}` : <Skeleton className="h-6 w-3/4" />}
             </p>
             <p className="text-muted-foreground text-sm">{customer?.email}</p>
           </CardContent>
@@ -208,25 +177,11 @@ export default function AppointmentDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2 font-bold">
                     <DollarSign className="h-5 w-5 text-muted-foreground"/>
-                    <span>{appointment.price ? `R$${appointment.price.toFixed(2)}` : <Skeleton className="h-5 w-16" />}</span>
+                    <span>{service ? `R$${service.price.toFixed(2)}` : <Skeleton className="h-5 w-16" />}</span>
                 </div>
              </div>
           </CardContent>
         </Card>
-
-        {appointment.notes && (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                    <PenSquare className="h-5 w-5 text-muted-foreground" />
-                    Anotações
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground italic">"{appointment.notes}"</p>
-                </CardContent>
-            </Card>
-        )}
       </div>
     </div>
   );

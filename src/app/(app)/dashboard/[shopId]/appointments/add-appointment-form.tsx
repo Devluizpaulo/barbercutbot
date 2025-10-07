@@ -52,15 +52,8 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import {
-  collection,
-  addDoc,
-  doc,
-  Timestamp,
-  updateDoc,
-} from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { Customer, Service, Barber, Appointment } from '@/lib/types';
+import { clients, services, barbers } from '@/lib/data';
+import type { Appointment as AppointmentType } from '@/lib/data';
 import { useEffect } from 'react';
 
 const formSchema = z.object({
@@ -74,16 +67,15 @@ const formSchema = z.object({
   price: z.coerce.number().optional(),
   notes: z.string().optional(),
   status: z
-    .enum(['pending', 'confirmed', 'completed', 'cancelled', 'no-show'])
-    .default('confirmed'),
+    .enum(['Confirmado', 'Concluído', 'Cancelado'])
+    .default('Confirmado'),
 });
 
 type AddAppointmentFormValues = z.infer<typeof formSchema>;
-type AppointmentWithId = Appointment & { id: string };
 
 interface AddAppointmentFormProps {
   shopId: string;
-  initialData?: AppointmentWithId;
+  initialData?: AppointmentType;
   onSuccess?: () => void;
 }
 
@@ -92,18 +84,11 @@ export function AddAppointmentForm({
   initialData,
   onSuccess,
 }: AddAppointmentFormProps) {
-  const firestore = useFirestore();
   const { toast } = useToast();
 
-  const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId]);
-  const { data: customers } = useCollection<Customer>(customersCollection);
-
-  const servicesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId]);
-  const { data: services } = useCollection<Service>(servicesCollection);
-
-  const barbersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId]);
-  const { data: barbers } = useCollection<Barber>(barbersCollection);
-
+  const customers = clients;
+  const availableServices = services;
+  const availableBarbers = barbers;
 
   const form = useForm<AddAppointmentFormValues>({
     resolver: zodResolver(formSchema),
@@ -114,19 +99,16 @@ export function AddAppointmentForm({
   // Set default values and handle initialData
   useEffect(() => {
     if (initialData) {
-      const startTime =
-        initialData.startTime instanceof Timestamp
-          ? initialData.startTime.toDate()
-          : new Date(initialData.startTime);
-
+      const startTime = new Date(initialData.dateTime);
       form.reset({
-        customerId: initialData.customerId,
-        serviceId: initialData.serviceIds[0] || '', // Assuming one service
-        barberId: initialData.barberId,
+        // This is a bit tricky with mock data, we'll find by name matching
+        customerId: customers.find(c => initialData.clientName.includes(c.name.split(' ')[0]))?.id,
+        serviceId: availableServices.find(s => s.name === initialData.service)?.id,
+        barberId: availableBarbers.find(b => initialData.barber.includes(b.firstName))?.id,
         date: startTime,
         time: format(startTime, 'HH:mm'),
-        price: initialData.price,
-        notes: initialData.notes,
+        price: availableServices.find(s => s.name === initialData.service)?.price,
+        notes: '', // Notes not in mock data
         status: initialData.status,
       });
     } else {
@@ -137,13 +119,13 @@ export function AddAppointmentForm({
         date: new Date(),
         time: format(new Date(), 'HH:mm'),
         notes: '',
-        status: 'confirmed',
+        status: 'Confirmado',
       });
     }
-  }, [initialData, form]);
+  }, [initialData, form, customers, availableServices, availableBarbers]);
 
   const selectedServiceId = form.watch('serviceId');
-  const selectedService = services?.find((s) => s.id === selectedServiceId);
+  const selectedService = availableServices?.find((s) => s.id === selectedServiceId);
 
   // Set price whenever service changes
   useEffect(() => {
@@ -153,69 +135,12 @@ export function AddAppointmentForm({
   }, [selectedService, form]);
 
   const onSubmit = async (values: AddAppointmentFormValues) => {
-    if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro de conexão',
-        description: 'Não foi possível conectar ao banco de dados.',
-      });
-      return;
-    }
-    
-    try {
-      const [hours, minutes] = values.time.split(':').map(Number);
-      const startTime = new Date(values.date);
-      startTime.setHours(hours, minutes);
-
-      const serviceDuration = selectedService?.duration || 0;
-      const endTime = new Date(startTime.getTime() + serviceDuration * 60000);
-
-      const submissionData: Omit<Appointment, 'id' | 'createdAt'> = {
-        customerId: values.customerId,
-        serviceIds: [values.serviceId],
-        barberId: values.barberId,
-        startTime: Timestamp.fromDate(startTime),
-        endTime: Timestamp.fromDate(endTime),
-        price: selectedService?.price || 0,
-        notes: values.notes || '',
-        status: values.status,
-        barberShopId: shopId,
-      };
-
-      if (initialData) {
-        // Update existing document
-        const appointmentRef = doc(
-          firestore,
-          'barberShops',
-          shopId,
-          'appointments',
-          initialData.id
-        );
-        await updateDoc(appointmentRef, submissionData);
-      } else {
-        // Create new document
-        const appointmentsCollection = collection(
-          firestore,
-          'barberShops',
-          shopId,
-          'appointments'
-        );
-        await addDoc(appointmentsCollection, {
-          ...submissionData,
-          createdAt: Timestamp.now(),
-        });
-      }
-
-      onSuccess?.();
-    } catch (error) {
-      console.error('Error saving appointment:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Uh oh! Algo deu errado.',
-        description:
-          'Houve um problema ao salvar o agendamento. Tente novamente.',
-      });
-    }
+    console.log("Simulating save appointment:", values);
+    toast({
+        title: initialData ? 'Agendamento Atualizado!' : 'Agendamento Criado!',
+        description: 'Os dados foram salvos (simulação).',
+    });
+    onSuccess?.();
   };
 
   return (
@@ -244,7 +169,7 @@ export function AddAppointmentForm({
                           {field.value
                             ? customers?.find(
                                 (client) => client.id === field.value
-                              )?.firstName
+                              )?.name
                             : 'Selecione um cliente'}
                           <Users className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -258,13 +183,13 @@ export function AddAppointmentForm({
                           <CommandGroup>
                             {customers?.map((client) => (
                               <CommandItem
-                                value={`${client.firstName} ${client.lastName}`}
+                                value={client.name}
                                 key={client.id}
                                 onSelect={() => {
                                   form.setValue('customerId', client.id);
                                 }}
                               >
-                                {client.firstName} {client.lastName}
+                                {client.name}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -298,7 +223,7 @@ export function AddAppointmentForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {services?.map((service) => (
+                      {availableServices?.map((service) => (
                         <SelectItem key={service.id} value={service.id}>
                           {service.name}
                         </SelectItem>
@@ -331,7 +256,7 @@ export function AddAppointmentForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {barbers?.map((barber) => (
+                      {availableBarbers?.map((barber) => (
                         <SelectItem key={barber.id} value={barber.id}>
                           {barber.firstName} {barber.lastName}
                         </SelectItem>

@@ -275,5 +275,3 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
       </Table>
   )
 }
-
-    

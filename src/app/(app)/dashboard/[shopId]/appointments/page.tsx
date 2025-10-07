@@ -15,16 +15,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import {
-  collection,
-  doc,
-  Timestamp,
-} from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-
-import type { Appointment, Customer, Barber } from '@/lib/types';
-import { updateAppointmentStatus } from '@/lib/actions';
-
-import {
   Card,
   CardContent,
   CardDescription,
@@ -71,58 +61,24 @@ import {
 import { AddAppointmentForm } from './add-appointment-form';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type AppointmentWithId = Appointment & { id: string };
+import { appointments as mockedAppointments } from '@/lib/data';
+import type { Appointment } from '@/lib/data';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
-  const [
-    appointmentToCancel,
-    setAppointmentToCancel,
-  ] = useState<AppointmentWithId | null>(null);
-  const [
-    selectedAppointment,
-    setSelectedAppointment,
-  ] = useState<AppointmentWithId | undefined>(undefined);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
 
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const shopId = params.shopId as string;
 
-  const firestore = useFirestore();
+  // Use mock data
+  const appointments = mockedAppointments;
+  const isLoading = false;
 
-  const appointmentsCollection = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'barberShops', shopId, 'appointments') : null),
-    [firestore, shopId]
-  );
-  
-  const {
-    data: appointments,
-    isLoading,
-    error,
-  } = useCollection<Appointment>(appointmentsCollection);
-
-  // Fetch related customer and barber data to display names
-  const { data: customers } = useCollection<Customer>(
-    useMemoFirebase(() => (firestore ? collection(firestore, 'barberShops', shopId, 'customers') : null), [firestore, shopId])
-  );
-  const { data: barbers } = useCollection<Barber>(
-    useMemoFirebase(() => (firestore ? collection(firestore, 'barberShops', shopId, 'barbers') : null), [firestore, shopId])
-  );
-  
-  const getCustomerName = (customerId: string) => {
-    const customer = customers?.find(c => c.id === customerId);
-    return customer ? `${customer.firstName} ${customer.lastName}` : 'Cliente não encontrado';
-  };
-
-  const getBarberName = (barberId: string) => {
-    const barber = barbers?.find(b => b.id === barberId);
-    return barber ? `${barber.firstName} ${barber.lastName}` : 'Barbeiro não encontrado';
-  };
-
-
-  const handleEdit = (appointment: AppointmentWithId) => {
+  const handleEdit = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setFormOpen(true);
   };
@@ -139,65 +95,31 @@ export default function AppointmentsPage() {
       title: selectedAppointment
         ? 'Agendamento Atualizado!'
         : 'Agendamento Criado!',
-      description: 'As informações foram salvas com sucesso.',
+      description: 'As informações foram salvas com sucesso (simulação).',
     });
   };
 
   const handleStatusUpdate = async (
     appointmentId: string,
-    status: 'completed' | 'cancelled'
+    status: 'Concluído' | 'Cancelado'
   ) => {
-    const result = await updateAppointmentStatus(shopId, appointmentId, status);
-    if (result.success) {
-      toast({
-        title: 'Status Atualizado!',
-        description: `O agendamento foi marcado como ${
-          status === 'completed' ? 'concluído' : 'cancelado'
-        }.`,
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao atualizar',
-        description: result.error,
-      });
-    }
-    if (status === 'cancelled') {
+    console.log(`Simulating update status for ${appointmentId} to ${status}`);
+    toast({
+      title: 'Status Atualizado!',
+      description: `O agendamento foi marcado como ${status}.`,
+    });
+    if (status === 'Cancelado') {
       setAppointmentToCancel(null);
     }
   };
 
   const getStatusVariant = (status: Appointment['status']) => {
     switch (status) {
-      case 'completed':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      case 'confirmed':
-        return 'default';
-      default:
-        return 'outline';
+      case 'Concluído': return 'secondary';
+      case 'Cancelado': return 'destructive';
+      case 'Confirmado': return 'default';
+      default: return 'outline';
     }
-  };
-
-  const getStatusLabel = (status: Appointment['status']) => {
-    const labels: Record<Appointment['status'], string> = {
-      pending: 'Pendente',
-      confirmed: 'Confirmado',
-      completed: 'Concluído',
-      cancelled: 'Cancelado',
-      'no-show': 'Não Compareceu',
-    };
-    return labels[status] || 'Desconhecido';
-  };
-
-  // Helper to convert Firestore Timestamp to Date for formatting
-  const getDateFromTimestamp = (timestamp: any): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    // Fallback for cases where it might already be a Date or string
-    return new Date(timestamp);
   };
 
   return (
@@ -280,25 +202,25 @@ export default function AppointmentsPage() {
                       <TableRow key={appointment.id}>
                         <TableCell>
                           <div className="font-medium">
-                            {getCustomerName(appointment.customerId)}
+                            {appointment.clientName}
                           </div>
                           <div className="text-sm text-muted-foreground md:hidden">
-                            {getBarberName(appointment.barberId)}
+                            {appointment.barber}
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {getBarberName(appointment.barberId)}
+                          {appointment.barber}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {format(
-                            getDateFromTimestamp(appointment.startTime),
+                            new Date(appointment.dateTime),
                             "dd/MM/yyyy 'às' HH:mm",
                             { locale: ptBR }
                           )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusVariant(appointment.status)}>
-                            {getStatusLabel(appointment.status)}
+                            {appointment.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -330,10 +252,10 @@ export default function AppointmentsPage() {
                                 onClick={() =>
                                   handleStatusUpdate(
                                     appointment.id,
-                                    'completed'
+                                    'Concluído'
                                   )
                                 }
-                                disabled={appointment.status === 'completed'}
+                                disabled={appointment.status === 'Concluído'}
                               >
                                 <CheckCircle className="mr-2" /> Marcar como
                                 Concluído
@@ -343,7 +265,7 @@ export default function AppointmentsPage() {
                                 onClick={() =>
                                   setAppointmentToCancel(appointment)
                                 }
-                                disabled={appointment.status === 'cancelled'}
+                                disabled={appointment.status === 'Cancelado'}
                               >
                                 <XCircle className="mr-2" /> Cancelar
                               </DropdownMenuItem>
@@ -398,7 +320,7 @@ export default function AppointmentsPage() {
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
-                handleStatusUpdate(appointmentToCancel!.id, 'cancelled')
+                handleStatusUpdate(appointmentToCancel!.id, 'Cancelado')
               }
               className="bg-destructive hover:bg-destructive/90"
             >
