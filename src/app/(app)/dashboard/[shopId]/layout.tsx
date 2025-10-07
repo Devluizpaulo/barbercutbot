@@ -95,8 +95,8 @@ export default function ShopLayout({
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="#">
-                  <SidebarMenuButton tooltip="Perfil" className="justify-start">
+                <Link href={`/dashboard/${shopId}/profile`}>
+                  <SidebarMenuButton tooltip="Perfil" className="justify-start" isActive={pathname.startsWith(`/dashboard/${shopId}/profile`)}>
                     <User />
                     <span>Perfil</span>
                   </SidebarMenuButton>
