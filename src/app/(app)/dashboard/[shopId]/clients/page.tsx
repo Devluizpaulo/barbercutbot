@@ -69,7 +69,7 @@ export default function ClientsPage() {
                     Adicionar Cliente
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl">
+                <DialogContent className="sm:max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Adicionar Novo Cliente</DialogTitle>
                   </DialogHeader>
