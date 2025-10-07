@@ -61,6 +61,21 @@ const serviceChartConfig = {
 
 type Period = 'today' | 'week' | 'month' | 'year';
 
+const periodTitles = {
+    today: 'Desempenho Diário',
+    week: 'Desempenho Semanal',
+    month: 'Desempenho Mensal',
+    year: 'Desempenho Anual',
+};
+
+const periodDescriptions = {
+    today: 'Comparativo de receitas e despesas de hoje.',
+    week: 'Comparativo de receitas e despesas desta semana.',
+    month: 'Comparativo de receitas e despesas deste mês.',
+    year: 'Comparativo de receitas e despesas ao longo do ano.',
+};
+
+
 export default function FinancePage() {
   const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
@@ -226,8 +241,8 @@ export default function FinancePage() {
        <Card ref={annualChartRef}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Desempenho Anual</CardTitle>
-            <CardDescription>Comparativo de receitas e despesas ao longo do ano.</CardDescription>
+            <CardTitle>{periodTitles[period]}</CardTitle>
+            <CardDescription>{periodDescriptions[period]}</CardDescription>
           </div>
           <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(annualChartRef, 'relatorio-desempenho-anual')}>
             <Download className="h-4 w-4" />
@@ -420,4 +435,5 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
   )
 }
 
+    
     
