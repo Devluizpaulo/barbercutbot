@@ -137,9 +137,9 @@ export default function AppointmentDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">
+            <div className="text-lg font-semibold">
               {customer ? `${customer.name}` : <Skeleton className="h-6 w-3/4" />}
-            </p>
+            </div>
             <p className="text-muted-foreground text-sm">{customer?.email}</p>
           </CardContent>
         </Card>
@@ -152,9 +152,9 @@ export default function AppointmentDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-semibold">
+            <div className="text-lg font-semibold">
               {barber ? `${barber.firstName} ${barber.lastName}` : <Skeleton className="h-6 w-3/4" />}
-            </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -167,7 +167,7 @@ export default function AppointmentDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
              <div>
-                <p className="text-lg font-semibold">{service ? service.name : <Skeleton className="h-6 w-1/2" />}</p>
+                <div className="text-lg font-semibold">{service ? service.name : <Skeleton className="h-6 w-1/2" />}</div>
                 <p className="text-muted-foreground">{service?.description}</p>
              </div>
              <div className="flex items-center justify-between text-lg">
