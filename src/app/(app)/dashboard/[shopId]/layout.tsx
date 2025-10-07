@@ -1,5 +1,6 @@
 
 
+
 "use client";
 
 import Link from "next/link";
@@ -20,7 +21,6 @@ import {
   Users,
   DollarSign,
   Settings,
-  ChevronLeft,
   Shield,
 } from "lucide-react";
 import { shops } from "@/lib/data";
@@ -70,14 +70,6 @@ export default function ShopLayout({
           <SidebarSeparator />
           <SidebarFooter>
             <SidebarMenu>
-               <SidebarMenuItem>
-                <Link href="/dashboard/shops">
-                  <SidebarMenuButton tooltip="Voltar para Lojas">
-                    <ChevronLeft />
-                    <span>Todas as Lojas</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
                 <SidebarMenuItem>
                     <Link href="/dashboard">
                         <SidebarMenuButton tooltip="Admin">
