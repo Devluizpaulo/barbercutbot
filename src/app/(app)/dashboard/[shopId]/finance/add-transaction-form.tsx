@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -73,8 +74,8 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     },
   });
 
-  const { isSubmitting, watch } = form.formState;
-  const transactionType = watch('type');
+  const { isSubmitting } = form.formState;
+  const transactionType = form.watch('type');
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      // NOTE: Database functionality is disabled for simulation.
