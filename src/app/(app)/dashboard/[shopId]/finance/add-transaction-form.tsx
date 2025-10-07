@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -104,7 +105,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                     form.setValue('category', ''); // Reset category on type change
                   }}
                   defaultValue={field.value}
-                  className="grid grid-cols-2 gap-2"
+                  className="grid grid-cols-2 gap-4"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
                     <FormControl>
@@ -112,7 +113,11 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                     </FormControl>
                     <FormLabel
                       htmlFor="income"
-                      className="flex-1 text-center font-normal border rounded-md p-2 cursor-pointer data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary"
+                      className={cn(
+                        "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                        "data-[state=checked]:border-green-500 data-[state=checked]:bg-green-50 data-[state=checked]:text-green-800",
+                        "dark:data-[state=checked]:bg-green-950 dark:data-[state=checked]:text-green-200 dark:data-[state=checked]:border-green-700"
+                      )}
                     >
                       Receita
                     </FormLabel>
@@ -123,7 +128,11 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                     </FormControl>
                     <FormLabel
                       htmlFor="expense"
-                       className="flex-1 text-center font-normal border rounded-md p-2 cursor-pointer data-[state=checked]:bg-destructive data-[state=checked]:text-destructive-foreground data-[state=checked]:border-destructive"
+                       className={cn(
+                        "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                        "data-[state=checked]:border-destructive data-[state=checked]:bg-red-50 data-[state=checked]:text-red-800",
+                        "dark:data-[state=checked]:bg-red-950 dark:data-[state=checked]:text-red-200 dark:data-[state=checked]:border-red-700"
+                       )}
                     >
                       Despesa
                     </FormLabel>
@@ -156,7 +165,12 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
               <FormItem>
                 <FormLabel>Valor (R$)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" placeholder="0,00" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0,00" 
+                    className="h-14 text-2xl text-center font-bold"
+                    {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -282,7 +296,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
@@ -293,3 +307,4 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     </Form>
   );
 }
+
