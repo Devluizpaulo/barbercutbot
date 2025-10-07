@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -15,10 +16,11 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, UserPlus } from "lucide-react"
+import { Search, UserPlus, ChevronRight } from "lucide-react"
 import { clients } from "@/lib/data"
+import Link from "next/link"
 
-export default function ClientsPage() {
+export default function ClientsPage({ params }: { params: { shopId: string } }) {
   return (
     <Card>
       <CardHeader>
@@ -50,16 +52,28 @@ export default function ClientsPage() {
               <TableHead className="hidden md:table-cell">Phone</TableHead>
               <TableHead className="hidden lg:table-cell">Last Visit</TableHead>
               <TableHead className="text-right">Total Spent</TableHead>
+              <TableHead><span className="sr-only">View</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clients.map((client) => (
               <TableRow key={client.id}>
-                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/dashboard/${params.shopId}/clients/${client.id}`} className="hover:underline">
+                    {client.name}
+                  </Link>
+                </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">{client.email}</TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">{client.phone}</TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground">{client.lastVisit}</TableCell>
                 <TableCell className="text-right font-mono">${client.totalSpent.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link href={`/dashboard/${params.shopId}/clients/${client.id}`}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
