@@ -44,12 +44,12 @@ export default function ClientDetailsPage() {
   const firestore = useFirestore();
 
   const clientRef = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !shopId || !clientId) return null;
     return doc(firestore, `/barberShops/${shopId}/customers/${clientId}`);
   }, [firestore, shopId, clientId]);
 
   const appointmentsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !shopId || !clientId) return null;
     return query(
       collection(firestore, `/barberShops/${shopId}/appointments`),
       where('customerId', '==', clientId)
@@ -62,12 +62,14 @@ export default function ClientDetailsPage() {
   const clientAppointments = appointments || [];
 
   const totalSpent = clientAppointments.reduce((acc, appt) => {
-    // Assuming you'll add price to appointments later
-    return acc + 50; // Placeholder value
+    // This assumes you have a `price` field on your appointments or can derive it.
+    // Using a placeholder value for now.
+    // TODO: Replace with actual service price lookup.
+    return acc + (appt.price || 50); 
   }, 0);
 
   const lastVisit = clientAppointments.length > 0 
-    ? format(new Date(Math.max(...clientAppointments.map(a => a.startTime.getTime()))), "dd/MM/yyyy", { locale: ptBR })
+    ? format(new Date(Math.max(...clientAppointments.map(a => new Date(a.startTime).getTime()))), "dd/MM/yyyy", { locale: ptBR })
     : "N/A";
 
 
@@ -190,7 +192,7 @@ export default function ClientDetailsPage() {
               {clientAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell>
-                    {format(appointment.startTime, "MMM d, yyyy 'às' HH:mm", {
+                    {format(new Date(appointment.startTime), "MMM d, yyyy 'às' HH:mm", {
                       locale: ptBR,
                     })}
                   </TableCell>

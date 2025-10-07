@@ -13,11 +13,12 @@ export type Appointment = {
   barberShopId: string;
   customerId: string;
   barberId: string;
-  startTime: Date;
-  endTime: Date;
+  startTime: string; // Stored as ISO string or Firestore Timestamp string
+  endTime: string;   // Stored as ISO string or Firestore Timestamp string
   serviceIds: string[];
   notes?: string;
-  createdAt: Date;
+  createdAt: string; // Stored as ISO string or Firestore Timestamp string
+  price?: number;
 };
 
 export type Customer = {
