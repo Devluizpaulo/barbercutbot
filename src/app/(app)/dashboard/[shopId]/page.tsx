@@ -178,7 +178,7 @@ export default function ShopDashboardPage() {
         </Card>
       </div>
     </div>
-    <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} />
+    <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
       <Button
         onClick={() => setCashierOpen(true)}
         className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
