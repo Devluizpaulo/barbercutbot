@@ -59,6 +59,7 @@ const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
 const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
+// Component moved outside the main component body
 const KeypadButton = ({ children, onClick, className }: { children: React.ReactNode, onClick: () => void, className?: string }) => (
     <Button
       type="button"
@@ -89,6 +90,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
   const { isSubmitting } = form.formState;
   const transactionType = form.watch('type');
 
+  // Logic function moved before the return statement
   const handleKeypadPress = (key: string) => {
     const currentAmount = form.getValues('amount') || 0;
     let currentAmountString = currentAmount.toFixed(2).replace('.', '');
@@ -351,10 +353,8 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 Salvar Transação
             </Button>
         </div>
+        </div>
       </form>
     </Form>
   );
 }
-
-
-    
