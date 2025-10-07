@@ -20,11 +20,13 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
       <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-          <Logo />
-          <nav className="hidden md:flex gap-6 items-center">
-            <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary">Funcionalidades</Link>
-            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary">Depoimentos</Link>
-            <Link href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary">Preços</Link>
+          <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+              <Logo />
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Funcionalidades</Link>
+            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Depoimentos</Link>
+            <Link href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Preços</Link>
           </nav>
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild>
@@ -37,33 +39,41 @@ export default function LandingPage() {
                 <Link href="/dashboard/shops">Começar Teste Grátis</Link>
             </Button>
           </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Abrir Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <div className="grid gap-4 py-6">
-                <Logo />
-                <Link href="#features" className="flex w-full items-center py-2 text-lg font-semibold">Funcionalidades</Link>
-                <Link href="#testimonials" className="flex w-full items-center py-2 text-lg font-semibold">Depoimentos</Link>
-                <Link href="#pricing" className="flex w-full items-center py-2 text-lg font-semibold">Preços</Link>
-                <div className="flex flex-col gap-4 pt-6">
-                   <Button variant="ghost" asChild>
-                        <Link href="/dashboard/shops">
-                            <Lock className="mr-2 h-4 w-4" />
-                            Login
-                        </Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href="/dashboard/shops">Começar Teste Grátis</Link>
-                    </Button>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                     <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+                        <Logo />
+                     </Link>
+                  </div>
+                  <nav className="flex-1 grid gap-4 p-4">
+                    <Link href="#features" className="flex items-center py-2 text-lg font-semibold hover:text-primary transition-colors">Funcionalidades</Link>
+                    <Link href="#testimonials" className="flex items-center py-2 text-lg font-semibold hover:text-primary transition-colors">Depoimentos</Link>
+                    <Link href="#pricing" className="flex items-center py-2 text-lg font-semibold hover:text-primary transition-colors">Preços</Link>
+                  </nav>
+                  <div className="p-4 border-t mt-auto flex flex-col gap-4">
+                     <Button variant="ghost" asChild className="w-full">
+                          <Link href="/dashboard/shops">
+                              <Lock className="mr-2 h-4 w-4" />
+                              Login
+                          </Link>
+                      </Button>
+                      <Button asChild className="w-full">
+                          <Link href="/dashboard/shops">Começar Teste Grátis</Link>
+                      </Button>
+                  </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
@@ -137,7 +147,7 @@ export default function LandingPage() {
                  <h2 className="text-3xl md:text-4xl font-bold font-headline">Como Funciona</h2>
                  <p className="text-muted-foreground mt-2">Em 3 passos simples, sua barbearia em outro nível.</p>
             </div>
-            <div className="grid gap-10 md:grid-cols-3 md:gap-16 items-center">
+            <div className="grid gap-10 md:grid-cols-3 md:gap-16 items-start">
               <div className="flex flex-col items-center text-center">
                   <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">1</div>
                   <h3 className="text-xl font-bold mb-2">Cadastre-se</h3>
@@ -238,8 +248,10 @@ export default function LandingPage() {
 
       <footer className="py-8 border-t bg-secondary">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
-          <Logo />
-          <nav className="flex gap-4 text-center md:text-left">
+           <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+              <Logo />
+           </Link>
+          <nav className="flex flex-wrap justify-center gap-4 text-center md:gap-6">
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
           </nav>
@@ -251,3 +263,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
