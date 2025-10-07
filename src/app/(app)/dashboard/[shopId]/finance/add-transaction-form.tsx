@@ -99,17 +99,19 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             currentAmountString = '0';
         }
     } else {
-        if (currentAmountString === '0' && key !== '00') {
-            currentAmountString = '';
+        if (currentAmountString === '000' && key !== '00') {
+             currentAmountString = key;
+        } else {
+             currentAmountString += key;
         }
-        currentAmountString += key;
     }
     
-    const numericValue = parseInt(currentAmountString, 10) || 0;
+    const numericValue = parseInt(currentAmountString.slice(-6), 10) || 0;
     const newAmount = numericValue / 100;
 
     form.setValue('amount', newAmount, { shouldValidate: true });
   };
+
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      console.log("Simulating add transaction:", values);
@@ -220,26 +222,26 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   </FormItem>
               )}
             />
-            
+
             <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor (R$)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text"
-                        readOnly
-                        placeholder="0,00" 
-                        className="h-14 text-2xl text-center font-bold"
-                        value={field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor (R$)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text"
+                      readOnly
+                      placeholder="0,00" 
+                      className="h-14 text-3xl text-center font-bold"
+                      value={field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
                 control={form.control}
@@ -339,15 +341,13 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             </div>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-4 gap-2">
+        <div className="grid grid-cols-3 grid-rows-4 gap-4">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                 <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
             ))}
-            <KeypadButton onClick={() => handleKeypadPress('backspace')} className="col-span-1"><Delete /></KeypadButton>
+            <KeypadButton onClick={() => handleKeypadPress('backspace')}><Delete /></KeypadButton>
         </div>
       </form>
     </Form>
   );
 }
-
-    
