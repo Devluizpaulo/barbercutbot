@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useParams } from "next/navigation";
@@ -39,7 +40,7 @@ export default function ShopDashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
           {shop?.name || "Painel"}
         </h1>
         <p className="text-muted-foreground">
@@ -47,7 +48,7 @@ export default function ShopDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -145,7 +146,7 @@ export default function ShopDashboardPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Hora</TableHead>
+                  <TableHead className="hidden sm:table-cell">Hora</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -154,11 +155,11 @@ export default function ShopDashboardPage() {
                   <TableRow key={appointment.id}>
                     <TableCell>
                       <div className="font-medium">{appointment.clientName}</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        {appointment.service}
+                      <div className="text-sm text-muted-foreground md:hidden">
+                         {format(appointment.dateTime, "HH:mm", { locale: ptBR })}
                       </div>
                     </TableCell>
-                    <TableCell>{format(appointment.dateTime, "MMM d, HH:mm", { locale: ptBR })}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{format(appointment.dateTime, "MMM d, HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
                       <Badge variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}>
                         {appointment.status}

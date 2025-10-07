@@ -1,5 +1,4 @@
 
-
 import {
   Card,
   CardContent,
@@ -33,10 +32,10 @@ export default function AdminDashboard() {
     const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4 md:gap-8">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-          <Shield className="h-8 w-8"/> Painel do Administrador
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+          <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
         </h1>
         <p className="text-muted-foreground">
           Gerencie suas barbearias parceiras, finanças e performance geral.
@@ -123,7 +122,7 @@ export default function AdminDashboard() {
                         <TableRow key={shop.id}>
                             <TableCell>
                                 <div className="font-medium">{shop.name}</div>
-                                <div className="text-sm text-muted-foreground">{shop.location}</div>
+                                <div className="text-sm text-muted-foreground md:hidden">{shop.location}</div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 <Badge variant={shop.status === 'Ativo' ? 'secondary' : 'destructive'}>{shop.status}</Badge>

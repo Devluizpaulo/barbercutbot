@@ -1,6 +1,4 @@
 
-
-
 "use client";
 
 import Link from "next/link";
@@ -89,7 +87,7 @@ export default function ShopLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 p-4 md:p-8 bg-muted/40">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
           {children}
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -67,21 +68,21 @@ export default function ClientsPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle className="font-headline">
+              <CardTitle className="font-headline text-2xl">
                 Gerenciamento de Clientes
               </CardTitle>
               <CardDescription>
                 Visualize, gerencie e adicione novos clientes.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar clientes..." className="pl-8" />
+                <Input placeholder="Buscar clientes..." className="pl-8 w-full" />
               </div>
               <Dialog open={isAddClientOpen} onOpenChange={setAddClientOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="w-full sm:w-auto">
                     <UserPlus className="mr-2 h-4 w-4" />
                     Adicionar Cliente
                   </Button>
@@ -105,7 +106,7 @@ export default function ClientsPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Telefone</TableHead>
+                <TableHead className="hidden sm:table-cell">Telefone</TableHead>
                 <TableHead>
                   <span className="sr-only">Ver</span>
                 </TableHead>
@@ -114,7 +115,7 @@ export default function ClientsPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={4} className="text-center h-24">
                     <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
                   </TableCell>
                 </TableRow>
@@ -136,8 +137,8 @@ export default function ClientsPage() {
               )}
               {!isLoading && !error && clients?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    Nenhum cliente encontrado.
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    Nenhum cliente encontrado. Comece adicionando um novo cliente.
                   </TableCell>
                 </TableRow>
               )}
@@ -152,17 +153,18 @@ export default function ClientsPage() {
                     </Link>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {client.email}
+                    {client.email || '-'}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {client.phone}
+                  <TableCell className="hidden sm:table-cell text-muted-foreground">
+                    {client.phone || '-'}
                   </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" asChild>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="icon" asChild>
                       <Link
                         href={`/dashboard/${shopId}/clients/${client.id}`}
                       >
                         <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Ver Cliente</span>
                       </Link>
                     </Button>
                   </TableCell>

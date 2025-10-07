@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -83,13 +84,17 @@ export default function ClientDetailsPage() {
 
   if (clientError || !client) {
     return (
-      <div className="text-center">
+      <div className="text-center py-10">
         <AlertCircle className="mx-auto h-10 w-10 text-destructive mb-4" />
-        <p className="text-lg mb-2">
-            {clientError ? "Ocorreu um erro ao carregar o cliente." : "Cliente não encontrado."}
+        <h2 className="text-xl font-semibold mb-2">
+            {clientError ? "Ocorreu um erro" : "Cliente não encontrado"}
+        </h2>
+        <p className="text-muted-foreground mb-4">
+            {clientError ? "Não foi possível carregar os dados do cliente." : "O cliente que você está procurando não existe."}
         </p>
-        <Button asChild variant="link">
+        <Button asChild>
           <Link href={`/dashboard/${shopId}/clients`}>
+            <ArrowLeft className="mr-2 h-4 w-4"/>
             Voltar para clientes
           </Link>
         </Button>
@@ -99,19 +104,22 @@ export default function ClientDetailsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href={`/dashboard/${shopId}/clients`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">
-            {client.firstName} {client.lastName}
-          </h1>
-          <p className="text-muted-foreground">Perfil e Histórico do Cliente</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" asChild className="shrink-0">
+            <Link href={`/dashboard/${shopId}/clients`}>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Voltar</span>
+            </Link>
+            </Button>
+            <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+                {client.firstName} {client.lastName}
+            </h1>
+            <p className="text-muted-foreground">Perfil e Histórico do Cliente</p>
+            </div>
         </div>
-        <Button className="ml-auto">
+        <Button className="w-full sm:w-auto">
           <Edit className="mr-2 h-4 w-4" />
           Editar Cliente
         </Button>
@@ -125,18 +133,18 @@ export default function ClientDetailsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {client.email && (
+            {client.email ? (
                 <div className="flex items-center gap-3">
                     <Mail className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-muted-foreground">{client.email}</span>
+                    <span className="text-muted-foreground truncate">{client.email}</span>
                 </div>
-            )}
-            {client.phone && (
+            ) : null}
+            {client.phone ? (
                 <div className="flex items-center gap-3">
                     <Phone className="h-5 w-5 text-muted-foreground" />
                     <span className="text-muted-foreground">{client.phone}</span>
                 </div>
-            )}
+            ) : null}
              {!client.email && !client.phone && (
                 <p className="text-sm text-muted-foreground">Nenhuma informação de contato disponível.</p>
             )}
@@ -176,15 +184,15 @@ export default function ClientDetailsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Data e Hora</TableHead>
-                <TableHead>Serviço</TableHead>
-                <TableHead>Barbeiro</TableHead>
+                <TableHead className="hidden sm:table-cell">Serviço</TableHead>
+                <TableHead className="hidden md:table-cell">Barbeiro</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {areAppointmentsLoading && (
                  <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
                   </TableCell>
                 </TableRow>
@@ -192,12 +200,17 @@ export default function ClientDetailsPage() {
               {clientAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell>
-                    {format(new Date(appointment.startTime), "MMM d, yyyy 'às' HH:mm", {
-                      locale: ptBR,
-                    })}
+                    <div className="font-medium">
+                      {format(new Date(appointment.startTime), "dd/MM/yy 'às' HH:mm", {
+                        locale: ptBR,
+                      })}
+                    </div>
+                     <div className="text-sm text-muted-foreground sm:hidden">
+                       {appointment.serviceIds.join(', ')}
+                     </div>
                   </TableCell>
-                  <TableCell>{appointment.serviceIds.join(', ')}</TableCell>
-                  <TableCell>{appointment.barberId}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{appointment.serviceIds.join(', ')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{appointment.barberId}</TableCell>
                   <TableCell>
                     <Badge
                       variant={'default'}
@@ -211,7 +224,7 @@ export default function ClientDetailsPage() {
                 <TableRow>
                   <TableCell
                     colSpan={4}
-                    className="text-center text-muted-foreground"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     Nenhum agendamento encontrado para este cliente.
                   </TableCell>

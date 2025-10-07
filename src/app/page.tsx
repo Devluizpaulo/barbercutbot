@@ -4,9 +4,10 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Star, CheckCircle, TrendingUp, Users, Lock } from "lucide-react";
+import { Star, CheckCircle, TrendingUp, Users, Lock, Menu } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-new');
@@ -28,7 +29,7 @@ export default function LandingPage() {
             <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary">Depoimentos</Link>
             <Link href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary">Preços</Link>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild>
                 <Link href="/dashboard/shops">
                     <Lock className="mr-2 h-4 w-4" />
@@ -39,6 +40,33 @@ export default function LandingPage() {
                 <Link href="/dashboard/shops">Começar Teste Grátis</Link>
             </Button>
           </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Abrir Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <div className="grid gap-4 py-6">
+                <Logo />
+                <Link href="#features" className="flex w-full items-center py-2 text-lg font-semibold">Funcionalidades</Link>
+                <Link href="#testimonials" className="flex w-full items-center py-2 text-lg font-semibold">Depoimentos</Link>
+                <Link href="#pricing" className="flex w-full items-center py-2 text-lg font-semibold">Preços</Link>
+                <div className="flex flex-col gap-4 pt-6">
+                   <Button variant="ghost" asChild>
+                        <Link href="/dashboard/shops">
+                            <Lock className="mr-2 h-4 w-4" />
+                            Login
+                        </Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/dashboard/shops">Começar Teste Grátis</Link>
+                    </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
@@ -57,7 +85,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
           <div className="relative z-10 container mx-auto px-4 md:px-6 text-white">
             <div className="max-w-xl">
-                <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl font-headline leading-tight">
+                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-7xl font-headline leading-tight">
                 Eleve sua Barbearia a Outro Nível.
                 </h1>
                 <p className="mt-6 text-lg md:text-xl text-gray-300">
@@ -75,7 +103,7 @@ export default function LandingPage() {
         <section id="features" className="py-16 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
-                 <h2 className="text-4xl font-bold font-headline">Tudo que sua barbearia precisa</h2>
+                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Tudo que sua barbearia precisa</h2>
                  <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
                     Ferramentas poderosas para otimizar seu tempo, aumentar seus lucros e fidelizar seus clientes.
                  </p>
@@ -109,7 +137,7 @@ export default function LandingPage() {
         <section id="how-it-works" className="py-16 md:py-24 lg:py-32 bg-secondary">
           <div className="container mx-auto px-4 md:px-6">
              <div className="text-center mb-12">
-                 <h2 className="text-4xl font-bold font-headline">Como Funciona</h2>
+                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Como Funciona</h2>
                  <p className="text-muted-foreground mt-2">Em 3 passos simples, sua barbearia em outro nível.</p>
             </div>
             <div className="grid gap-10 md:grid-cols-3 md:gap-16 items-center">
@@ -135,7 +163,7 @@ export default function LandingPage() {
         <section id="testimonials" className="py-16 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="text-center mb-12">
-                    <h2 className="text-4xl font-bold font-headline">Amado por Barbeiros de Todo o Brasil</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Amado por Barbeiros de Todo o Brasil</h2>
                     <p className="text-muted-foreground mt-2">Veja o que nossos parceiros estão dizendo.</p>
                 </div>
                 <div className="grid gap-8 md:grid-cols-3">
@@ -199,7 +227,7 @@ export default function LandingPage() {
 
         <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-primary text-white">
             <div className="container mx-auto px-4 md:px-6 text-center">
-                 <h2 className="text-4xl font-bold font-headline">Pronto para transformar sua barbearia?</h2>
+                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar sua barbearia?</h2>
                  <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/80">Junte-se a centenas de barbeiros que já estão otimizando sua gestão e lucrando mais.</p>
                  <div className="mt-8">
                     <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform">
@@ -214,11 +242,11 @@ export default function LandingPage() {
       <footer className="py-8 border-t bg-secondary">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
           <Logo />
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 text-center md:text-left">
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
           </nav>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground text-center md:text-right">
             © {new Date().getFullYear()} Barbearia SaaS. Todos os direitos reservados.
           </p>
         </div>

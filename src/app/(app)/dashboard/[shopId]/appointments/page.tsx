@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -23,8 +24,8 @@ import { ptBR } from "date-fns/locale"
 
 export default function AppointmentsPage() {
   return (
-    <div className="grid gap-8 md:grid-cols-3">
-      <div className="md:col-span-2">
+    <div className="grid gap-8 lg:grid-cols-3">
+      <div className="lg:col-span-2">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Todos os Agendamentos</CardTitle>
@@ -37,8 +38,8 @@ export default function AppointmentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Barbeiro</TableHead>
-                  <TableHead>Data e Hora</TableHead>
+                  <TableHead className="hidden sm:table-cell">Barbeiro</TableHead>
+                  <TableHead className="hidden md:table-cell">Data e Hora</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -50,9 +51,12 @@ export default function AppointmentsPage() {
                       <div className="text-sm text-muted-foreground">
                         {appointment.service}
                       </div>
+                       <div className="text-sm text-muted-foreground md:hidden">
+                        {format(appointment.dateTime, "MMM d, HH:mm", { locale: ptBR })}
+                      </div>
                     </TableCell>
-                    <TableCell>{appointment.barber}</TableCell>
-                    <TableCell>{format(appointment.dateTime, "MMM d, yyyy 'às' HH:mm", { locale: ptBR })}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{appointment.barber}</TableCell>
+                    <TableCell className="hidden md:table-cell">{format(appointment.dateTime, "MMM d, yyyy 'às' HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
                       <Badge variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}>
                         {appointment.status}
@@ -65,16 +69,18 @@ export default function AppointmentsPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="md:col-span-1 flex flex-col gap-8">
+      <div className="lg:col-span-1 flex flex-col gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Calendário</CardTitle>
-             <Button className="mt-4">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Novo Agendamento
-            </Button>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+              <CardTitle className="font-headline">Calendário</CardTitle>
+              <Button>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Novo Agendamento
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex justify-center">
             <Calendar
               mode="single"
               selected={new Date()}
