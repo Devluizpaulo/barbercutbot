@@ -82,15 +82,20 @@ export const appointments: Appointment[] = [
 ];
 
 export type Transaction = {
-  id: string;
-  date: string;
-  description: string;
-  type: 'Receita' | 'Despesa';
-  amount: number;
+    id: string;
+    date: string;
+    description: string;
+    type: 'Receita' | 'Despesa';
+    amount: number;
+    category: string;
+    paymentMethod?: string;
 };
+  
+const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
+const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
+const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
 export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => {
-    // Use a predictable pattern instead of Math.random()
     const isIncome = (i % 3) !== 0; 
     const type = isIncome ? 'Receita' : 'Despesa';
     const amount = isIncome
@@ -99,6 +104,14 @@ export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => 
     const description = isIncome
         ? `Serviço - Cliente ${Math.floor(pseudoRandom(i + 1) * 10) + 1}`
         : `Compra de Suprimentos ${i+1}`;
+    
+    const category = isIncome
+        ? incomeCategories[i % incomeCategories.length]
+        : expenseCategories[i % expenseCategories.length];
+        
+    const paymentMethod = isIncome
+        ? paymentMethods[i % paymentMethods.length]
+        : undefined;
 
     return {
         id: `txn-${i + 1}`,
@@ -106,6 +119,8 @@ export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => 
         description,
         type,
         amount,
+        category,
+        paymentMethod,
     };
 });
 

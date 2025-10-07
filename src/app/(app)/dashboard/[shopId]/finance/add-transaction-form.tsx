@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -65,7 +65,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: '',
-      amount: 0,
       type: 'income',
       date: new Date(),
       category: '',
@@ -91,30 +90,46 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="type"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="space-y-3">
               <FormLabel>Tipo de Transação</FormLabel>
-              <Select
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  form.setValue('category', ''); // Reset category on type change
-                }}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Receita</SelectItem>
-                  <SelectItem value="expense">Despesa</SelectItem>
-                </SelectContent>
-              </Select>
+               <FormControl>
+                <RadioGroup
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.setValue('category', ''); // Reset category on type change
+                  }}
+                  defaultValue={field.value}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="income" id="income" className="sr-only" />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="income"
+                      className="flex-1 text-center font-normal border rounded-md p-2 cursor-pointer data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary"
+                    >
+                      Receita
+                    </FormLabel>
+                  </FormItem>
+                   <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value="expense" id="expense" className="sr-only" />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="expense"
+                       className="flex-1 text-center font-normal border rounded-md p-2 cursor-pointer data-[state=checked]:bg-destructive data-[state=checked]:text-destructive-foreground data-[state=checked]:border-destructive"
+                    >
+                      Despesa
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -133,25 +148,27 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
+
+        <FormField
             control={form.control}
             name="amount"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Valor (R$)</FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input type="number" step="0.01" placeholder="0,00" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="date"
             render={({ field }) => (
-              <FormItem className="flex flex-col pt-2">
+              <FormItem className="flex flex-col">
                 <FormLabel>Data</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -189,10 +206,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
               </FormItem>
             )}
           />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
+          <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
@@ -214,38 +228,39 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 </FormItem>
               )}
             />
-            {transactionType === 'income' && (
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {paymentMethods.map(method => (
-                          <SelectItem key={method} value={method}>{method}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
         </div>
+        
+        {transactionType === 'income' && (
+          <FormField
+            control={form.control}
+            name="paymentMethod"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Forma de Pagamento</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a forma de pagamento" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {paymentMethods.map(method => (
+                      <SelectItem key={method} value={method}>{method}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {transactionType === 'expense' && (
           <FormField
             control={form.control}
             name="isRecurring"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+              <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md pt-4">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -254,10 +269,10 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 </FormControl>
                 <div className="space-y-1 leading-none">
                   <FormLabel>
-                    Despesa Recorrente
+                    É uma despesa recorrente?
                   </FormLabel>
                   <FormDescription>
-                    Marque se esta for uma despesa que se repete (ex: mensalmente).
+                    Marque se esta despesa se repete (ex: aluguel).
                   </FormDescription>
                 </div>
               </FormItem>

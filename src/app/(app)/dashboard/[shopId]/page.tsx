@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { appointments, monthlyRevenue, shops } from "@/lib/data"
-import { DollarSign, Users, Calendar, Scissors, CashRegister } from "lucide-react"
+import { DollarSign, Users, Calendar, Scissors, Store } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,7 @@ export default function ShopDashboardPage() {
         className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
         size="icon"
       >
-        <CashRegister className="h-8 w-8" />
+        <Store className="h-8 w-8" />
         <span className="sr-only">Abrir Caixa</span>
       </Button>
     </>

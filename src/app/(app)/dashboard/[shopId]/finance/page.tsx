@@ -21,10 +21,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
-import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle, PlusCircle, MoreHorizontal } from "lucide-react"
+import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal } from "lucide-react"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -75,22 +82,25 @@ export default function FinancePage() {
   const transactions = mockedTransactions;
   const isLoading = false;
 
-  const { totalIncome, totalExpense, netProfit, recentTransactions } = useMemo(() => {
+  const { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords } = useMemo(() => {
     const records = transactions || [];
-    const totals = records.reduce(
-      (acc, record) => {
-        if (record.type === 'Receita') {
-          acc.totalIncome += record.amount;
-        } else {
-          acc.totalExpense += record.amount;
-        }
-        return acc;
-      },
-      { totalIncome: 0, totalExpense: 0 }
-    );
-    const netProfit = totals.totalIncome - totals.totalExpense;
-    const recent = records.slice(0, 10); // Show more recent transactions
-    return { ...totals, netProfit, recentTransactions: recent };
+    let totalIncome = 0;
+    let totalExpense = 0;
+    const incomeRecords: FinancialRecord[] = [];
+    const expenseRecords: FinancialRecord[] = [];
+
+    records.forEach(record => {
+      if (record.type === 'Receita') {
+        totalIncome += record.amount;
+        incomeRecords.push(record);
+      } else {
+        totalExpense += record.amount;
+        expenseRecords.push(record);
+      }
+    });
+
+    const netProfit = totalIncome - totalExpense;
+    return { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords };
   }, [transactions]);
   
 
@@ -112,7 +122,7 @@ export default function FinancePage() {
               Adicionar Transação
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Adicionar Nova Transação</DialogTitle>
             </DialogHeader>
@@ -156,76 +166,112 @@ export default function FinancePage() {
           </CardHeader>
           <CardContent>
              {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
-              <div className="text-2xl font-bold">R${netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <div className={`text-2xl font-bold ${netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>R${netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
             )}
              <p className="text-xs text-muted-foreground">Receita total menos despesas.</p>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid gap-8 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <CardHeader>
-              <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-              <ChartContainer config={chartConfig} className="w-full h-[300px]">
-                <AreaChart accessibilityLayer data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Number(value) / 1000}k`} />
-                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                    <Area type="monotone" dataKey="income" stackId="1" stroke="var(--color-income)" fill="var(--color-income)" name="Receita" />
-                    <Area type="monotone" dataKey="expense" stackId="1" stroke="var(--color-expense)" fill="var(--color-expense)" name="Despesa" />
-                </AreaChart>
-              </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-2">
-           <CardHeader>
-              <CardTitle className="font-headline">Transações Recentes</CardTitle>
-              <CardDescription>As últimas transações registradas.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Detalhes</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                   {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-32" /><div className="mt-1"><Skeleton className="h-4 w-24" /></div></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                      </TableRow>
-                    ))}
-                    {recentTransactions.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          <div className="font-medium">{record.description}</div>
-                          <div className="text-sm text-muted-foreground">{record.date}</div>
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            <Badge variant="outline">{record.category}</Badge>
-                            {record.paymentMethod && <Badge variant="secondary">{record.paymentMethod}</Badge>}
-                          </div>
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${record.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`}>
-                          {record.type === 'Despesa' && '-'}R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!isLoading && recentTransactions.length === 0 && (
-                       <TableRow>
-                          <TableCell colSpan={2} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
-                       </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+            <CardTitle className="font-headline">Histórico de Transações</CardTitle>
+            <CardDescription>Visualize todas as receitas e despesas registradas.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="all">
+            <TabsList>
+              <TabsTrigger value="all">Todas</TabsTrigger>
+              <TabsTrigger value="income">Receitas</TabsTrigger>
+              <TabsTrigger value="expenses">Despesas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="mt-4">
+               <TransactionsTable transactions={transactions} isLoading={isLoading} />
+            </TabsContent>
+            <TabsContent value="income" className="mt-4">
+              <TransactionsTable transactions={incomeRecords} isLoading={isLoading} />
+            </TabsContent>
+             <TabsContent value="expenses" className="mt-4">
+               <TransactionsTable transactions={expenseRecords} isLoading={isLoading} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-3">
+        <CardHeader>
+            <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
+        </CardHeader>
+        <CardContent className="pl-2">
+            <ChartContainer config={chartConfig} className="w-full h-[300px]">
+              <AreaChart accessibilityLayer data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Number(value) / 1000}k`} />
+                  <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                  <Area type="monotone" dataKey="income" stackId="1" stroke="var(--color-income)" fill="var(--color-income)" name="Receita" />
+                  <Area type="monotone" dataKey="expense" stackId="1" stroke="var(--color-expense)" fill="var(--color-expense)" name="Despesa" />
+              </AreaChart>
+            </ChartContainer>
+        </CardContent>
+      </Card>
     </div>
+  )
+}
+
+function TransactionsTable({ transactions, isLoading }: { transactions: FinancialRecord[], isLoading: boolean }) {
+  return (
+      <Table>
+          <TableHeader>
+              <TableRow>
+                  <TableHead>Detalhes</TableHead>
+                  <TableHead className="hidden sm:table-cell">Categoria</TableHead>
+                  <TableHead className="hidden md:table-cell">Data</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="w-[40px]"><span className="sr-only">Ações</span></TableHead>
+              </TableRow>
+          </TableHeader>
+          <TableBody>
+             {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
+                </TableRow>
+              ))}
+              {transactions.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell>
+                    <div className="font-medium">{record.description}</div>
+                    {record.paymentMethod && <div className="text-sm text-muted-foreground md:hidden">{record.paymentMethod}</div>}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="outline">{record.category}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{record.date}</TableCell>
+                  <TableCell className={`text-right font-medium ${record.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`}>
+                    {record.type === 'Despesa' && '-'}R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </TableCell>
+                   <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Ações</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500">Excluir</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!isLoading && transactions.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
+                 </TableRow>
+              )}
+          </TableBody>
+      </Table>
   )
 }
