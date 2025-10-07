@@ -22,11 +22,13 @@ import {
   Phone,
   Clock,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const shop = shops.find((s) => s.id === shopId);
+  const { toast } = useToast();
 
   // Placeholder data - in a real app, this would come from settings
   const address = 'Rua das Flores, 123, São Paulo, SP';
@@ -41,6 +43,39 @@ export default function ProfilePage() {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(
     bookingUrl
   )}`;
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(bookingUrl);
+    toast({
+      title: 'Link copiado!',
+      description: 'O link de agendamento foi copiado para sua área de transferência.',
+    });
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Agende seu horário na ${shop.name}`,
+          text: `Confira os serviços da ${shop.name} e agende seu horário!`,
+          url: bookingUrl,
+        });
+      } catch (error) {
+        console.error('Erro ao compartilhar:', error);
+         toast({
+          variant: 'destructive',
+          title: 'Erro ao compartilhar',
+          description: 'Não foi possível compartilhar o link.',
+        });
+      }
+    } else {
+       toast({
+        variant: 'destructive',
+        title: 'Não suportado',
+        description: 'Seu navegador não suporta a função de compartilhamento.',
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,7 +99,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full" onClick={() => navigator.clipboard.writeText(bookingUrl)}>
+              <Button className="w-full" onClick={handleCopy}>
                 <Copy className="mr-2 h-4 w-4" /> Copiar Link de Agendamento
               </Button>
               <a href={qrCodeUrl} download={`qrcode-${shop.id}.png`}>
@@ -72,7 +107,7 @@ export default function ProfilePage() {
                   <Download className="mr-2 h-4 w-4" /> Baixar QR Code
                 </Button>
               </a>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleShare}>
                 <Share2 className="mr-2 h-4 w-4" /> Compartilhar
               </Button>
             </CardContent>
