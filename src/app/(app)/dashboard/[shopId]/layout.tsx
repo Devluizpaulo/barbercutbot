@@ -24,6 +24,7 @@ import {
   User,
 } from "lucide-react";
 import { shops } from "@/lib/data";
+import { Logo } from "@/components/logo";
 
 export default function ShopLayout({
   children,
@@ -45,6 +46,9 @@ export default function ShopLayout({
   return (
       <div className="flex flex-1">
         <Sidebar>
+          <SidebarHeader>
+              <Logo />
+          </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
               {navItems.map((item) => (
