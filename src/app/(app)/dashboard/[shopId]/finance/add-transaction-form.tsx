@@ -33,6 +33,7 @@ import { Calendar as CalendarIcon, LoaderCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   description: z.string().min(1, { message: 'A descrição é obrigatória.' }),
@@ -145,20 +146,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         />
         
         <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: Corte de cabelo" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
             control={form.control}
             name="amount"
             render={({ field }) => (
@@ -176,6 +163,20 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
               </FormItem>
             )}
           />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Ex: Corte de cabelo" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
@@ -307,4 +308,3 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     </Form>
   );
 }
-
