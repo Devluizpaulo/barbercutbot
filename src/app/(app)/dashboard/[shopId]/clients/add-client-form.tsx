@@ -24,6 +24,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, { message: 'O sobrenome é obrigatório.' }),
   email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
+  whatsapp: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -44,6 +45,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
       lastName: '',
       email: '',
       phone: '',
+      whatsapp: '',
       notes: '',
     },
   });
@@ -110,6 +112,19 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Telefone</FormLabel>
+              <FormControl>
+                <Input placeholder="(11) 99999-9999" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="whatsapp"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>WhatsApp</FormLabel>
               <FormControl>
                 <Input placeholder="(11) 99999-9999" {...field} />
               </FormControl>

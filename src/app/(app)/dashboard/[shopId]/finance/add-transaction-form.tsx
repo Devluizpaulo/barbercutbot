@@ -131,13 +131,13 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="space-y-8 gap-4">
             <FormField
               control={form.control}
               name="type"
               render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-4">
                   <FormLabel>Tipo de Transação</FormLabel>
                   <FormControl>
                     <RadioGroup
@@ -146,7 +146,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                         form.setValue('category', '');
                       }}
                       defaultValue={field.value}
-                      className="grid grid-cols-2 gap-4"
+                      className="grid grid-cols-2 gap-6"
                     >
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
@@ -295,12 +295,12 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             )}
         </div>
 
-        <div className="flex flex-col justify-between gap-6">
+        <div className="flex flex-col justify-between gap-2">
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="flex flex-col p-2 gap-2">
                   <FormLabel>Data</FormLabel>
                   <Popover>
                       <PopoverTrigger asChild>
@@ -338,7 +338,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   </FormItem>
               )}
             />
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-4">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                     <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
                 ))}
