@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Card,
@@ -21,9 +22,11 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { appointments, monthlyRevenue, shops } from "@/lib/data"
-import { DollarSign, Users, Calendar, Scissors } from "lucide-react"
+import { DollarSign, Users, Calendar, Scissors, CashRegister } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { Button } from "@/components/ui/button";
+import { CashierDialog } from "./cashier-dialog";
 
 const chartConfig = {
   revenue: {
@@ -36,8 +39,10 @@ export default function ShopDashboardPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const shop = shops.find((s) => s.id === shopId);
+  const [isCashierOpen, setCashierOpen] = useState(false);
 
   return (
+    <>
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -173,5 +178,15 @@ export default function ShopDashboardPage() {
         </Card>
       </div>
     </div>
+    <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} />
+      <Button
+        onClick={() => setCashierOpen(true)}
+        className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+        size="icon"
+      >
+        <CashRegister className="h-8 w-8" />
+        <span className="sr-only">Abrir Caixa</span>
+      </Button>
+    </>
   )
 }
