@@ -36,7 +36,7 @@ export default function LandingPage() {
                 </Link>
             </Button>
             <Button asChild>
-                <Link href="/dashboard">Começar Teste Grátis</Link>
+                <Link href="/dashboard/shops">Começar Teste Grátis</Link>
             </Button>
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-8">
                 <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
-                    <Link href="/dashboard">Descubra como</Link>
+                    <Link href="/dashboard/shops">Descubra como</Link>
                 </Button>
                 </div>
             </div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
                  <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/80">Junte-se a centenas de barbeiros que já estão otimizando sua gestão e lucrando mais.</p>
                  <div className="mt-8">
                     <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform">
-                        <Link href="/dashboard">Começar meu teste grátis de 14 dias</Link>
+                        <Link href="/dashboard/shops">Começar meu teste grátis de 14 dias</Link>
                     </Button>
                     <p className="text-xs mt-4 text-primary-foreground/60">Não é necessário cartão de crédito.</p>
                  </div>
