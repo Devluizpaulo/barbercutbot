@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "BarberShop": {
@@ -77,6 +78,21 @@
             "type": "string"
           }
         },
+        "price": {
+          "type": "number",
+          "description": "The final price of the appointment, which could be different from the sum of services."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the appointment.",
+          "enum": [
+            "pending",
+            "confirmed",
+            "completed",
+            "cancelled",
+            "no-show"
+          ]
+        },
         "notes": {
           "type": "string",
           "description": "Additional notes for the appointment."
@@ -88,7 +104,8 @@
         "customerId",
         "barberId",
         "startTime",
-        "endTime"
+        "endTime",
+        "status"
       ]
     },
     "Customer": {
@@ -274,6 +291,49 @@
         "category"
       ]
     },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier or vendor for a barber shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the supplier."
+        },
+        "barberShopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop the supplier belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier company."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Name of the primary contact person."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for the supplier."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of products/services provided (e.g., 'Produtos de Cabelo', 'Equipamentos')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "General notes about the supplier."
+        }
+      },
+      "required": [
+        "id",
+        "barberShopId",
+        "name",
+        "phone",
+        "category"
+      ]
+    },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
@@ -427,6 +487,26 @@
         }
       },
       {
+        "path": "/barberShops/{barberShopId}/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier data for a specific barber shop.",
+          "params": [
+            {
+              "name": "barberShopId",
+              "description": "The ID of the barber shop."
+            },
+            {
+              "name": "supplierId",
+              "description": "The ID of the supplier."
+            }
+          ]
+        }
+      },
+      {
         "path": "/barberShops/{barberShopId}/financialRecords/{financialRecordId}",
         "definition": {
           "entityName": "FinancialRecord",
@@ -447,6 +527,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
+    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
   }
-}]}
+}

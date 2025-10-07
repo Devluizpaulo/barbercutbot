@@ -17,8 +17,9 @@ export type Appointment = {
   endTime: string;   // Stored as ISO string or Firestore Timestamp string
   serviceIds: string[];
   notes?: string;
-  createdAt: Date;
   price?: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
+  createdAt: Date;
 };
 
 export type Customer = {

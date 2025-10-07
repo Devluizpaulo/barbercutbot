@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,8 +24,22 @@ import { Calendar } from "@/components/ui/calendar"
 import { appointments } from "@/lib/data"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { AddAppointmentForm } from "./add-appointment-form";
+import { useParams } from "next/navigation";
 
 export default function AppointmentsPage() {
+  const [isAddAppointmentOpen, setAddAppointmentOpen] = useState(false);
+  const params = useParams();
+  const shopId = params.shopId as string;
+
   return (
     <div className="grid gap-8 mt-8">
       <div className="flex items-center justify-between gap-4">
@@ -35,10 +51,26 @@ export default function AppointmentsPage() {
             Aqui está uma lista de todos os seus agendamentos.
           </p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Agendamento
-        </Button>
+        <Dialog open={isAddAppointmentOpen} onOpenChange={setAddAppointmentOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Agendamento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Novo Agendamento</DialogTitle>
+              <DialogDescription>
+                Preencha os detalhes abaixo para criar um novo agendamento.
+              </DialogDescription>
+            </DialogHeader>
+            <AddAppointmentForm 
+              shopId={shopId} 
+              onSuccess={() => setAddAppointmentOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
