@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UserNav } from "@/components/user-nav";
-import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function AppLayout({
