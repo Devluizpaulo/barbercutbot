@@ -133,103 +133,59 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Tipo de Transação</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          form.setValue('category', '');
-                        }}
-                        defaultValue={field.value}
-                        className="grid grid-cols-2 gap-4"
-                      >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="income" id="income" className="sr-only" />
-                          </FormControl>
-                          <FormLabel
-                            htmlFor="income"
-                            className={cn(
-                              "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                              field.value === 'income' 
-                              ? "border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200 dark:border-green-700"
-                              : "hover:bg-accent hover:text-accent-foreground"
-                            )}
-                          >
-                            Receita
-                          </FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="expense" id="expense" className="sr-only" />
-                          </FormControl>
-                          <FormLabel
-                            htmlFor="expense"
-                            className={cn(
-                              "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                              field.value === 'expense'
-                              ? "border-destructive bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200 dark:border-red-700"
-                              : "hover:bg-accent hover:text-accent-foreground"
-                            )}
-                          >
-                            Despesa
-                          </FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                    <FormLabel>Data</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Transação</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('category', '');
+                      }}
+                      defaultValue={field.value}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, 'PPP', { locale: ptBR })
-                            ) : (
-                                <span>Escolha uma data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
+                          <RadioGroupItem value="income" id="income" className="sr-only" />
                         </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                            date > new Date() || date < new Date('1900-01-01')
-                            }
-                            initialFocus
-                            locale={ptBR}
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                    </FormItem>
-                )}
-              />
-            </div>
+                        <FormLabel
+                          htmlFor="income"
+                          className={cn(
+                            "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                            field.value === 'income' 
+                            ? "border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200 dark:border-green-700"
+                            : "hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          Receita
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="expense" id="expense" className="sr-only" />
+                        </FormControl>
+                        <FormLabel
+                          htmlFor="expense"
+                          className={cn(
+                            "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                            field.value === 'expense'
+                            ? "border-destructive bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200 dark:border-red-700"
+                            : "hover:bg-accent hover:text-accent-foreground"
+                          )}
+                        >
+                          Despesa
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
@@ -340,6 +296,48 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         </div>
 
         <div className="flex flex-col justify-between gap-6">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                  <FormLabel>Data</FormLabel>
+                  <Popover>
+                      <PopoverTrigger asChild>
+                      <FormControl>
+                          <Button
+                          variant={'outline'}
+                          className={cn(
+                              'pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                          )}
+                          >
+                          {field.value ? (
+                              format(field.value, 'PPP', { locale: ptBR })
+                          ) : (
+                              <span>Escolha uma data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                      </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                          date > new Date() || date < new Date('1900-01-01')
+                          }
+                          initialFocus
+                          locale={ptBR}
+                      />
+                      </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                  </FormItem>
+              )}
+            />
             <div className="grid grid-cols-3 gap-2">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                     <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
