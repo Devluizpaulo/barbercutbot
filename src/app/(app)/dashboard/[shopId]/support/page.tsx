@@ -1,5 +1,11 @@
 
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -8,9 +14,28 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LifeBuoy, Ticket, Phone } from 'lucide-react';
+import { LifeBuoy, Ticket, Phone, FileText } from 'lucide-react';
 
 export default function SupportPage() {
+  const faqItems = [
+    {
+      question: 'Como faço para adicionar um novo barbeiro?',
+      answer: 'Vá para a seção "Barbeiros" no menu lateral e clique no botão "Adicionar Barbeiro". Preencha as informações e salve.',
+    },
+    {
+      question: 'É possível cancelar um agendamento?',
+      answer: 'Sim. Na página de "Agendamentos", encontre o agendamento desejado, clique no menu de ações (três pontos) e selecione "Cancelar".',
+    },
+    {
+      question: 'Como gero um relatório financeiro?',
+      answer: 'Acesse a seção "Finanças". Você pode visualizar o resumo, filtrar por data e em breve poderá exportar relatórios detalhados.',
+    },
+     {
+      question: 'Posso integrar minha agenda com a Google Agenda?',
+      answer: 'Sim! Vá em "Configurações" > "Integrações" e siga as instruções para conectar sua conta do Google.',
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -35,7 +60,6 @@ export default function SupportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-            {/* Futuramente, aqui poderá ser listado os tickets abertos */}
             <p className="text-sm text-muted-foreground">Você não possui nenhum chamado aberto no momento.</p>
           </CardContent>
           <CardFooter>
@@ -62,9 +86,28 @@ export default function SupportPage() {
           </CardFooter>
         </Card>
       </div>
+      
+       <div className="space-y-6">
+        <h2 className="text-xl font-bold font-headline">Perguntas Frequentes (FAQ)</h2>
+         <Card>
+           <CardContent className="p-6">
+              <Accordion type="single" collapsible className="w-full">
+                {faqItems.map((item, index) => (
+                  <AccordionItem value={`item-${index+1}`} key={index}>
+                    <AccordionTrigger>{item.question}</AccordionTrigger>
+                    <AccordionContent>
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+           </CardContent>
+         </Card>
+      </div>
+
 
       <div className="space-y-6">
-         <h2 className="text-xl font-bold font-headline">Documentos Legais</h2>
+         <h2 className="text-xl font-bold font-headline flex items-center gap-2"><FileText /> Documentos Legais</h2>
         <Card>
           <CardHeader>
             <CardTitle>Termos de Uso</CardTitle>

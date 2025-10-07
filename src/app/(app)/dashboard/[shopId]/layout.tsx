@@ -87,8 +87,8 @@ export default function ShopLayout({
                     </Link>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                    <Link href="/dashboard/support">
-                        <SidebarMenuButton tooltip="Suporte" className="justify-start" isActive={pathname.startsWith(`/dashboard/support`)}>
+                    <Link href={`/dashboard/${shopId}/support`}>
+                        <SidebarMenuButton tooltip="Suporte" className="justify-start" isActive={pathname.startsWith(`/dashboard/${shopId}/support`)}>
                             <LifeBuoy />
                             <span>Suporte</span>
                         </SidebarMenuButton>
