@@ -106,7 +106,6 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         }
     }
     
-    // Ensure the string doesn't get excessively long
     currentAmountString = currentAmountString.padStart(3, '0').slice(-6);
 
     const numericValue = parseInt(currentAmountString, 10) || 0;
@@ -336,14 +335,14 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col justify-between">
             <div className="grid grid-cols-3 gap-2">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                     <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
                 ))}
                 <KeypadButton onClick={() => handleKeypadPress('backspace')}><Trash2 /></KeypadButton>
             </div>
-            <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
+             <Button type="submit" disabled={isSubmitting} size="lg" className="w-full">
                 {isSubmitting && (
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                 )}
