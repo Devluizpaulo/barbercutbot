@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { shops } from "@/lib/data"
-import { Activity, MoreVertical, DollarSign, Users, Calendar, BarChart, ExternalLink, Shield, Ticket, CreditCard, Settings, FileText, Store } from "lucide-react"
+import { Activity, MoreVertical, DollarSign, Users, Calendar, ExternalLink, Shield, Ticket, CreditCard, Settings, FileText, Store } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,8 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+
 
 const chartConfig = {
   shops: {
