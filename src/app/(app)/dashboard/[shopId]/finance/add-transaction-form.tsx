@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -92,26 +91,26 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
   const handleKeypadPress = (key: string) => {
     const currentAmount = form.getValues('amount') || 0;
-    const currentAmountString = currentAmount.toFixed(2);
-
-    let newAmountString;
+    let currentAmountString = currentAmount.toFixed(2).replace('.', '');
 
     if (key === 'backspace') {
-      newAmountString = currentAmountString.slice(0, -1).replace('.', '');
-      if (newAmountString.length < 3) {
-        newAmountString = '0'.repeat(3 - newAmountString.length) + newAmountString;
-      }
+        currentAmountString = currentAmountString.slice(0, -1);
+        if (currentAmountString.length === 0) {
+            currentAmountString = '0';
+        }
     } else {
-       newAmountString = (currentAmountString + key).replace('.', '');
+        if (currentAmountString === '0' && key !== '00') {
+            currentAmountString = '';
+        }
+        currentAmountString += key;
     }
     
-    const integerPart = newAmountString.slice(0, -2);
-    const decimalPart = newAmountString.slice(-2);
-    const newAmount = parseFloat(`${integerPart}.${decimalPart}`);
+    // Ensure we are working with pennies
+    const numericValue = parseInt(currentAmountString, 10) || 0;
+    const newAmount = numericValue / 100;
 
     form.setValue('amount', newAmount, { shouldValidate: true });
 };
-
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      // NOTE: Database functionality is disabled for simulation.
@@ -180,7 +179,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                 </FormItem>
               )}
             />
-
+            
             <FormField
                 control={form.control}
                 name="description"
@@ -263,11 +262,11 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <FormLabel>{transactionType === 'income' ? 'Serviço' : 'Categoria'}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
+                            <SelectValue placeholder={transactionType === 'income' ? 'Selecione um serviço' : 'Selecione uma categoria'} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -292,7 +291,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a forma de pagamento" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {paymentMethods.map(method => (
@@ -343,10 +342,10 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         </div>
 
         <div className="grid grid-cols-3 grid-rows-4 gap-2 h-full">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', ''].map((key, i) => (
-                key === '' ? <KeypadButton key={i} onClick={() => handleKeypadPress('backspace')} className="col-span-1"><Delete /></KeypadButton>
-                : <KeypadButton key={i} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
+                <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
             ))}
+            <KeypadButton onClick={() => handleKeypadPress('backspace')} className="col-span-1"><Delete /></KeypadButton>
         </div>
       </form>
     </Form>
