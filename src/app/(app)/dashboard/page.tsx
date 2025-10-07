@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { shops } from "@/lib/data"
-import { MoreVertical, DollarSign, Users, Calendar, BarChart, ExternalLink, Shield } from "lucide-react"
+import { MoreVertical, DollarSign, Users, Calendar, BarChart, ExternalLink, Shield, Ticket, CreditCard } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 export default function AdminDashboard() {
     const totalRevenue = shops.reduce((acc, shop) => acc + (shop.totalRevenue || 0), 0)
@@ -110,10 +111,14 @@ export default function AdminDashboard() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Barbearia</TableHead>
-                        <TableHead className="hidden md:table-cell">Status</TableHead>
-                        <TableHead className="hidden lg:table-cell">Plano</TableHead>
-                        <TableHead className="hidden md:table-cell">Receita (Mês)</TableHead>
+                        <TableHead className="w-[250px]">Barbearia</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Clientes</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status Pag.</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Tickets</TableHead>
+                        <TableHead className="text-right">Faturamento (Mês)</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -122,14 +127,54 @@ export default function AdminDashboard() {
                         <TableRow key={shop.id}>
                             <TableCell>
                                 <div className="font-medium">{shop.name}</div>
-                                <div className="text-sm text-muted-foreground md:hidden">{shop.location}</div>
+                                <div className="text-sm text-muted-foreground">{shop.location}</div>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                                <Badge variant={shop.status === 'Ativo' ? 'secondary' : 'destructive'}>{shop.status}</Badge>
+                            <TableCell>
+                                <Badge 
+                                    variant={shop.status === 'Ativo' ? 'default' : 'destructive'}
+                                    className={cn(shop.status === 'Ativo' && 'bg-green-500 hover:bg-green-500/80')}
+                                >
+                                    {shop.status}
+                                </Badge>
                             </TableCell>
-                            <TableCell className="hidden lg:table-cell">{shop.plan}</TableCell>
-                            <TableCell className="hidden md:table-cell font-mono">
-                                R${(shop.totalRevenue || 0).toLocaleString('pt-BR')}
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-muted-foreground"/>
+                                    <span>{shop.totalClients}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>{shop.plan}</TableCell>
+                             <TableCell>
+                                <Badge 
+                                    variant={
+                                        shop.paymentStatus === 'Pago' ? 'secondary' : 
+                                        shop.paymentStatus === 'Pendente' ? 'outline' : 'destructive'
+                                    }
+                                     className={cn(
+                                        shop.paymentStatus === 'Pago' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                        shop.paymentStatus === 'Pendente' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700'
+                                    )}
+                                >
+                                    {shop.paymentStatus}
+                                </Badge>
+                            </TableCell>
+                             <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground"/>
+                                    <span>{shop.planDueDate}</span>
+                                </div>
+                             </TableCell>
+                            <TableCell>
+                                <div className={cn(
+                                    "flex items-center gap-2",
+                                    shop.openTickets > 0 && "font-bold text-destructive"
+                                )}>
+                                    <Ticket className="h-4 w-4 text-muted-foreground"/>
+                                    <span>{shop.openTickets}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                                R${(shop.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>
@@ -145,7 +190,10 @@ export default function AdminDashboard() {
                                                 Ver Dashboard
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>Gerenciar Fatura</DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <CreditCard className="mr-2 h-4 w-4" />
+                                            Gerenciar Fatura
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem className="text-red-500">Desativar</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
