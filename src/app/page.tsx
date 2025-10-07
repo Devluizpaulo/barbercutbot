@@ -11,9 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-new');
-  const feat1Image = PlaceHolderImages.find(p => p.id === 'feature-1');
-  const feat2Image = PlaceHolderImages.find(p => p.id === 'feature-2');
-  const feat3Image = PlaceHolderImages.find(p => p.id === 'feature-3');
   const avatar1 = PlaceHolderImages.find(p => p.id === 'avatar-1');
   const avatar2 = PlaceHolderImages.find(p => p.id === 'avatar-2');
   const avatar3 = PlaceHolderImages.find(p => p.id === 'avatar-3');
