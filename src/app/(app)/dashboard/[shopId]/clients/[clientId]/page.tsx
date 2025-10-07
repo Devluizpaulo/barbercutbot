@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { doc, collection, query, where } from 'firebase/firestore';
 import {
   ArrowLeft,
   Edit,
@@ -11,14 +10,13 @@ import {
   Phone,
   DollarSign,
   Calendar as CalendarIcon,
-  LoaderCircle,
   AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { useDoc, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Customer, Appointment } from '@/lib/types';
+import { clients, appointments as allAppointments } from '@/lib/data';
+import type { Client, Appointment } from '@/lib/data';
 
 import {
   Card,
@@ -42,55 +40,28 @@ export default function ClientDetailsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const clientId = params.clientId as string;
-  const firestore = useFirestore();
 
-  const clientRef = useMemoFirebase(() => {
-    if (!firestore || !shopId || !clientId) return null;
-    return doc(firestore, `/barberShops/${shopId}/customers/${clientId}`);
-  }, [firestore, shopId, clientId]);
-
-  const appointmentsQuery = useMemoFirebase(() => {
-    if (!firestore || !shopId || !clientId) return null;
-    return query(
-      collection(firestore, `/barberShops/${shopId}/appointments`),
-      where('customerId', '==', clientId)
-    );
-  }, [firestore, shopId, clientId]);
-
-  const { data: client, isLoading: isClientLoading, error: clientError } = useDoc<Customer>(clientRef);
-  const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
-
-  const clientAppointments = appointments || [];
+  // Simulate fetching data
+  const client = clients.find(c => `client-${c.id}` === clientId);
+  const clientAppointments = allAppointments.filter(a => a.clientName.includes(client?.name.split(' ')[0] ?? ''));
 
   const totalSpent = clientAppointments.reduce((acc, appt) => {
-    // This assumes you have a `price` field on your appointments or can derive it.
-    // Using a placeholder value for now.
-    // TODO: Replace with actual service price lookup.
-    return acc + (appt.price || 50); 
+    // Placeholder price for mock data
+    return acc + 50; 
   }, 0);
 
-  const lastVisit = clientAppointments.length > 0 
-    ? format(new Date(Math.max(...clientAppointments.map(a => new Date(a.startTime).getTime()))), "dd/MM/yyyy", { locale: ptBR })
-    : "N/A";
+  const lastVisit = client?.lastVisit || "N/A";
 
 
-  if (isClientLoading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (clientError || !client) {
+  if (!client) {
     return (
       <div className="text-center py-10">
         <AlertCircle className="mx-auto h-10 w-10 text-destructive mb-4" />
         <h2 className="text-xl font-semibold mb-2">
-            {clientError ? "Ocorreu um erro" : "Cliente não encontrado"}
+            Cliente não encontrado
         </h2>
         <p className="text-muted-foreground mb-4">
-            {clientError ? "Não foi possível carregar os dados do cliente." : "O cliente que você está procurando não existe."}
+            O cliente que você está procurando não existe.
         </p>
         <Button asChild>
           <Link href={`/dashboard/${shopId}/clients`}>
@@ -114,7 +85,7 @@ export default function ClientDetailsPage() {
             </Button>
             <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-                {client.firstName} {client.lastName}
+                {client.name}
             </h1>
             <p className="text-muted-foreground">Perfil e Histórico do Cliente</p>
             </div>
@@ -190,37 +161,30 @@ export default function ClientDetailsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areAppointmentsLoading && (
-                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
-                  </TableCell>
-                </TableRow>
-              )}
               {clientAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell>
                     <div className="font-medium">
-                      {format(new Date(appointment.startTime), "dd/MM/yy 'às' HH:mm", {
+                      {format(new Date(appointment.dateTime), "dd/MM/yy 'às' HH:mm", {
                         locale: ptBR,
                       })}
                     </div>
                      <div className="text-sm text-muted-foreground sm:hidden">
-                       {appointment.serviceIds.join(', ')}
+                       {appointment.service}
                      </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{appointment.serviceIds.join(', ')}</TableCell>
-                  <TableCell className="hidden md:table-cell">{appointment.barberId}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{appointment.service}</TableCell>
+                  <TableCell className="hidden md:table-cell">{appointment.barber}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={'default'}
+                      variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}
                     >
-                      Confirmado
+                      {appointment.status}
                     </Badge>
                   </TableCell>
                 </TableRow>
               ))}
-              {!areAppointmentsLoading && clientAppointments.length === 0 && (
+              {clientAppointments.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={4}

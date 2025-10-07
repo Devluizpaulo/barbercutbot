@@ -4,25 +4,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { collection, query, where } from 'firebase/firestore';
 import {
   Search,
-  UserPlus,
   ChevronRight,
-  LoaderCircle,
-  AlertCircle,
   PlusCircle,
 } from 'lucide-react';
 
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Customer } from '@/lib/types';
+import { clients as mockedClients } from '@/lib/data';
+import type { Client } from '@/lib/data';
 
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -45,23 +38,12 @@ import { AddClientForm } from './add-client-form';
 
 export default function ClientsPage() {
   const [isAddClientOpen, setAddClientOpen] = useState(false);
-  const firestore = useFirestore();
   const params = useParams();
   const shopId = params.shopId as string;
 
-  const clientsQuery = useMemoFirebase(() => {
-    if (!firestore || !shopId) return null;
-    return query(
-      collection(firestore, `/barberShops/${shopId}/customers`),
-      where('barberShopId', '==', shopId)
-    );
-  }, [firestore, shopId]);
-
-  const {
-    data: clients,
-    isLoading,
-    error,
-  } = useCollection<Customer>(clientsQuery);
+  const clients = mockedClients;
+  const isLoading = false; // Simulation: no loading state
+  const error = null; // Simulation: no error state
 
   return (
     <>
@@ -101,7 +83,7 @@ export default function ClientsPage() {
           </div>
         
           <Card>
-            <CardContent>
+            <CardContent className="pt-6">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -114,43 +96,14 @@ export default function ClientsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center h-24">
-                        <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {error && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="text-center text-destructive"
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          <AlertCircle className="h-5 w-5" />
-                          <span>
-                            Ocorreu um erro ao carregar os clientes. Tente novamente.
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!isLoading && !error && clients?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        Nenhum cliente encontrado. Comece adicionando um novo cliente.
-                      </TableCell>
-                    </TableRow>
-                  )}
                   {clients?.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">
                         <Link
-                          href={`/dashboard/${shopId}/clients/${client.id}`}
+                          href={`/dashboard/${shopId}/clients/client-${client.id}`}
                           className="hover:underline"
                         >
-                          {client.firstName} {client.lastName}
+                          {client.name}
                         </Link>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">
@@ -162,7 +115,7 @@ export default function ClientsPage() {
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" asChild>
                           <Link
-                            href={`/dashboard/${shopId}/clients/${client.id}`}
+                            href={`/dashboard/${shopId}/clients/client-${client.id}`}
                           >
                             <ChevronRight className="h-4 w-4" />
                             <span className="sr-only">Ver Cliente</span>

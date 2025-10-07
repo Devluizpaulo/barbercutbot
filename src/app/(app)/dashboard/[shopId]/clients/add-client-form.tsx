@@ -1,12 +1,9 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { collection } from 'firebase/firestore';
-
-import { addDocumentNonBlocking, useFirestore } from '@/firebase';
-import type { Customer } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +36,6 @@ interface AddClientFormProps {
 
 export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const form = useForm<AddClientFormValues>({
     resolver: zodResolver(formSchema),
@@ -55,43 +51,13 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: AddClientFormValues) => {
-    try {
-      if (!firestore) {
-        throw new Error('Firestore not available');
-      }
-
-      const customersRef = collection(
-        firestore,
-        `/barberShops/${shopId}/customers`
-      );
-
-      const newCustomer: Omit<Customer, 'id'> = {
-        barberShopId: shopId,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email || '',
-        phone: values.phone || '',
-        notes: values.notes || '',
-        createdAt: new Date(),
-      };
-      
-      await addDocumentNonBlocking(customersRef, newCustomer);
-
-      toast({
-        title: 'Sucesso!',
-        description: 'Novo cliente adicionado.',
-      });
-
-      onSuccess?.();
-    } catch (error) {
-      console.error('Error adding client:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description:
-          'Não foi possível adicionar o cliente. Tente novamente.',
-      });
-    }
+    // NOTE: Database functionality is disabled for simulation.
+    console.log("Simulating add client:", values);
+    toast({
+      title: 'Modo de Simulação',
+      description: 'Funcionalidade de adicionar cliente desabilitada.',
+    });
+    onSuccess?.();
   };
 
   return (

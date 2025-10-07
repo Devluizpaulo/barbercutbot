@@ -1,14 +1,11 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { collection, serverTimestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-import { addDocumentNonBlocking, useFirestore } from '@/firebase';
-import type { FinancialRecord } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -53,7 +50,6 @@ interface AddTransactionFormProps {
 
 export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
 
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -68,38 +64,15 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: AddTransactionFormValues) => {
-    if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Serviço de banco de dados indisponível.',
-      });
-      return;
-    }
-
-    const transactionsRef = collection(
-      firestore,
-      `/barberShops/${shopId}/financialRecords`
-    );
-
-    const newRecord: Omit<FinancialRecord, 'id'> = {
-      barberShopId: shopId,
-      description: values.description,
-      amount: values.amount,
-      type: values.type,
-      date: values.date.toISOString(),
-      createdAt: new Date(), // Managed by client for consistency
-    };
-
-    addDocumentNonBlocking(transactionsRef, newRecord);
-
-    toast({
-      title: 'Sucesso!',
-      description: 'Transação adicionada.',
-    });
-
-    onSuccess?.();
-    form.reset();
+     // NOTE: Database functionality is disabled for simulation.
+     console.log("Simulating add transaction:", values);
+     toast({
+       title: 'Modo de Simulação',
+       description: 'Funcionalidade de adicionar transação desabilitada.',
+     });
+ 
+     onSuccess?.();
+     form.reset();
   };
 
   return (

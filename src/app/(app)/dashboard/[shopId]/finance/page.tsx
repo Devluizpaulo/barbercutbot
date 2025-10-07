@@ -3,9 +3,9 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { FinancialRecord } from '@/lib/types';
+import { transactions as mockedTransactions } from '@/lib/data';
+import type { Transaction as FinancialRecord } from '@/lib/data';
+
 import {
   Card,
   CardContent,
@@ -71,24 +71,15 @@ export default function FinancePage() {
   const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
   const params = useParams();
   const shopId = params.shopId as string;
-  const firestore = useFirestore();
 
-  const transactionsQuery = useMemoFirebase(() => {
-    if (!firestore || !shopId) return null;
-    return query(
-      collection(firestore, `/barberShops/${shopId}/financialRecords`),
-      orderBy('date', 'desc'),
-      limit(100) // Limit to last 100 transactions for performance
-    );
-  }, [firestore, shopId]);
-
-  const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
+  const transactions = mockedTransactions;
+  const isLoading = false;
 
   const { totalIncome, totalExpense, netProfit, recentTransactions } = useMemo(() => {
     const records = transactions || [];
     const totals = records.reduce(
       (acc, record) => {
-        if (record.type === 'income') {
+        if (record.type === 'Receita') {
           acc.totalIncome += record.amount;
         } else {
           acc.totalExpense += record.amount;
@@ -216,10 +207,10 @@ export default function FinancePage() {
                       <TableRow key={record.id}>
                         <TableCell>
                           <div className="font-medium">{record.description}</div>
-                          <Badge variant={record.type === 'income' ? 'secondary' : 'destructive'} className="capitalize mt-1">{record.type === 'income' ? 'Receita' : 'Despesa'}</Badge>
+                          <Badge variant={record.type === 'Receita' ? 'secondary' : 'destructive'} className="capitalize mt-1">{record.type}</Badge>
                         </TableCell>
-                         <TableCell>{format(new Date(record.date), "dd/MM/yy", { locale: ptBR })}</TableCell>
-                        <TableCell className={`text-right font-medium ${record.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                         <TableCell>{record.date}</TableCell>
+                        <TableCell className={`text-right font-medium ${record.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`}>
                           R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                       </TableRow>
