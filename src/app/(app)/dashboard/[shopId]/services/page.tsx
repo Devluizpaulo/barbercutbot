@@ -3,13 +3,10 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { PlusCircle, MoreVertical, Trash2, Edit, DollarSign, Clock } from 'lucide-react';
+import { PlusCircle, MoreVertical, Trash2, Edit, DollarSign, Clock, Image as ImageIcon } from 'lucide-react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -36,6 +33,7 @@ import {
 import { AddServiceForm } from './add-service-form';
 import { services as mockedServices } from '@/lib/data';
 import type { Service } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ServicesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -113,9 +111,19 @@ export default function ServicesPage() {
               {services.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">
-                    <div>{service.name}</div>
-                    <div className="text-sm text-muted-foreground truncate max-w-[200px] md:hidden">
-                        {service.description}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="rounded-md">
+                        <AvatarImage src={service.imageUrl} alt={service.name} className="object-cover"/>
+                        <AvatarFallback className="rounded-md">
+                          <ImageIcon />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div>{service.name}</div>
+                        <div className="text-sm text-muted-foreground truncate max-w-[200px] md:hidden">
+                            {service.description}
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">

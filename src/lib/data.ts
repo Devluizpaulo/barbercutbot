@@ -157,14 +157,18 @@ export type Service = {
     price: number;
     cost: number;
     duration: number; // in minutes
+    imageUrl: string;
+    isCommissionEnabled?: boolean;
+    commissionType?: 'fixed' | 'percentage';
+    commissionValue?: number;
 };
 
 export const services: Service[] = [
-    { id: 'service-1', name: 'Corte de Cabelo', description: 'Corte clássico ou moderno, na tesoura ou máquina.', price: 50, cost: 10, duration: 30 },
-    { id: 'service-2', name: 'Barba', description: 'Modelagem e aparo da barba com toalha quente.', price: 35, cost: 5, duration: 25 },
-    { id: 'service-3', name: 'Corte + Barba', description: 'Pacote completo de corte de cabelo e barba.', price: 80, cost: 15, duration: 55 },
-    { id: 'service-4', name: 'Degradê', description: 'Corte com efeito degradê (fade) preciso.', price: 60, cost: 12, duration: 40 },
-    { id: 'service-5', name: 'Pintura Capilar', description: 'Coloração completa do cabelo.', price: 120, cost: 40, duration: 60 },
+    { id: 'service-1', name: 'Corte de Cabelo', description: 'Corte clássico ou moderno, na tesoura ou máquina.', price: 50, cost: 10, duration: 30, imageUrl: 'https://picsum.photos/seed/haircut/200/200' },
+    { id: 'service-2', name: 'Barba', description: 'Modelagem e aparo da barba com toalha quente.', price: 35, cost: 5, duration: 25, imageUrl: 'https://picsum.photos/seed/beard/200/200' },
+    { id: 'service-3', name: 'Corte + Barba', description: 'Pacote completo de corte de cabelo e barba.', price: 80, cost: 15, duration: 55, imageUrl: 'https://picsum.photos/seed/haircut-beard/200/200' },
+    { id: 'service-4', name: 'Degradê', description: 'Corte com efeito degradê (fade) preciso.', price: 60, cost: 12, duration: 40, imageUrl: 'https://picsum.photos/seed/fade/200/200' },
+    { id: 'service-5', name: 'Pintura Capilar', description: 'Coloração completa do cabelo.', price: 120, cost: 40, duration: 60, imageUrl: 'https://picsum.photos/seed/hair-color/200/200' },
 ];
 
 export type Supplier = {

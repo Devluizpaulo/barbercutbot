@@ -170,7 +170,7 @@
           "type": "string",
           "description": "A brief biography of the barber."
         },
-        "avatarUrl": {
+        "avatar": {
             "type": "string",
             "description": "URL for the barber's profile picture.",
             "format": "uri"
@@ -216,6 +216,30 @@
         "duration": {
           "type": "number",
           "description": "Duration of the service in minutes."
+        },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL for the service's photo.",
+            "format": "uri"
+        },
+        "partnership": {
+            "type": "object",
+            "description": "Partnership and commission settings for the service.",
+            "properties": {
+                "isCommissionEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates if a commission is enabled for this service."
+                },
+                "commissionType": {
+                    "type": "string",
+                    "enum": ["fixed", "percentage"],
+                    "description": "The type of commission (fixed amount or percentage)."
+                },
+                "commissionValue": {
+                    "type": "number",
+                    "description": "The value of the commission."
+                }
+            }
         }
       },
       "required": [
