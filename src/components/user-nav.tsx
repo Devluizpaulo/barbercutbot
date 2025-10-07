@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Avatar,
@@ -14,7 +15,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, Settings, User } from "lucide-react"
+import { LogOut, Settings, User as UserIcon } from "lucide-react"
+import { users } from "@/lib/data"
+
+// For demonstration, we'll pick a user. In a real app, this would come from an auth hook.
+const currentUser = users[1]; 
 
 export function UserNav() {
   return (
@@ -22,24 +27,24 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/seed/user-avatar/40/40" alt="@user" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={currentUser.avatar} alt={`@${currentUser.firstName}`} />
+            <AvatarFallback>{currentUser.firstName.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">João da Silva</p>
+            <p className="text-sm font-medium leading-none">{currentUser.firstName} {currentUser.lastName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              joao.silva@example.com
+              {currentUser.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
+            <UserIcon className="mr-2 h-4 w-4" />
             <span>Perfil</span>
           </DropdownMenuItem>
           <DropdownMenuItem>

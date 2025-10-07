@@ -2,6 +2,22 @@
 import { addDays, format, subDays, subHours, subMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export type User = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+  role: 'admin' | 'owner';
+};
+
+export const users: User[] = [
+    { id: 'user-1', firstName: 'Admin', lastName: 'SaaS', email: 'admin@barbersaas.com', avatar: 'https://picsum.photos/seed/admin-avatar/100/100', role: 'admin' },
+    { id: 'user-2', firstName: 'João', lastName: 'Silva', email: 'joao.silva@example.com', avatar: 'https://picsum.photos/seed/user-avatar-1/100/100', role: 'owner' },
+    { id: 'user-3', firstName: 'Maria', lastName: 'Oliveira', email: 'maria.oliveira@example.com', avatar: 'https://picsum.photos/seed/user-avatar-2/100/100', role: 'owner' },
+];
+
+
 export type Shop = {
   id: string;
   name: string;
