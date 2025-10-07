@@ -46,13 +46,19 @@ export type Client = {
   totalSpent: number;
 };
 
+// predictable number generator
+const pseudoRandom = (seed: number) => {
+    let value = (seed * 9301 + 49297) % 233280;
+    return value / 233280;
+};
+
 export const clients: Client[] = Array.from({ length: 25 }, (_, i) => ({
   id: `client-${i + 1}`,
   name: `Cliente ${i + 1}`,
   email: `cliente${i + 1}@example.com`,
   phone: `(11) 98765-43${String(i).padStart(2, '0')}`,
   lastVisit: format(new Date(2023, 10, 15 - i), 'dd/MM/yyyy', { locale: ptBR }),
-  totalSpent: Math.round(Math.random() * 2000 + 50),
+  totalSpent: Math.round(pseudoRandom(i + 1) * 2000 + 50),
 }));
 
 export type Appointment = {
@@ -84,15 +90,25 @@ export type Transaction = {
 };
 
 export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => {
-    const type = Math.random() > 0.3 ? 'Receita' : 'Despesa';
+    // Use a predictable pattern instead of Math.random()
+    const isIncome = (i % 3) !== 0; 
+    const type = isIncome ? 'Receita' : 'Despesa';
+    const amount = isIncome
+        ? Math.round(pseudoRandom(i + 1) * 100 + 20)
+        : Math.round(pseudoRandom(i + 1) * 200 + 10);
+    const description = isIncome
+        ? `Serviço - Cliente ${Math.floor(pseudoRandom(i + 1) * 10) + 1}`
+        : `Compra de Suprimentos ${i+1}`;
+
     return {
         id: `txn-${i + 1}`,
         date: format(subDays(new Date(2024, 6, 20), i), 'dd/MM/yyyy', { locale: ptBR }),
-        description: type === 'Receita' ? `Serviço - Cliente ${Math.floor(Math.random() * 10) + 1}` : `Compra de Suprimentos ${i+1}`,
-        type: type,
-        amount: type === 'Receita' ? Math.round(Math.random() * 100 + 20) : Math.round(Math.random() * 200 + 10),
-    }
+        description,
+        type,
+        amount,
+    };
 });
+
 
 export const monthlyRevenue = [
   { month: "Jan", revenue: 4230 },
