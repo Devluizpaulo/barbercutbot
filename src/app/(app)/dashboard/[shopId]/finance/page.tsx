@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal, Download } from "lucide-react"
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,12 +59,14 @@ const serviceChartConfig = {
   revenue: { label: "Receita", color: "hsl(var(--chart-1))" },
 }
 
+type Period = 'today' | 'week' | 'month' | 'year';
+
 export default function FinancePage() {
   const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
+  const [period, setPeriod] = useState<Period>('month');
   const params = useParams();
   const shopId = params.shopId as string;
 
-  const transactions = mockedTransactions;
   const isLoading = false;
 
   const serviceChartRef = useRef<HTMLDivElement>(null);
@@ -83,14 +85,51 @@ export default function FinancePage() {
     });
   };
 
+  const filteredTransactions = useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date = now;
+
+    switch (period) {
+        case 'today':
+            startDate = new Date(now.setHours(0, 0, 0, 0));
+            endDate = new Date(now.setHours(23, 59, 59, 999));
+            break;
+        case 'week':
+            startDate = startOfWeek(now, { locale: ptBR });
+            endDate = endOfWeek(now, { locale: ptBR });
+            break;
+        case 'month':
+            startDate = startOfMonth(now);
+            endDate = endOfMonth(now);
+            break;
+        case 'year':
+            startDate = startOfYear(now);
+            endDate = endOfYear(now);
+            break;
+        default:
+            return mockedTransactions;
+    }
+    
+    return mockedTransactions.filter(t => {
+      try {
+        const transactionDate = parse(t.date, 'dd/MM/yyyy', new Date());
+        return transactionDate >= startDate && transactionDate <= endDate;
+      } catch (error) {
+        console.error("Error parsing date for transaction:", t, error);
+        return false;
+      }
+    });
+
+}, [period]);
+
   const { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords } = useMemo(() => {
-    const records = transactions || [];
     let totalIncome = 0;
     let totalExpense = 0;
     const incomeRecords: FinancialRecord[] = [];
     const expenseRecords: FinancialRecord[] = [];
 
-    records.forEach(record => {
+    filteredTransactions.forEach(record => {
       if (record.type === 'Receita') {
         totalIncome += record.amount;
         incomeRecords.push(record);
@@ -102,7 +141,7 @@ export default function FinancePage() {
 
     const netProfit = totalIncome - totalExpense;
     return { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords };
-  }, [transactions]);
+  }, [filteredTransactions]);
   
 
   return (
@@ -116,23 +155,33 @@ export default function FinancePage() {
             Acompanhe a receita e as despesas da sua barbearia.
           </p>
         </div>
-        <Dialog open={isAddTransactionOpen} onOpenChange={setAddTransactionOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Transação
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Adicionar Nova Transação</DialogTitle>
-            </DialogHeader>
-            <AddTransactionForm 
-              shopId={shopId} 
-              onSuccess={() => setAddTransactionOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-4">
+            <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="hidden sm:block">
+              <TabsList>
+                <TabsTrigger value="today">Hoje</TabsTrigger>
+                <TabsTrigger value="week">Semana</TabsTrigger>
+                <TabsTrigger value="month">Mês</TabsTrigger>
+                <TabsTrigger value="year">Ano</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Dialog open={isAddTransactionOpen} onOpenChange={setAddTransactionOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Transação
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Nova Transação</DialogTitle>
+                </DialogHeader>
+                <AddTransactionForm 
+                  shopId={shopId} 
+                  onSuccess={() => setAddTransactionOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+        </div>
       </div>
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -145,7 +194,7 @@ export default function FinancePage() {
             {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
               <div className="text-2xl font-bold">R${totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
             )}
-            <p className="text-xs text-muted-foreground">Total de entradas registradas.</p>
+            <p className="text-xs text-muted-foreground">Total de entradas no período.</p>
           </CardContent>
         </Card>
         <Card>
@@ -157,7 +206,7 @@ export default function FinancePage() {
             {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
               <div className="text-2xl font-bold">R${totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
             )}
-            <p className="text-xs text-muted-foreground">Total de saídas registradas.</p>
+            <p className="text-xs text-muted-foreground">Total de saídas no período.</p>
           </CardContent>
         </Card>
         <Card>
@@ -167,7 +216,7 @@ export default function FinancePage() {
           </CardHeader>
           <CardContent>
              {isLoading ? <Skeleton className="h-8 w-3/4" /> : (
-              <div className={`text-2xl font-bold ${netProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>R${netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>R${netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
             )}
              <p className="text-xs text-muted-foreground">Receita total menos despesas.</p>
           </CardContent>
@@ -199,6 +248,7 @@ export default function FinancePage() {
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
                   />
                   <ChartTooltip
                     cursor={false}
@@ -211,6 +261,7 @@ export default function FinancePage() {
                     fillOpacity={0.4}
                     stroke="var(--color-income)"
                     stackId="a"
+                    name="Receita"
                   />
                   <Area
                     dataKey="expense"
@@ -219,6 +270,7 @@ export default function FinancePage() {
                     fillOpacity={0.4}
                     stroke="var(--color-expense)"
                     stackId="b"
+                    name="Despesa"
                   />
                 </AreaChart>
             </ChartContainer>
@@ -249,10 +301,10 @@ export default function FinancePage() {
                      <ChartContainer config={serviceChartConfig} className="w-full h-[250px]">
                         <BarChart accessibilityLayer data={revenueByService} layout="vertical" margin={{ left: 20 }}>
                             <CartesianGrid horizontal={false} />
-                            <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                            <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} width={80} />
                             <XAxis type="number" dataKey="revenue" hide />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent indicator="dot" />} />
-                            <Bar dataKey="revenue" radius={4} fill="var(--color-revenue)" />
+                            <Bar dataKey="revenue" radius={4} fill="var(--color-revenue)" name="Receita" />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -286,7 +338,7 @@ export default function FinancePage() {
       <Card>
         <CardHeader>
             <CardTitle className="font-headline">Histórico de Transações</CardTitle>
-            <CardDescription>Visualize todas as receitas e despesas registradas.</CardDescription>
+            <CardDescription>Visualize todas as receitas e despesas registradas no período selecionado.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all">
@@ -296,7 +348,7 @@ export default function FinancePage() {
               <TabsTrigger value="expenses">Despesas</TabsTrigger>
             </TabsList>
             <TabsContent value="all" className="mt-4">
-               <TransactionsTable transactions={transactions} isLoading={isLoading} />
+               <TransactionsTable transactions={filteredTransactions} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="income" className="mt-4">
               <TransactionsTable transactions={incomeRecords} isLoading={isLoading} />
@@ -360,10 +412,12 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
               ))}
               {!isLoading && transactions.length === 0 && (
                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma transação encontrada.</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma transação encontrada para este período.</TableCell>
                  </TableRow>
               )}
           </TableBody>
       </Table>
   )
 }
+
+    

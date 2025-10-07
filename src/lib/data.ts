@@ -1,5 +1,5 @@
 
-import { addDays, format, subDays, subHours, subMinutes } from "date-fns";
+import { addDays, format, subDays, subHours, subMinutes, startOfToday, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export type User = {
@@ -70,20 +70,20 @@ export type Appointment = {
   status: 'Confirmado' | 'Concluído' | 'Cancelado';
 };
 
-const staticDate = new Date(2024, 6, 20, 12, 0, 0); // Use a fixed date
-
+const today = startOfToday();
 export const appointments: Appointment[] = [
-  { id: 'apt-1', clientName: 'Miguel Silva', service: 'Corte + Barba', barber: 'Carlos Alberto', dateTime: subHours(staticDate, 2), status: 'Concluído' },
-  { id: 'apt-2', clientName: 'Arthur Costa', service: 'Degradê', barber: 'Roberto Almeida', dateTime: subHours(staticDate, 1), status: 'Concluído' },
-  { id: 'apt-3', clientName: 'Helena Santos', service: 'Corte', barber: 'Fernanda Lima', dateTime: staticDate, status: 'Confirmado' },
-  { id: 'apt-4', clientName: 'Bernardo Lima', service: 'Corte Americano', barber: 'Carlos Alberto', dateTime: addDays(staticDate, 1), status: 'Confirmado' },
-  { id: 'apt-5', clientName: 'Sophia Pereira', service: 'Penteado', barber: 'Fernanda Lima', dateTime: addDays(staticDate, 1), status: 'Confirmado' },
-  { id: 'apt-6', clientName: 'Davi Ferreira', service: 'Corte + Barba', barber: 'Roberto Almeida', dateTime: addDays(staticDate, 2), status: 'Confirmado' },
+  { id: 'apt-1', clientName: 'Miguel Silva', service: 'Corte + Barba', barber: 'Carlos Alberto', dateTime: subHours(today, 2), status: 'Concluído' },
+  { id: 'apt-2', clientName: 'Arthur Costa', service: 'Degradê', barber: 'Roberto Almeida', dateTime: subHours(today, 1), status: 'Concluído' },
+  { id: 'apt-3', clientName: 'Helena Santos', service: 'Corte', barber: 'Fernanda Lima', dateTime: addMinutes(today, 30), status: 'Confirmado' },
+  { id: 'apt-4', clientName: 'Bernardo Lima', service: 'Corte Americano', barber: 'Carlos Alberto', dateTime: addDays(today, 1), status: 'Confirmado' },
+  { id: 'apt-5', clientName: 'Sophia Pereira', service: 'Penteado', barber: 'Fernanda Lima', dateTime: addDays(today, 1), status: 'Confirmado' },
+  { id: 'apt-6', clientName: 'Davi Ferreira', service: 'Corte + Barba', barber: 'Roberto Almeida', dateTime: addDays(today, 2), status: 'Confirmado' },
 ];
+
 
 export type Transaction = {
     id: string;
-    date: string;
+    date: string; // "dd/MM/yyyy"
     description: string;
     type: 'Receita' | 'Despesa';
     amount: number;
@@ -95,14 +95,14 @@ const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
 const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
-export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => {
-    const isIncome = (i % 3) !== 0; 
+export const transactions: Transaction[] = Array.from({ length: 150 }, (_, i) => {
+    const isIncome = (pseudoRandom(i) > 0.3); // More income than expense
     const type = isIncome ? 'Receita' : 'Despesa';
     const amount = isIncome
         ? Math.round(pseudoRandom(i + 1) * 100 + 20)
         : Math.round(pseudoRandom(i + 1) * 200 + 10);
     const description = isIncome
-        ? `Serviço - Cliente ${Math.floor(pseudoRandom(i + 1) * 10) + 1}`
+        ? `Serviço - Cliente ${Math.floor(pseudoRandom(i + 5) * 10) + 1}`
         : `Compra de Suprimentos ${i+1}`;
     
     const category = isIncome
@@ -115,7 +115,7 @@ export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => 
 
     return {
         id: `txn-${i + 1}`,
-        date: format(subDays(new Date(2024, 6, 20), i), 'dd/MM/yyyy', { locale: ptBR }),
+        date: format(subDays(today, Math.floor(i / 2)), 'dd/MM/yyyy', { locale: ptBR }),
         description,
         type,
         amount,
@@ -126,12 +126,18 @@ export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => 
 
 
 export const monthlyRevenue = [
-  { month: "Jan", income: 4230, expense: 2100 },
-  { month: "Fev", income: 3890, expense: 2200 },
-  { month: "Mar", income: 4500, expense: 2300 },
-  { month: "Abr", income: 4880, expense: 2500 },
-  { month: "Mai", income: 5120, expense: 2400 },
-  { month: "Jun", income: 5500, expense: 2600 },
+  { month: "Janeiro", income: 4230, expense: 2100 },
+  { month: "Fevereiro", income: 3890, expense: 2200 },
+  { month: "Março", income: 4500, expense: 2300 },
+  { month: "Abril", income: 4880, expense: 2500 },
+  { month: "Maio", income: 5120, expense: 2400 },
+  { month: "Junho", income: 5500, expense: 2600 },
+  { month: "Julho", income: 5300, expense: 2550 },
+  { month: "Agosto", income: 5800, expense: 2700 },
+  { month: "Setembro", income: 6100, expense: 2800 },
+  { month: "Outubro", income: 6500, expense: 2900 },
+  { month: "Novembro", income: 7200, expense: 3100 },
+  { month: "Dezembro", income: 8000, expense: 3500 },
 ];
 
 export const revenueByService = [
