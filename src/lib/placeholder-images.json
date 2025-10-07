@@ -7,6 +7,12 @@
       "imageHint": "barber shop interior"
     },
     {
+      "id": "hero-new",
+      "description": "Close-up de um barbeiro talentoso finalizando um corte de cabelo moderno",
+      "imageUrl": "https://picsum.photos/seed/hero-new/1920/1280",
+      "imageHint": "barber finishing haircut"
+    },
+    {
       "id": "feature-1",
       "description": "Close-up de um barbeiro usando um navalha",
       "imageUrl": "https://picsum.photos/seed/feature-1/800/600",

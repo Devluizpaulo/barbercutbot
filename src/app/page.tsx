@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function LandingPage() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'barber-hero');
+  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-new');
   const feat1Image = PlaceHolderImages.find(p => p.id === 'feature-1');
   const feat2Image = PlaceHolderImages.find(p => p.id === 'feature-2');
   const feat3Image = PlaceHolderImages.find(p => p.id === 'feature-3');
@@ -35,32 +35,31 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1 pt-20">
-        <section className="relative w-full h-[80vh] flex items-center justify-center text-center">
+        <section className="relative w-full h-[90vh] flex items-center">
           {heroImage && (
             <Image
               src={heroImage.imageUrl}
               alt={heroImage.description}
               fill
-              className="object-cover"
+              className="object-cover object-right"
               data-ai-hint={heroImage.imageHint}
               priority
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
           <div className="relative z-10 container mx-auto px-4 md:px-6 text-white">
-            <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl font-headline">
-              Gestão Simples, Barbearia de Sucesso.
-            </h1>
-            <p className="mx-auto mt-6 max-w-[700px] text-lg md:text-xl text-gray-200">
-              A plataforma completa para agendamentos, clientes e finanças. Deixe a burocracia conosco e foque na arte de barbear.
-            </p>
-            <div className="mt-8 flex gap-4 justify-center">
-              <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
-                <Link href="/dashboard">Comece Agora</Link>
-              </Button>
-               <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
-                <Link href="#features">Saiba Mais</Link>
-              </Button>
+            <div className="max-w-xl">
+                <h1 className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl font-headline leading-tight">
+                Eleve sua Barbearia a Outro Nível.
+                </h1>
+                <p className="mt-6 text-lg md:text-xl text-gray-300">
+                Otimize agendamentos, gerencie clientes e controle suas finanças com a ferramenta definitiva para barbeiros modernos.
+                </p>
+                <div className="mt-8">
+                <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <Link href="/dashboard">Descubra como</Link>
+                </Button>
+                </div>
             </div>
           </div>
         </section>
@@ -219,5 +218,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
