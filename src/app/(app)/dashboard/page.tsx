@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { shops } from "@/lib/data"
-import { MoreVertical, DollarSign, Users, Calendar, BarChart, ExternalLink, Shield, Ticket, CreditCard } from "lucide-react"
+import { MoreVertical, DollarSign, Users, Calendar, BarChart, ExternalLink, Shield, Ticket, CreditCard, Settings, FileText } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
     const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:gap-8">
+    <div className="flex flex-1 flex-col gap-8">
        <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
           <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
@@ -102,6 +102,60 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold font-headline">Ferramentas do Administrador</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-lg">Gerenciar Usuários</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Adicione, remova ou edite os usuários da plataforma.</p>
+            </CardContent>
+            <CardContent>
+                <Button variant="outline" asChild>
+                    <Link href="#">Acessar Usuários</Link>
+                </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+               <div className="p-2 bg-primary/10 rounded-lg">
+                <FileText className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-lg">Gerenciar Documentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Edite os termos de uso, contratos e FAQs.</p>
+            </CardContent>
+             <CardContent>
+                <Button variant="outline" asChild>
+                    <Link href="#">Acessar Documentos</Link>
+                </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+               <div className="p-2 bg-primary/10 rounded-lg">
+                <Settings className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-lg">Configurações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Ajuste as configurações gerais da plataforma.</p>
+            </CardContent>
+             <CardContent>
+                <Button variant="outline" asChild>
+                    <Link href="#">Acessar Configurações</Link>
+                </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
        <Card>
         <CardHeader>
             <CardTitle className="font-headline">Barbearias Parceiras</CardTitle>
@@ -118,7 +172,6 @@ export default function AdminDashboard() {
                         <TableHead>Status Pag.</TableHead>
                         <TableHead>Vencimento</TableHead>
                         <TableHead>Tickets</TableHead>
-                        <TableHead className="text-right">Faturamento (Mês)</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -172,9 +225,6 @@ export default function AdminDashboard() {
                                     <Ticket className="h-4 w-4 text-muted-foreground"/>
                                     <span>{shop.openTickets}</span>
                                 </div>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                                R${(shop.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>
