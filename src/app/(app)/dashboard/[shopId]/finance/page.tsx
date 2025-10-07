@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { transactions as mockedTransactions } from '@/lib/data';
+import { transactions as mockedTransactions, revenueByService, revenueByPaymentMethod } from '@/lib/data';
 import type { Transaction as FinancialRecord } from '@/lib/data';
 
 import {
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal } from "lucide-react"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -46,33 +46,16 @@ import {
 import { AddTransactionForm } from './add-transaction-form';
 
 
-// Chart data is still mocked as aggregation would require backend functions
-const financialData = [
-  { month: "Jan", income: 4230, expense: 2200 },
-  { month: "Fev", income: 3890, expense: 2000 },
-  { month: "Mar", income: 4500, expense: 2500 },
-  { month: "Abr", income: 4880, expense: 2600 },
-  { month: "Mai", income: 5120, expense: 2800 },
-  { month: "Jun", income: 5500, expense: 3000 },
-  { month: "Jul", income: 5800, expense: 3100 },
-  { month: "Ago", income: 6200, expense: 3300 },
-  { month: "Set", income: 5900, expense: 3200 },
-  { month: "Out", income: 6500, expense: 3500 },
-  { month: "Nov", income: 6800, expense: 3700 },
-  { month: "Dez", income: 7200, expense: 3900 },
-];
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
 
-const chartConfig = {
-  income: {
-    label: "Receita",
-    color: "hsl(var(--chart-2))",
-  },
-  expense: {
-    label: "Despesa",
-    color: "hsl(var(--chart-5))",
-  },
+const annualChartConfig = {
+  income: { label: "Receita", color: "hsl(var(--chart-2))" },
+  expense: { label: "Despesa", color: "hsl(var(--chart-5))" },
 }
 
+const serviceChartConfig = {
+  revenue: { label: "Receita", color: "hsl(var(--chart-1))" },
+}
 
 export default function FinancePage() {
   const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
@@ -173,6 +156,54 @@ export default function FinancePage() {
         </Card>
       </div>
       
+      <div className="space-y-8">
+        <div>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight font-headline">
+                Relatórios
+            </h2>
+            <p className="text-muted-foreground">
+                Análises detalhadas do desempenho do seu negócio.
+            </p>
+        </div>
+        <div className="grid gap-8 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Receita por Serviço</CardTitle>
+                    <CardDescription>Performance de vendas dos principais serviços.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <ChartContainer config={serviceChartConfig} className="w-full h-[250px]">
+                        <BarChart accessibilityLayer data={revenueByService} layout="vertical" margin={{ left: 20 }}>
+                            <CartesianGrid horizontal={false} />
+                            <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                            <XAxis type="number" dataKey="revenue" hide />
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent indicator="dot" />} />
+                            <Bar dataKey="revenue" radius={4} fill="var(--color-revenue)" />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Forma de Pagamento</CardTitle>
+                    <CardDescription>Distribuição da receita por forma de pagamento.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <ChartContainer config={{}} className="w-full h-[250px]">
+                        <PieChart>
+                            <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                            <Pie data={revenueByPaymentMethod} dataKey="revenue" nameKey="method" cx="50%" cy="50%" innerRadius={60} outerRadius={80} label>
+                                {revenueByPaymentMethod.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
             <CardTitle className="font-headline">Histórico de Transações</CardTitle>
@@ -195,24 +226,6 @@ export default function FinancePage() {
                <TransactionsTable transactions={expenseRecords} isLoading={isLoading} />
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card className="lg:col-span-3">
-        <CardHeader>
-            <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
-        </CardHeader>
-        <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="w-full h-[300px]">
-              <AreaChart accessibilityLayer data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Number(value) / 1000}k`} />
-                  <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                  <Area type="monotone" dataKey="income" stackId="1" stroke="var(--color-income)" fill="var(--color-income)" name="Receita" />
-                  <Area type="monotone" dataKey="expense" stackId="1" stroke="var(--color-expense)" fill="var(--color-expense)" name="Despesa" />
-              </AreaChart>
-            </ChartContainer>
         </CardContent>
       </Card>
     </div>
@@ -275,3 +288,5 @@ function TransactionsTable({ transactions, isLoading }: { transactions: Financia
       </Table>
   )
 }
+
+    

@@ -134,6 +134,21 @@ export const monthlyRevenue = [
   { month: "Jun", revenue: 5500 },
 ];
 
+export const revenueByService = [
+    { name: 'Corte + Barba', revenue: 3200 },
+    { name: 'Degradê', revenue: 2400 },
+    { name: 'Corte de Cabelo', revenue: 1800 },
+    { name: 'Barba', revenue: 1200 },
+    { name: 'Pintura', revenue: 800 },
+];
+
+export const revenueByPaymentMethod = [
+    { method: 'Pix', revenue: 4500 },
+    { method: 'Crédito', revenue: 2800 },
+    { method: 'Débito', revenue: 1500 },
+    { method: 'Dinheiro', revenue: 1200 },
+];
+
 export type Barber = {
   id: string;
   firstName: string;
@@ -185,3 +200,5 @@ export const suppliers: Supplier[] = [
     { id: 'supplier-2', name: 'Lâminas & Cia', contactPerson: 'Ricardo Alves', phone: '(21) 97777-2222', category: 'Equipamentos', notes: 'Fornecedor principal de lâminas e navalhas. Pedir com 1 semana de antecedência.' },
     { id: 'supplier-3', name: 'Toalhas & Uniformes', contactPerson: 'Beatriz Martins', phone: '(31) 96666-3333', category: 'Uniformes', notes: 'Uniformes personalizados. Boa qualidade, mas prazo de entrega longo.' },
 ];
+
+    
