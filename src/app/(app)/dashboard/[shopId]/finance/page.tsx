@@ -22,11 +22,26 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
-import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle } from "lucide-react"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts"
+import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle, PlusCircle, MoreHorizontal } from "lucide-react"
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { monthlyRevenue } from "@/lib/data"
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 
 const chartConfig = {
@@ -78,152 +93,134 @@ export default function FinancePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Finanças
-        </h1>
-        <p className="text-muted-foreground">
-          Acompanhe a receita e as despesas da sua barbearia.
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+            Finanças
+          </h1>
+          <p className="text-muted-foreground">
+            Acompanhe a receita e as despesas da sua barbearia.
+          </p>
+        </div>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Adicionar Transação
+        </Button>
       </div>
 
-       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-green-500" />
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-slate-900 text-white">
+          <CardHeader>
+            <CardTitle>Total</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-                <Skeleton className="h-8 w-32" />
-            ) : (
-                <div className="text-2xl font-bold">R${totalIncome.toLocaleString('pt-BR')}</div>
-            )}
-            <p className="text-xs text-muted-foreground">+15% do último mês</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Despesas Totais</CardTitle>
-            <ArrowDownLeft className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-             {isLoading ? (
-                <Skeleton className="h-8 w-32" />
-            ) : (
-                <div className="text-2xl font-bold">R${totalExpense.toLocaleString('pt-BR')}</div>
-            )}
-            <p className="text-xs text-muted-foreground">+5% do último mês</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-             {isLoading ? (
-                <Skeleton className="h-8 w-32" />
-            ) : (
-                <div className="text-2xl font-bold">R${(totalIncome - totalExpense).toLocaleString('pt-BR')}</div>
-            )}
+            <div className="text-3xl font-bold">R${(totalIncome - totalExpense).toLocaleString('pt-BR')}</div>
             <p className="text-xs text-muted-foreground">+22% do último mês</p>
+            <AreaChart data={financialData.slice(0,6)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
+                <defs>
+                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="income" stroke="hsl(var(--primary))" fill="url(#colorIncome)" strokeWidth={2} />
+            </AreaChart>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Rascunhos</CardTitle>
+          </CardHeader>
+          <CardContent>
+             <div className="text-3xl font-bold">R$137.6k</div>
+            <p className="text-xs text-muted-foreground">+5% do último mês</p>
+             <AreaChart data={financialData.slice(2,8)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
+                <defs>
+                    <linearGradient id="colorDraft" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="income" stroke="hsl(var(--chart-4))" fill="url(#colorDraft)" strokeWidth={2} />
+            </AreaChart>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Pagos</CardTitle>
+          </CardHeader>
+          <CardContent>
+             <div className="text-3xl font-bold">R${totalIncome.toLocaleString('pt-BR')}</div>
+            <p className="text-xs text-muted-foreground">+15% do último mês</p>
+            <AreaChart data={financialData.slice(4,10)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
+                <defs>
+                    <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--chart-5))" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="hsl(var(--chart-5))" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="income" stroke="hsl(var(--chart-5))" fill="url(#colorPaid)" strokeWidth={2} />
+            </AreaChart>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Abertos</CardTitle>
+          </CardHeader>
+          <CardContent>
+             <div className="text-3xl font-bold">R${totalExpense.toLocaleString('pt-BR')}</div>
+             <p className="text-xs text-muted-foreground">+10% do último mês</p>
+             <AreaChart data={financialData.slice(1,7)} margin={{ top: 20, right: 0, left: 0, bottom: 0 }} width={200} height={80}>
+                <defs>
+                    <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="income" stroke="hsl(var(--primary))" fill="url(#colorOpen)" strokeWidth={2} />
+            </AreaChart>
           </CardContent>
         </Card>
       </div>
       
       <Card>
         <CardHeader>
-            <CardTitle className="font-headline">Receita vs. Despesas</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-headline">Pagamentos</CardTitle>
+             <Select defaultValue="monthly">
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select a fruit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Mensal</SelectItem>
+                <SelectItem value="yearly">Anual</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="pl-2">
-             <ChartContainer config={chartConfig} className="h-[350px] w-full">
-              <LineChart
-                accessibilityLayer
-                data={financialData}
-                margin={{
-                  left: 12,
-                  right: 12,
-                }}
-              >
+            <ChartContainer config={chartConfig} className="h-[350px] w-full">
+              <BarChart accessibilityLayer data={financialData}>
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="month"
                   tickLine={false}
+                  tickMargin={10}
                   axisLine={false}
-                  tickMargin={8}
                 />
-                <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => `R$${value / 1000}k`}
+                 <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={10}
+                  tickFormatter={(value) => `R$${value / 1000}k`}
                 />
-                <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                <Line
-                  dataKey="income"
-                  type="monotone"
-                  stroke="var(--color-income)"
-                  strokeWidth={2}
-                  dot={false}
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
                 />
-                <Line
-                  dataKey="expense"
-                  type="monotone"
-                  stroke="var(--color-expense)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
+                <Bar dataKey="income" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ChartContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">Transações Recentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                     {isLoading && (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                <LoaderCircle className="mx-auto h-6 w-6 animate-spin text-primary" />
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {financialRecords.slice(0, 10).map((transaction) => (
-                        <TableRow key={transaction.id}>
-                            <TableCell className="text-muted-foreground">{format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                            <TableCell className="font-medium">{transaction.description}</TableCell>
-                            <TableCell>
-                                <Badge variant={transaction.type === 'income' ? 'outline' : 'destructive'}>
-                                  {transaction.type === 'income' ? 'Receita' : 'Despesa'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className={`text-right font-mono ${transaction.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                                {transaction.type === 'income' ? '+' : '-'}R${transaction.amount.toFixed(2)}
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                    {!isLoading && financialRecords.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                Nenhuma transação encontrada.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
         </CardContent>
       </Card>
     </div>

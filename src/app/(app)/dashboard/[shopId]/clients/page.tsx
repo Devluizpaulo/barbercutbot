@@ -11,6 +11,7 @@ import {
   ChevronRight,
   LoaderCircle,
   AlertCircle,
+  PlusCircle,
 } from 'lucide-react';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -64,16 +65,15 @@ export default function ClientsPage() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+       <div className="flex flex-col gap-8">
+         <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle className="font-headline text-2xl">
-                Gerenciamento de Clientes
-              </CardTitle>
-              <CardDescription>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+                Clientes
+              </h1>
+              <p className="text-muted-foreground">
                 Visualize, gerencie e adicione novos clientes.
-              </CardDescription>
+              </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1">
@@ -83,7 +83,7 @@ export default function ClientsPage() {
               <Dialog open={isAddClientOpen} onOpenChange={setAddClientOpen}>
                 <DialogTrigger asChild>
                   <Button className="w-full sm:w-auto">
-                    <UserPlus className="mr-2 h-4 w-4" />
+                    <PlusCircle className="mr-2 h-4 w-4" />
                     Adicionar Cliente
                   </Button>
                 </DialogTrigger>
@@ -99,81 +99,83 @@ export default function ClientsPage() {
               </Dialog>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden sm:table-cell">Telefone</TableHead>
-                <TableHead>
-                  <span className="sr-only">Ver</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">
-                    <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
-                  </TableCell>
-                </TableRow>
-              )}
-              {error && (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center text-destructive"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <AlertCircle className="h-5 w-5" />
-                      <span>
-                        Ocorreu um erro ao carregar os clientes. Tente novamente.
-                      </span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-              {!isLoading && !error && clients?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    Nenhum cliente encontrado. Comece adicionando um novo cliente.
-                  </TableCell>
-                </TableRow>
-              )}
-              {clients?.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/dashboard/${shopId}/clients/${client.id}`}
-                      className="hover:underline"
-                    >
-                      {client.firstName} {client.lastName}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {client.email || '-'}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-muted-foreground">
-                    {client.phone || '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="icon" asChild>
-                      <Link
-                        href={`/dashboard/${shopId}/clients/${client.id}`}
+        
+          <Card>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead className="hidden sm:table-cell">Telefone</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Ver</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center h-24">
+                        <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-primary" />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {error && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-destructive"
                       >
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="sr-only">Ver Cliente</span>
-                      </Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        <div className="flex items-center justify-center gap-2">
+                          <AlertCircle className="h-5 w-5" />
+                          <span>
+                            Ocorreu um erro ao carregar os clientes. Tente novamente.
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoading && !error && clients?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        Nenhum cliente encontrado. Comece adicionando um novo cliente.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {clients?.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/dashboard/${shopId}/clients/${client.id}`}
+                          className="hover:underline"
+                        >
+                          {client.firstName} {client.lastName}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {client.email || '-'}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {client.phone || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link
+                            href={`/dashboard/${shopId}/clients/${client.id}`}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                            <span className="sr-only">Ver Cliente</span>
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+      </div>
     </>
   );
 }

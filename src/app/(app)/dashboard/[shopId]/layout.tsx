@@ -17,9 +17,11 @@ import {
   LayoutDashboard,
   Calendar,
   Users,
-  DollarSign,
+  CreditCard,
   Settings,
   Shield,
+  LogOut,
+  User,
 } from "lucide-react";
 import { shops } from "@/lib/data";
 
@@ -37,17 +39,12 @@ export default function ShopLayout({
     { href: `/dashboard/${shopId}`, label: "Visão Geral", icon: LayoutDashboard },
     { href: `/dashboard/${shopId}/appointments`, label: "Agendamentos", icon: Calendar },
     { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
-    { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: DollarSign },
+    { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: CreditCard },
   ];
 
   return (
       <div className="flex flex-1">
         <Sidebar>
-          <SidebarHeader>
-            <h2 className="text-lg font-semibold tracking-tight font-headline truncate px-2">
-                {shop?.name || "Barbearia"}
-            </h2>
-          </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -56,6 +53,7 @@ export default function ShopLayout({
                     <SidebarMenuButton
                       isActive={pathname === item.href}
                       tooltip={item.label}
+                      className="justify-start"
                     >
                       <item.icon />
                       <span>{item.label}</span>
@@ -70,7 +68,7 @@ export default function ShopLayout({
             <SidebarMenu>
                 <SidebarMenuItem>
                     <Link href="/dashboard">
-                        <SidebarMenuButton tooltip="Admin">
+                        <SidebarMenuButton tooltip="Admin" className="justify-start">
                             <Shield />
                             <span>Admin</span>
                         </SidebarMenuButton>
@@ -78,16 +76,32 @@ export default function ShopLayout({
                 </SidebarMenuItem>
                <SidebarMenuItem>
                 <Link href="#">
-                  <SidebarMenuButton tooltip="Configurações">
+                  <SidebarMenuButton tooltip="Configurações" className="justify-start">
                     <Settings />
                     <span>Configurações</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <Link href="#">
+                  <SidebarMenuButton tooltip="Perfil" className="justify-start">
+                    <User />
+                    <span>Perfil</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <Link href="/">
+                  <SidebarMenuButton tooltip="Sair" className="justify-start">
+                    <LogOut />
+                    <span>Sair</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
           {children}
         </div>
       </div>

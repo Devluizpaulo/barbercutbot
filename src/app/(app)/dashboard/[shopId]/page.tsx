@@ -41,7 +41,7 @@ export default function ShopDashboardPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          {shop?.name || "Painel"}
+          Visão Geral
         </h1>
         <p className="text-muted-foreground">
           Aqui está uma visão geral do desempenho da sua barbearia.
