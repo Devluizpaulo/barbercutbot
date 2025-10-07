@@ -59,14 +59,14 @@ const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
 const KeypadButton = ({ children, onClick, className }: { children: React.ReactNode, onClick: () => void, className?: string }) => (
-    <Button
-        type="button"
-        variant="outline"
-        className={cn("h-16 text-2xl font-bold text-foreground", className)}
-        onClick={onClick}
-    >
-        {children}
-    </Button>
+  <Button
+    type="button"
+    variant="outline"
+    className={cn("h-16 text-2xl font-bold text-foreground", className)}
+    onClick={onClick}
+  >
+    {children}
+  </Button>
 );
 
 export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProps) {
@@ -104,15 +104,13 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         currentAmountString += key;
     }
     
-    // Ensure we are working with pennies
     const numericValue = parseInt(currentAmountString, 10) || 0;
     const newAmount = numericValue / 100;
 
     form.setValue('amount', newAmount, { shouldValidate: true });
-};
+  };
 
   const onSubmit = async (values: AddTransactionFormValues) => {
-     // NOTE: Database functionality is disabled for simulation.
      console.log("Simulating add transaction:", values);
      toast({
        title: 'Modo de Simulação',
@@ -137,7 +135,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                     <RadioGroup
                       onValueChange={(value) => {
                         field.onChange(value);
-                        form.setValue('category', ''); // Reset category on type change
+                        form.setValue('category', '');
                       }}
                       defaultValue={field.value}
                       className="grid grid-cols-2 gap-4"
