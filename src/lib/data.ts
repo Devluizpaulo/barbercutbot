@@ -155,15 +155,16 @@ export type Service = {
     name: string;
     description: string;
     price: number;
+    cost: number;
     duration: number; // in minutes
 };
 
 export const services: Service[] = [
-    { id: 'service-1', name: 'Corte de Cabelo', description: 'Corte clássico ou moderno, na tesoura ou máquina.', price: 50, duration: 30 },
-    { id: 'service-2', name: 'Barba', description: 'Modelagem e aparo da barba com toalha quente.', price: 35, duration: 25 },
-    { id: 'service-3', name: 'Corte + Barba', description: 'Pacote completo de corte de cabelo e barba.', price: 80, duration: 55 },
-    { id: 'service-4', name: 'Degradê', description: 'Corte com efeito degradê (fade) preciso.', price: 60, duration: 40 },
-    { id: 'service-5', name: 'Pintura Capilar', description: 'Coloração completa do cabelo.', price: 120, duration: 60 },
+    { id: 'service-1', name: 'Corte de Cabelo', description: 'Corte clássico ou moderno, na tesoura ou máquina.', price: 50, cost: 10, duration: 30 },
+    { id: 'service-2', name: 'Barba', description: 'Modelagem e aparo da barba com toalha quente.', price: 35, cost: 5, duration: 25 },
+    { id: 'service-3', name: 'Corte + Barba', description: 'Pacote completo de corte de cabelo e barba.', price: 80, cost: 15, duration: 55 },
+    { id: 'service-4', name: 'Degradê', description: 'Corte com efeito degradê (fade) preciso.', price: 60, cost: 12, duration: 40 },
+    { id: 'service-5', name: 'Pintura Capilar', description: 'Coloração completa do cabelo.', price: 120, cost: 40, duration: 60 },
 ];
 
 export type Supplier = {

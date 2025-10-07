@@ -102,6 +102,7 @@ export default function ServicesPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead className="hidden md:table-cell">Preço</TableHead>
+                <TableHead className="hidden lg:table-cell">Custo</TableHead>
                 <TableHead className="hidden sm:table-cell">Duração</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
@@ -119,8 +120,12 @@ export default function ServicesPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span>R${service.price.toFixed(2)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>R${service.cost.toFixed(2)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -154,7 +159,7 @@ export default function ServicesPage() {
               {services.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="h-24 text-center text-muted-foreground"
                   >
                     Nenhum serviço encontrado.

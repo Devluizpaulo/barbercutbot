@@ -209,6 +209,10 @@
           "type": "number",
           "description": "Price of the service."
         },
+        "cost": {
+          "type": "number",
+          "description": "Cost of the service for the business."
+        },
         "duration": {
           "type": "number",
           "description": "Duration of the service in minutes."
@@ -219,6 +223,7 @@
         "barberShopId",
         "name",
         "price",
+        "cost",
         "duration"
       ]
     },

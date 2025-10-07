@@ -22,6 +22,7 @@ const formSchema = z.object({
   name: z.string().min(1, 'O nome do serviço é obrigatório.'),
   description: z.string().optional(),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
+  cost: z.coerce.number().min(0, 'O custo não pode ser negativo.'),
   duration: z.coerce.number().min(0, 'A duração deve ser um número positivo em minutos.'),
 });
 
@@ -42,6 +43,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       name: '',
       description: '',
       price: 0,
+      cost: 0,
       duration: 30,
     },
   });
@@ -101,7 +103,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
           )}
         />
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <FormField
             control={form.control}
             name="price"
@@ -118,11 +120,27 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                 </FormItem>
             )}
             />
+             <FormField
+              control={form.control}
+              name="cost"
+              render={({ field }) => (
+                  <FormItem>
+                  <FormLabel>Custo (R$)</FormLabel>
+                  <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                      <Input type="number" placeholder="15.00" {...field} className="pl-10" />
+                      </FormControl>
+                  </div>
+                  <FormMessage />
+                  </FormItem>
+              )}
+              />
             <FormField
             control={form.control}
             name="duration"
             render={({ field }) => (
-                <FormItem>
+                <FormItem className="lg:col-span-1">
                 <FormLabel>Duração (minutos)</FormLabel>
                 <div className="relative">
                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
