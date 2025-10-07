@@ -25,6 +25,7 @@ import {
   Scissors,
   ClipboardList,
   Truck,
+  FileText,
 } from "lucide-react";
 import { shops } from "@/lib/data";
 import { Logo } from "@/components/logo";
@@ -81,6 +82,14 @@ export default function ShopLayout({
                         <SidebarMenuButton tooltip="Admin" className="justify-start">
                             <Shield />
                             <span>Admin</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <Link href="/dashboard/documents">
+                        <SidebarMenuButton tooltip="Documentos" className="justify-start" isActive={pathname.startsWith(`/dashboard/documents`)}>
+                            <FileText />
+                            <span>Documentos</span>
                         </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>
