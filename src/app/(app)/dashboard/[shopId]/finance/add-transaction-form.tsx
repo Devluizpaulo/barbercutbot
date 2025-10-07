@@ -63,7 +63,7 @@ const KeypadButton = ({ children, onClick, className }: { children: React.ReactN
     <Button
       type="button"
       variant="outline"
-      className={cn("h-20 text-2xl font-bold", className)}
+      className={cn("h-16 text-3xl font-bold", className)}
       onClick={onClick}
     >
       {children}
@@ -106,7 +106,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
         }
     }
     
-    currentAmountString = currentAmountString.padStart(3, '0').slice(-6);
+    currentAmountString = currentAmountString.padStart(3, '0');
 
     const numericValue = parseInt(currentAmountString, 10) || 0;
     const newAmount = numericValue / 100;
@@ -335,7 +335,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             )}
         </div>
 
-        <div className="flex flex-col justify-between">
+        <div className="flex flex-col justify-between gap-4">
             <div className="grid grid-cols-3 gap-2">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                     <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
