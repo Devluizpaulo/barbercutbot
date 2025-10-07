@@ -107,13 +107,13 @@ export default function ClientDetailsPage() {
             {client.email ? (
                 <div className="flex items-center gap-3">
                     <Mail className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-muted-foreground truncate">{client.email}</span>
+                    <a href={`mailto:${client.email}`} className="text-muted-foreground truncate hover:underline">{client.email}</a>
                 </div>
             ) : null}
             {client.phone ? (
                 <div className="flex items-center gap-3">
                     <Phone className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-muted-foreground">{client.phone}</span>
+                    <a href={`tel:${client.phone}`} className="text-muted-foreground hover:underline">{client.phone}</a>
                 </div>
             ) : null}
              {!client.email && !client.phone && (
