@@ -66,7 +66,7 @@ export default function AdminTicketsPage() {
 }
 
 
-function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets, findShopName: (id: string) => string }) {
+function TicketsTable({ tickets, findShopName }: { tickets: (typeof mockedTickets)[0][], findShopName: (id: string) => string }) {
     
     const getStatusVariant = (status: 'Aberto' | 'Em Andamento' | 'Fechado') => {
         switch (status) {
@@ -76,14 +76,6 @@ function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets
         }
     };
     
-    const getPriorityVariant = (priority: 'Baixa' | 'Média' | 'Alta') => {
-        switch (priority) {
-            case 'Baixa': return 'secondary';
-            case 'Média': return 'outline';
-            case 'Alta': return 'destructive';
-        }
-    };
-
     return (
          <Table>
             <TableHeader>
@@ -91,7 +83,6 @@ function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets
                     <TableHead>Barbearia</TableHead>
                     <TableHead>Assunto</TableHead>
                     <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Prioridade</TableHead>
                     <TableHead className="hidden md:table-cell">Última Atualização</TableHead>
                     <TableHead><span className="sr-only">Ações</span></TableHead>
                 </TableRow>
@@ -110,9 +101,6 @@ function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets
                              <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                            <Badge variant={getPriorityVariant(ticket.priority)}>{ticket.priority}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
                             {formatDistanceToNow(ticket.lastUpdate, { addSuffix: true, locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right">
@@ -121,7 +109,7 @@ function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets
                     </TableRow>
                 )) : (
                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">Nenhum ticket encontrado nesta categoria.</TableCell>
+                        <TableCell colSpan={5} className="h-24 text-center">Nenhum ticket encontrado nesta categoria.</TableCell>
                     </TableRow>
                 )}
             </TableBody>

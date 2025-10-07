@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LoaderCircle, Type, MessageSquare, AlertTriangle } from 'lucide-react';
+import { LoaderCircle, Type, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,15 +17,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   subject: z.string().min(5, 'O assunto deve ter pelo menos 5 caracteres.'),
   description: z.string().min(20, 'A descrição deve ter pelo menos 20 caracteres.'),
-  priority: z.enum(['Baixa', 'Média', 'Alta'], {
-    required_error: 'Selecione uma prioridade.',
-  }),
 });
 
 type AddTicketFormValues = z.infer<typeof formSchema>;
@@ -43,7 +38,6 @@ export function AddTicketForm({ shopId, onSuccess }: AddTicketFormProps) {
     defaultValues: {
       subject: '',
       description: '',
-      priority: 'Baixa',
     },
   });
 
@@ -95,43 +89,6 @@ export function AddTicketForm({ shopId, onSuccess }: AddTicketFormProps) {
                   />
                 </FormControl>
               </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Prioridade</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="grid grid-cols-3 gap-4"
-                >
-                  {['Baixa', 'Média', 'Alta'].map((priority) => (
-                    <FormItem key={priority}>
-                      <FormControl>
-                        <RadioGroupItem value={priority} id={priority} className="sr-only" />
-                      </FormControl>
-                      <FormLabel
-                        htmlFor={priority}
-                        className={cn(
-                            "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                            field.value === priority 
-                            ? "border-primary bg-primary/10 text-primary-foreground dark:text-primary-foreground"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                          )}
-                      >
-                        {priority}
-                      </FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
