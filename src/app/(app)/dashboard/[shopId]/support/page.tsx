@@ -1,4 +1,7 @@
 
+'use client';
+
+import { useState } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -15,8 +18,22 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LifeBuoy, Ticket, Phone, FileText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { AddTicketForm } from './add-ticket-form';
+import { useParams } from 'next/navigation';
 
 export default function SupportPage() {
+  const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
+  const params = useParams();
+  const shopId = params.shopId as string;
+
   const faqItems = [
     {
       question: 'Como faço para adicionar um novo barbeiro?',
@@ -49,23 +66,39 @@ export default function SupportPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ticket />
-              Sistema de Tickets
-            </CardTitle>
-            <CardDescription>
-              Tem alguma dúvida ou problema? Abra um chamado e nossa equipe responderá em breve.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <p className="text-sm text-muted-foreground">Você não possui nenhum chamado aberto no momento.</p>
-          </CardContent>
-          <CardFooter>
-            <Button>Abrir Novo Ticket</Button>
-          </CardFooter>
-        </Card>
+        <Dialog open={isTicketDialogOpen} onOpenChange={setTicketDialogOpen}>
+            <Card className="flex flex-col">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                <Ticket />
+                Sistema de Tickets
+                </CardTitle>
+                <CardDescription>
+                Tem alguma dúvida ou problema? Abra um chamado e nossa equipe responderá em breve.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground">Você não possui nenhum chamado aberto no momento.</p>
+            </CardContent>
+            <CardFooter>
+                <DialogTrigger asChild>
+                    <Button>Abrir Novo Ticket</Button>
+                </DialogTrigger>
+            </CardFooter>
+            </Card>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                <DialogTitle>Abrir Novo Ticket de Suporte</DialogTitle>
+                <DialogDescription>
+                    Descreva seu problema ou dúvida abaixo. Nossa equipe responderá o mais rápido possível.
+                </DialogDescription>
+                </DialogHeader>
+                <AddTicketForm
+                    shopId={shopId}
+                    onSuccess={() => setTicketDialogOpen(false)}
+                />
+            </DialogContent>
+        </Dialog>
         
         <Card className="flex flex-col">
           <CardHeader>
