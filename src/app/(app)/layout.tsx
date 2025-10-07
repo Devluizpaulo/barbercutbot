@@ -1,7 +1,9 @@
+
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UserNav } from "@/components/user-nav";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function AppLayout({
   children,
@@ -20,15 +22,20 @@ export default function AppLayout({
             <span className="sr-only">Barbearia SaaS</span>
           </Link>
         </nav>
+        <div className="flex items-center gap-4 md:hidden">
+            <SidebarTrigger />
+        </div>
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
           <div className="ml-auto flex-1 sm:flex-initial">
           </div>
           <UserNav />
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-background">
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 bg-muted/40">
         {children}
       </main>
     </div>
   )
 }
+
+    

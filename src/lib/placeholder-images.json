@@ -4,7 +4,43 @@
       "id": "barber-hero",
       "description": "Interior de uma barbearia estilosa com cadeiras e espelhos",
       "imageUrl": "https://picsum.photos/seed/barber-hero/1920/1080",
-      "imageHint": "barber shop"
+      "imageHint": "barber shop interior"
+    },
+    {
+      "id": "feature-1",
+      "description": "Close-up de um barbeiro usando um navalha",
+      "imageUrl": "https://picsum.photos/seed/feature-1/800/600",
+      "imageHint": "barber razor"
+    },
+    {
+      "id": "feature-2",
+      "description": "Ferramentas de barbearia organizadas em uma bancada",
+      "imageUrl": "https://picsum.photos/seed/feature-2/800/600",
+      "imageHint": "barber tools"
+    },
+    {
+      "id": "feature-3",
+      "description": "Cliente recebendo um corte de cabelo",
+      "imageUrl": "https://picsum.photos/seed/feature-3/800/600",
+      "imageHint": "haircut client"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Foto de perfil de um homem sorrindo",
+      "imageUrl": "https://images.unsplash.com/photo-1715029005043-e88d219a3c48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bWFuJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzU5NzcyMTg1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Foto de perfil de um homem com barba",
+      "imageUrl": "https://picsum.photos/seed/avatar-2/100/100",
+      "imageHint": "man beard"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Foto de perfil de um homem em um ambiente urbano",
+      "imageUrl": "https://picsum.photos/seed/avatar-3/100/100",
+      "imageHint": "man urban"
     }
   ]
 }
