@@ -53,6 +53,7 @@ export default function AdminDashboard() {
     const totalRevenue = shops.reduce((acc, shop) => acc + (shop.totalRevenue || 0), 0)
     const totalClients = shops.reduce((acc, shop) => acc + shop.totalClients, 0)
     const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
+    const totalOpenTickets = shops.reduce((acc, shop) => acc + shop.openTickets, 0);
 
   return (
     <div className="flex flex-1 flex-col gap-8">
@@ -111,14 +112,14 @@ export default function AdminDashboard() {
          <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Agendamentos (Hoje)
+              Tickets de Suporte
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAppointments}</div>
+            <div className="text-2xl font-bold">{totalOpenTickets}</div>
              <p className="text-xs text-muted-foreground">
-              em todas as lojas
+              Abertos no momento
             </p>
           </CardContent>
         </Card>
@@ -271,3 +272,5 @@ export default function AdminDashboard() {
     </div>
   )
 }
+
+    
