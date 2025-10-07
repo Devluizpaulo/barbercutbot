@@ -33,11 +33,10 @@ export default function GlobalSettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="billing">Pagamentos</TabsTrigger>
-          <TabsTrigger value="legal">Legal</TabsTrigger>
           <TabsTrigger value="advanced">Avançado</TabsTrigger>
         </TabsList>
 
@@ -115,33 +114,6 @@ export default function GlobalSettingsPage() {
                         <Button>
                             <Save className="mr-2 h-4 w-4" />
                             Salvar Configurações
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
-
-         <TabsContent value="legal">
-            <Card>
-                <CardHeader>
-                    <CardTitle  className="flex items-center gap-2"><FileText /> Textos Legais</CardTitle>
-                    <CardDescription>
-                        Edite os Termos de Serviço e a Política de Privacidade.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                     <div className="space-y-2">
-                        <Label htmlFor="terms">Termos de Serviço</Label>
-                        <textarea id="terms" className="w-full h-40 border rounded-md p-2 text-sm" defaultValue="Lorem ipsum..."></textarea>
-                     </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="privacy">Política de Privacidade</Label>
-                        <textarea id="privacy" className="w-full h-40 border rounded-md p-2 text-sm" defaultValue="Lorem ipsum..."></textarea>
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button>
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar Documentos
                         </Button>
                     </div>
                 </CardContent>
