@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -288,7 +289,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a forma de pagamento" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {paymentMethods.map(method => (
@@ -348,3 +349,5 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
     </Form>
   );
 }
+
+    
