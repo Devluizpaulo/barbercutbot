@@ -341,7 +341,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             </div>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-4 gap-4">
+        <div className="grid grid-cols-3 grid-rows-4 gap-2">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                 <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
             ))}
