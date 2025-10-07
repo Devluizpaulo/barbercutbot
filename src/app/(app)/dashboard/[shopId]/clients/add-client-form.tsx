@@ -25,7 +25,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, { message: 'O sobrenome é obrigatório.' }),
   email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
-  whatsapp: z.string().optional(),
+  whatsapp: z.string().min(1, { message: 'O WhatsApp é obrigatório.' }),
   notes: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
