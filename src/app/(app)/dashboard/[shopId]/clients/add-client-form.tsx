@@ -262,20 +262,20 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                     )}
                 />
             </div>
-             <FormField
-                control={form.control}
-                name="neighborhood"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Bairro</FormLabel>
-                    <FormControl>
-                    <Input placeholder="Centro" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <FormField
+                    control={form.control}
+                    name="neighborhood"
+                    render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                        <Input placeholder="Centro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 <FormField
                     control={form.control}
                     name="city"
