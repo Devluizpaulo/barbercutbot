@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { transactions as mockedTransactions, revenueByService, revenueByPaymentMethod } from '@/lib/data';
+import { transactions as mockedTransactions, revenueByService, revenueByPaymentMethod, monthlyRevenue } from '@/lib/data';
 import type { Transaction as FinancialRecord } from '@/lib/data';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal, Download } from "lucide-react"
 import { format } from 'date-fns';
@@ -69,15 +69,16 @@ export default function FinancePage() {
 
   const serviceChartRef = useRef<HTMLDivElement>(null);
   const paymentChartRef = useRef<HTMLDivElement>(null);
+  const annualChartRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPdf = (chartRef: React.RefObject<HTMLDivElement>, fileName: string) => {
     if (!chartRef.current) return;
-    html2canvas(chartRef.current).then((canvas) => {
+    html2canvas(chartRef.current, { backgroundColor: null }).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'px', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 15, 15, pdfWidth - 30, pdfHeight - 30);
       pdf.save(`${fileName}.pdf`);
     });
   };
@@ -172,14 +173,65 @@ export default function FinancePage() {
           </CardContent>
         </Card>
       </div>
+
+       <Card ref={annualChartRef}>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Desempenho Anual</CardTitle>
+            <CardDescription>Comparativo de receitas e despesas ao longo do ano.</CardDescription>
+          </div>
+          <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(annualChartRef, 'relatorio-desempenho-anual')}>
+            <Download className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={annualChartConfig} className="w-full h-[250px]">
+                <AreaChart
+                  data={monthlyRevenue}
+                  margin={{
+                    left: 12,
+                    right: 12,
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="income"
+                    type="natural"
+                    fill="var(--color-income)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-income)"
+                    stackId="a"
+                  />
+                  <Area
+                    dataKey="expense"
+                    type="natural"
+                    fill="var(--color-expense)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-expense)"
+                    stackId="b"
+                  />
+                </AreaChart>
+            </ChartContainer>
+        </CardContent>
+      </Card>
       
       <div className="space-y-8">
         <div>
             <h2 className="text-xl md:text-2xl font-bold tracking-tight font-headline">
-                Relatórios
+                Relatórios Detalhados
             </h2>
             <p className="text-muted-foreground">
-                Análises detalhadas do desempenho do seu negócio.
+                Análises específicas para o seu negócio.
             </p>
         </div>
         <div className="grid gap-8 md:grid-cols-2">

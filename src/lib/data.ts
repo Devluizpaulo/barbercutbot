@@ -126,12 +126,12 @@ export const transactions: Transaction[] = Array.from({ length: 30 }, (_, i) => 
 
 
 export const monthlyRevenue = [
-  { month: "Jan", revenue: 4230 },
-  { month: "Fev", revenue: 3890 },
-  { month: "Mar", revenue: 4500 },
-  { month: "Abr", revenue: 4880 },
-  { month: "Mai", revenue: 5120 },
-  { month: "Jun", revenue: 5500 },
+  { month: "Jan", income: 4230, expense: 2100 },
+  { month: "Fev", income: 3890, expense: 2200 },
+  { month: "Mar", income: 4500, expense: 2300 },
+  { month: "Abr", income: 4880, expense: 2500 },
+  { month: "Mai", income: 5120, expense: 2400 },
+  { month: "Jun", income: 5500, expense: 2600 },
 ];
 
 export const revenueByService = [
