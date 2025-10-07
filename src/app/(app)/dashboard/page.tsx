@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 export default function Dashboard() {
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Select a Barber Shop</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-headline mb-6">Selecione uma Barbearia</h1>
       <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {shops.map((shop) => (
           <Card key={shop.id} className="hover:shadow-lg transition-shadow">
@@ -38,19 +38,19 @@ export default function Dashboard() {
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-semibold">{shop.todayAppointments}</p>
-                    <p className="text-muted-foreground">Today's Bookings</p>
+                    <p className="text-muted-foreground">Reservas de Hoje</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-semibold">{shop.totalClients}</p>
-                    <p className="text-muted-foreground">Total Clients</p>
+                    <p className="text-muted-foreground">Total de Clientes</p>
                   </div>
                 </div>
               </div>
                <Button className="w-full mt-6" asChild>
-                    <Link href={`/dashboard/${shop.id}`}>Manage Shop</Link>
+                    <Link href={`/dashboard/${shop.id}`}>Gerenciar Loja</Link>
                 </Button>
             </CardContent>
           </Card>

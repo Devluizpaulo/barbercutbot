@@ -2,7 +2,7 @@
   "placeholderImages": [
     {
       "id": "barber-hero",
-      "description": "A stylish barber shop interior with chairs and mirrors",
+      "description": "Interior de uma barbearia estilosa com cadeiras e espelhos",
       "imageUrl": "https://picsum.photos/seed/barber-hero/1920/1080",
       "imageHint": "barber shop"
     }

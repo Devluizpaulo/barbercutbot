@@ -35,10 +35,10 @@ export default function ShopLayout({
   const shop = shops.find((s) => s.id === shopId);
 
   const navItems = [
-    { href: `/dashboard/${shopId}`, label: "Overview", icon: LayoutDashboard },
-    { href: `/dashboard/${shopId}/appointments`, label: "Appointments", icon: Calendar },
-    { href: `/dashboard/${shopId}/clients`, label: "Clients", icon: Users },
-    { href: `/dashboard/${shopId}/finance`, label: "Finance", icon: DollarSign },
+    { href: `/dashboard/${shopId}`, label: "Visão Geral", icon: LayoutDashboard },
+    { href: `/dashboard/${shopId}/appointments`, label: "Agendamentos", icon: Calendar },
+    { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
+    { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: DollarSign },
   ];
 
   return (
@@ -47,7 +47,7 @@ export default function ShopLayout({
         <Sidebar>
           <SidebarHeader>
             <h2 className="text-lg font-semibold tracking-tight font-headline truncate px-2">
-                {shop?.name || "Barber Shop"}
+                {shop?.name || "Barbearia"}
             </h2>
           </SidebarHeader>
           <SidebarContent>
@@ -72,17 +72,17 @@ export default function ShopLayout({
             <SidebarMenu>
                <SidebarMenuItem>
                 <Link href="/dashboard">
-                  <SidebarMenuButton tooltip="Back to Shops">
+                  <SidebarMenuButton tooltip="Voltar para Lojas">
                     <ChevronLeft />
-                    <span>All Shops</span>
+                    <span>Todas as Lojas</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
                <SidebarMenuItem>
                 <Link href="#">
-                  <SidebarMenuButton tooltip="Settings">
+                  <SidebarMenuButton tooltip="Configurações">
                     <Settings />
-                    <span>Settings</span>
+                    <span>Configurações</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>

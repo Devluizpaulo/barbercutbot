@@ -26,19 +26,19 @@ export default function ClientsPage({ params }: { params: { shopId: string } }) 
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-                <CardTitle className="font-headline">Client Management</CardTitle>
+                <CardTitle className="font-headline">Gerenciamento de Clientes</CardTitle>
                 <CardDescription>
-                View, manage, and add new clients.
+                Visualize, gerencie e adicione novos clientes.
                 </CardDescription>
             </div>
             <div className="flex items-center gap-2">
                 <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search clients..." className="pl-8" />
+                    <Input placeholder="Buscar clientes..." className="pl-8" />
                 </div>
                 <Button>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Add Client
+                    Adicionar Cliente
                 </Button>
             </div>
         </div>
@@ -47,12 +47,12 @@ export default function ClientsPage({ params }: { params: { shopId: string } }) 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>Nome</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
-              <TableHead className="hidden md:table-cell">Phone</TableHead>
-              <TableHead className="hidden lg:table-cell">Last Visit</TableHead>
-              <TableHead className="text-right">Total Spent</TableHead>
-              <TableHead><span className="sr-only">View</span></TableHead>
+              <TableHead className="hidden md:table-cell">Telefone</TableHead>
+              <TableHead className="hidden lg:table-cell">Última Visita</TableHead>
+              <TableHead className="text-right">Total Gasto</TableHead>
+              <TableHead><span className="sr-only">Ver</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -66,7 +66,7 @@ export default function ClientsPage({ params }: { params: { shopId: string } }) 
                 <TableCell className="hidden md:table-cell text-muted-foreground">{client.email}</TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">{client.phone}</TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground">{client.lastVisit}</TableCell>
-                <TableCell className="text-right font-mono">${client.totalSpent.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono">R${client.totalSpent.toFixed(2)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" asChild>
                     <Link href={`/dashboard/${params.shopId}/clients/${client.id}`}>

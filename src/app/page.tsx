@@ -13,7 +13,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Logo />
           <Button asChild variant="outline">
-            <Link href="/dashboard">Login</Link>
+            <Link href="/dashboard">Entrar</Link>
           </Button>
         </div>
       </header>
@@ -33,14 +33,14 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 container mx-auto px-4 md:px-6">
             <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-              Elevate Your Barber Shop
+              Eleve sua Barbearia
             </h1>
             <p className="mx-auto mt-4 max-w-[700px] text-gray-200 md:text-xl">
-              The all-in-one SaaS platform to manage appointments, clients, and financials. Focus on your craft, we'll handle the rest.
+              A plataforma SaaS completa para gerenciar agendamentos, clientes e finanças. Concentre-se na sua arte, nós cuidamos do resto.
             </p>
             <div className="mt-8">
               <Button asChild size="lg">
-                <Link href="/dashboard">Get Started</Link>
+                <Link href="/dashboard">Comece Agora</Link>
               </Button>
             </div>
           </div>
@@ -50,21 +50,21 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
               <div className="text-center">
-                <h3 className="text-2xl font-bold font-headline">Smart Scheduling</h3>
+                <h3 className="text-2xl font-bold font-headline">Agendamento Inteligente</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Effortless appointment management with a real-time calendar view.
+                  Gerenciamento de agendamentos sem esforço com uma visão de calendário em tempo real.
                 </p>
               </div>
               <div className="text-center">
-                <h3 className="text-2xl font-bold font-headline">Client Management</h3>
+                <h3 className="text-2xl font-bold font-headline">Gestão de Clientes</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Keep track of customer preferences, history, and contact information.
+                  Acompanhe as preferências, histórico e informações de contato dos clientes.
                 </p>
               </div>
               <div className="text-center">
-                <h3 className="text-2xl font-bold font-headline">Financial Tracking</h3>
+                <h3 className="text-2xl font-bold font-headline">Acompanhamento Financeiro</h3>
                 <p className="mt-2 text-muted-foreground">
-                  Monitor your income and expenses with insightful financial reports.
+                  Monitore suas receitas e despesas com relatórios financeiros perspicazes.
                 </p>
               </div>
             </div>
@@ -76,7 +76,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
           <Logo />
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Barbearia SaaS. All rights reserved.
+            © {new Date().getFullYear()} Barbearia SaaS. Todos os direitos reservados.
           </p>
         </div>
       </footer>

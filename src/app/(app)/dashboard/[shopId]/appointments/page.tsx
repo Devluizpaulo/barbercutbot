@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { appointments } from "@/lib/data"
 import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 export default function AppointmentsPage() {
   return (
@@ -26,18 +27,18 @@ export default function AppointmentsPage() {
       <div className="md:col-span-2">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">All Appointments</CardTitle>
+            <CardTitle className="font-headline">Todos os Agendamentos</CardTitle>
             <CardDescription>
-              Here is a list of all scheduled appointments.
+              Aqui está uma lista de todos os agendamentos.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Barber</TableHead>
-                  <TableHead>Date & Time</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Barbeiro</TableHead>
+                  <TableHead>Data e Hora</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -51,9 +52,9 @@ export default function AppointmentsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{appointment.barber}</TableCell>
-                    <TableCell>{format(appointment.dateTime, "MMM d, yyyy 'at' h:mm a")}</TableCell>
+                    <TableCell>{format(appointment.dateTime, "MMM d, yyyy 'às' HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
-                      <Badge variant={appointment.status === 'Completed' ? 'secondary' : appointment.status === 'Cancelled' ? 'destructive' : 'default'}>
+                      <Badge variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}>
                         {appointment.status}
                       </Badge>
                     </TableCell>
@@ -67,10 +68,10 @@ export default function AppointmentsPage() {
       <div className="md:col-span-1 flex flex-col gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Calendar</CardTitle>
+            <CardTitle className="font-headline">Calendário</CardTitle>
              <Button className="mt-4">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              New Appointment
+              Novo Agendamento
             </Button>
           </CardHeader>
           <CardContent>
@@ -78,6 +79,7 @@ export default function AppointmentsPage() {
               mode="single"
               selected={new Date()}
               className="rounded-md border"
+              locale={ptBR}
             />
           </CardContent>
         </Card>

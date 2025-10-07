@@ -22,6 +22,7 @@ import { clients, appointments } from "@/lib/data"
 import { ArrowLeft, Edit, Mail, Phone, DollarSign, Calendar } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 export default function ClientDetailsPage({ params }: { params: { shopId: string, clientId: string } }) {
   const client = clients.find(c => c.id === params.clientId)
@@ -30,9 +31,9 @@ export default function ClientDetailsPage({ params }: { params: { shopId: string
   if (!client) {
     return (
       <div className="text-center">
-        <p>Client not found.</p>
+        <p>Cliente não encontrado.</p>
         <Button asChild variant="link">
-          <Link href={`/dashboard/${params.shopId}/clients`}>Go back to clients</Link>
+          <Link href={`/dashboard/${params.shopId}/clients`}>Voltar para clientes</Link>
         </Button>
       </div>
     )
@@ -51,19 +52,19 @@ export default function ClientDetailsPage({ params }: { params: { shopId: string
             {client.name}
             </h1>
             <p className="text-muted-foreground">
-            Client Profile and History
+            Perfil e Histórico do Cliente
             </p>
         </div>
         <Button className="ml-auto">
             <Edit className="mr-2 h-4 w-4" />
-            Edit Client
+            Editar Cliente
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-lg">Contact Info</CardTitle>
+            <CardTitle className="font-headline text-lg">Informações de Contato</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -78,21 +79,21 @@ export default function ClientDetailsPage({ params }: { params: { shopId: string
         </Card>
          <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-lg">Key Stats</CardTitle>
+            <CardTitle className="font-headline text-lg">Estatísticas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
-                    <p className="font-bold">${client.totalSpent.toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">Total Spent</p>
+                    <p className="font-bold">R${client.totalSpent.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Total Gasto</p>
                 </div>
             </div>
             <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                     <p className="font-bold">{client.lastVisit}</p>
-                    <p className="text-xs text-muted-foreground">Last Visit</p>
+                    <p className="text-xs text-muted-foreground">Última Visita</p>
                 </div>
             </div>
           </CardContent>
@@ -101,26 +102,26 @@ export default function ClientDetailsPage({ params }: { params: { shopId: string
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Appointment History</CardTitle>
+          <CardTitle className="font-headline">Histórico de Agendamentos</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Barber</TableHead>
+                <TableHead>Data e Hora</TableHead>
+                <TableHead>Serviço</TableHead>
+                <TableHead>Barbeiro</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {clientAppointments.map((appointment) => (
                 <TableRow key={appointment.id}>
-                  <TableCell>{format(appointment.dateTime, "MMM d, yyyy 'at' h:mm a")}</TableCell>
+                  <TableCell>{format(appointment.dateTime, "MMM d, yyyy 'às' HH:mm", { locale: ptBR })}</TableCell>
                   <TableCell>{appointment.service}</TableCell>
                   <TableCell>{appointment.barber}</TableCell>
                   <TableCell>
-                    <Badge variant={appointment.status === 'Completed' ? 'secondary' : appointment.status === 'Cancelled' ? 'destructive' : 'default'}>
+                    <Badge variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}>
                       {appointment.status}
                     </Badge>
                   </TableCell>
@@ -129,7 +130,7 @@ export default function ClientDetailsPage({ params }: { params: { shopId: string
                {clientAppointments.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No appointments found for this client.
+                    Nenhum agendamento encontrado para este cliente.
                   </TableCell>
                 </TableRow>
               )}
