@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { DollarSign, ArrowUpRight, ArrowDownLeft, LoaderCircle, PlusCircle, MoreHorizontal } from "lucide-react"
 import { format } from 'date-fns';
@@ -178,16 +178,16 @@ export default function FinancePage() {
               <CardTitle className="font-headline">Receita vs. Despesa (Anual)</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <ChartContainer config={chartConfig} className="w-full h-[300px]">
+                <AreaChart accessibilityLayer data={financialData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Number(value) / 1000}k`} />
                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                    <Area type="monotone" dataKey="income" stackId="1" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2), 0.3)" name="Receita" />
-                    <Area type="monotone" dataKey="expense" stackId="1" stroke="hsl(var(--chart-5))" fill="hsl(var(--chart-5), 0.3)" name="Despesa" />
+                    <Area type="monotone" dataKey="income" stackId="1" stroke="var(--color-income)" fill="var(--color-income)" name="Receita" />
+                    <Area type="monotone" dataKey="expense" stackId="1" stroke="var(--color-expense)" fill="var(--color-expense)" name="Despesa" />
                 </AreaChart>
-              </ResponsiveContainer>
+              </ChartContainer>
           </CardContent>
         </Card>
         <Card className="lg:col-span-1">
