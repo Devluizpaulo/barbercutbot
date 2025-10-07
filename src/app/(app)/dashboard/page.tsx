@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -17,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { shops } from "@/lib/data"
+import { shops, type Shop } from "@/lib/data"
 import { Activity, MoreVertical, DollarSign, Users, Calendar, ExternalLink, Shield, Ticket, CreditCard, Settings, FileText, Store } from "lucide-react"
 import {
   DropdownMenu,
@@ -31,6 +32,17 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 
 const chartConfig = {
@@ -50,12 +62,34 @@ const chartData = [
 
 
 export default function AdminDashboard() {
+    const { toast } = useToast();
+    const [shopToDeactivate, setShopToDeactivate] = useState<Shop | null>(null);
+
     const totalRevenue = shops.reduce((acc, shop) => acc + (shop.totalRevenue || 0), 0)
     const totalClients = shops.reduce((acc, shop) => acc + shop.totalClients, 0)
     const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
     const totalOpenTickets = shops.reduce((acc, shop) => acc + shop.openTickets, 0);
 
+    const handleManageBilling = (shopId: string) => {
+        toast({
+            title: 'Em breve!',
+            description: `A funcionalidade de gerenciar faturas para a loja ${shopId} está em desenvolvimento.`,
+        });
+    };
+    
+    const handleDeactivateShop = (shop: Shop | null) => {
+        if (!shop) return;
+        console.log(`Desativando a loja: ${shop.name}`);
+        toast({
+            title: 'Loja Desativada',
+            description: `A barbearia "${shop.name}" foi desativada com sucesso.`,
+            variant: 'destructive',
+        });
+        setShopToDeactivate(null);
+    };
+
   return (
+    <>
     <div className="flex flex-1 flex-col gap-8">
        <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
@@ -228,11 +262,16 @@ export default function AdminDashboard() {
                                                         Ver Dashboard
                                                     </Link>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleManageBilling(shop.id)}>
                                                     <CreditCard className="mr-2 h-4 w-4" />
                                                     Gerenciar Fatura
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-500">Desativar</DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                  className="text-red-500"
+                                                  onClick={() => setShopToDeactivate(shop)}
+                                                >
+                                                  Desativar
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -270,7 +309,29 @@ export default function AdminDashboard() {
          </div>
        </div>
     </div>
+    <AlertDialog
+        open={!!shopToDeactivate}
+        onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá desativar a barbearia "{shopToDeactivate?.name}".
+              Isso pode ser revertido, mas bloqueará o acesso do proprietário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDeactivateShop(shopToDeactivate)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Sim, desativar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
-
-    
