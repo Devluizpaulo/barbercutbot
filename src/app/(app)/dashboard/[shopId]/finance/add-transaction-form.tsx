@@ -31,7 +31,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar as CalendarIcon, LoaderCircle, Delete } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
@@ -63,7 +62,7 @@ const KeypadButton = ({ children, onClick, className }: { children: React.ReactN
     <Button
         type="button"
         variant="outline"
-        className={cn("h-full text-2xl font-bold text-foreground", className)}
+        className={cn("h-16 text-2xl font-bold text-foreground", className)}
         onClick={onClick}
     >
         {children}
@@ -181,60 +180,46 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             />
             
             <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="Ex: Corte de cabelo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-                <FormItem className="flex flex-col">
-                <FormLabel>Data</FormLabel>
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <FormControl>
-                        <Button
-                        variant={'outline'}
-                        className={cn(
-                            'pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                        )}
-                        >
-                        {field.value ? (
-                            format(field.value, 'PPP', { locale: ptBR })
-                        ) : (
-                            <span>Escolha uma data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                    </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                        date > new Date() || date < new Date('1900-01-01')
-                        }
-                        initialFocus
-                        locale={ptBR}
-                    />
-                    </PopoverContent>
-                </Popover>
-                <FormMessage />
-                </FormItem>
-            )}
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                  <FormLabel>Data</FormLabel>
+                  <Popover>
+                      <PopoverTrigger asChild>
+                      <FormControl>
+                          <Button
+                          variant={'outline'}
+                          className={cn(
+                              'pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
+                          )}
+                          >
+                          {field.value ? (
+                              format(field.value, 'PPP', { locale: ptBR })
+                          ) : (
+                              <span>Escolha uma data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                      </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                          date > new Date() || date < new Date('1900-01-01')
+                          }
+                          initialFocus
+                          locale={ptBR}
+                      />
+                      </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                  </FormItem>
+              )}
             />
             
             <FormField
@@ -256,6 +241,20 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   </FormItem>
                 )}
               />
+            
+            <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="Ex: Corte de cabelo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
 
             <FormField
                   control={form.control}
@@ -341,7 +340,7 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
             </div>
         </div>
 
-        <div className="grid grid-cols-3 grid-rows-4 gap-2 h-full">
+        <div className="grid grid-cols-3 grid-rows-4 gap-2">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0'].map((key) => (
                 <KeypadButton key={key} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
             ))}
