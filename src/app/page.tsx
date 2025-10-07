@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Star, CheckCircle, TrendingUp, Users } from "lucide-react";
+import { Star, CheckCircle, TrendingUp, Users, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -28,9 +28,17 @@ export default function LandingPage() {
             <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-primary">Depoimentos</Link>
             <Link href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary">Preços</Link>
           </nav>
-          <Button asChild>
-            <Link href="/dashboard">Começar Teste Grátis</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" asChild>
+                <Link href="/dashboard">
+                    <Lock className="mr-2 h-4 w-4" />
+                    Login
+                </Link>
+            </Button>
+            <Button asChild>
+                <Link href="/dashboard">Começar Teste Grátis</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
