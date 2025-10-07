@@ -30,7 +30,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild>
-                <Link href="/dashboard">
+                <Link href="/dashboard/shops">
                     <Lock className="mr-2 h-4 w-4" />
                     Login
                 </Link>
