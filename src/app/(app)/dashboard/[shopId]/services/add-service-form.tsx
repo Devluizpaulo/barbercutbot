@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LoaderCircle, PenSquare, DollarSign, Clock, Tag, Image as ImageIcon, Percent, Users } from 'lucide-react';
+import { LoaderCircle, PenSquare, DollarSign, Clock, Tag, Image as ImageIcon, Percent, Users, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,11 +17,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome do serviço é obrigatório.'),
@@ -66,8 +64,6 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   });
 
   const { isSubmitting } = form.formState;
-  const imageUrl = form.watch('imageUrl');
-  const serviceName = form.watch('name');
   const isCommissionEnabled = form.watch('isCommissionEnabled');
 
   const onSubmit = async (values: AddServiceFormValues) => {
@@ -84,36 +80,6 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-
-        <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20 rounded-md">
-                <AvatarImage src={imageUrl} alt={serviceName} className="object-cover" />
-                <AvatarFallback className="rounded-md">
-                    <ImageIcon className="h-8 w-8" />
-                </AvatarFallback>
-            </Avatar>
-            <FormField
-            control={form.control}
-            name="imageUrl"
-            render={({ field }) => (
-                <FormItem className="flex-1">
-                <FormLabel>URL da Foto</FormLabel>
-                <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                    <Input
-                        placeholder="https://exemplo.com/foto.jpg"
-                        {...field}
-                        className="pl-10"
-                        value={field.value || ''}
-                    />
-                    </FormControl>
-                </div>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
 
         <FormField
           control={form.control}
@@ -209,90 +175,120 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
             <AccordionItem value="item-1">
                 <AccordionTrigger>
                     <div className='flex items-center gap-2'>
-                        <Users className="h-4 w-4" />
-                        Configurações de Parceria
+                        <Film className="h-4 w-4" />
+                        Mídia e Opções Avançadas
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-6">
                     <FormField
                         control={form.control}
-                        name="isCommissionEnabled"
+                        name="imageUrl"
                         render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <FormLabel className="text-base">Habilitar Comissão</FormLabel>
-                                <p className="text-sm text-muted-foreground">
-                                    Ative para definir uma comissão para parceiros neste serviço.
-                                </p>
-                            </div>
-                            <FormControl>
-                                <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
+                            <FormItem className="flex-1">
+                            <FormLabel>URL da Foto do Serviço</FormLabel>
+                            <div className="relative">
+                                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <FormControl>
+                                <Input
+                                    placeholder="https://exemplo.com/foto.jpg"
+                                    {...field}
+                                    className="pl-10"
+                                    value={field.value || ''}
                                 />
-                            </FormControl>
+                                </FormControl>
+                            </div>
+                             <p className="text-xs text-muted-foreground pt-1">
+                                No futuro, você poderá fazer o upload de uma imagem diretamente.
+                            </p>
+                            <FormMessage />
                             </FormItem>
                         )}
                     />
-
-                    {isCommissionEnabled && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-                            <FormField
+                    
+                    <div className="space-y-4 rounded-lg border p-4">
+                         <FormField
                             control={form.control}
-                            name="commissionType"
+                            name="isCommissionEnabled"
                             render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                <FormLabel>Tipo de Comissão</FormLabel>
+                                <FormItem className="flex flex-row items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base flex items-center gap-2">
+                                        <Users className="h-4 w-4" />
+                                        Habilitar Parceria/Comissão
+                                    </FormLabel>
+                                    <p className="text-sm text-muted-foreground">
+                                        Ative para definir uma comissão para parceiros.
+                                    </p>
+                                </div>
                                 <FormControl>
-                                    <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
-                                    >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="percentage" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                        Porcentagem (%)
-                                        </FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="fixed" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                        Valor Fixo (R$)
-                                        </FormLabel>
-                                    </FormItem>
-                                    </RadioGroup>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
                                 </FormControl>
-                                <FormMessage />
                                 </FormItem>
                             )}
-                            />
-                            <FormField
+                        />
+
+                        {isCommissionEnabled && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                                <FormField
                                 control={form.control}
-                                name="commissionValue"
+                                name="commissionType"
                                 render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Valor da Comissão</FormLabel>
-                                    <div className="relative">
-                                    {form.watch('commissionType') === 'fixed' ? (
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    )}
+                                    <FormItem className="space-y-3">
+                                    <FormLabel>Tipo de Comissão</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="50" {...field} className="pl-10" />
+                                        <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex flex-col space-y-1"
+                                        >
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="percentage" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                            Porcentagem (%)
+                                            </FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="fixed" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                            Valor Fixo (R$)
+                                            </FormLabel>
+                                        </FormItem>
+                                        </RadioGroup>
                                     </FormControl>
-                                    </div>
                                     <FormMessage />
-                                </FormItem>
+                                    </FormItem>
                                 )}
-                            />
-                        </div>
-                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="commissionValue"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Valor da Comissão</FormLabel>
+                                        <div className="relative">
+                                        {form.watch('commissionType') === 'fixed' ? (
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        ) : (
+                                            <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        )}
+                                        <FormControl>
+                                            <Input type="number" placeholder="50" {...field} className="pl-10" />
+                                        </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
