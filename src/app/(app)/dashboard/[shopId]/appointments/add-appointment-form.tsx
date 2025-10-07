@@ -92,6 +92,16 @@ export function AddAppointmentForm({
 
   const form = useForm<AddAppointmentFormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      customerId: '',
+      serviceId: '',
+      barberId: '',
+      date: new Date(),
+      time: format(new Date(), 'HH:mm'),
+      notes: '',
+      price: 0,
+      status: 'Confirmado',
+    }
   });
 
   const { isSubmitting } = form.formState;
@@ -102,12 +112,12 @@ export function AddAppointmentForm({
       const startTime = new Date(initialData.dateTime);
       form.reset({
         // This is a bit tricky with mock data, we'll find by name matching
-        customerId: customers.find(c => initialData.clientName.includes(c.name.split(' ')[0]))?.id,
-        serviceId: availableServices.find(s => s.name === initialData.service)?.id,
-        barberId: availableBarbers.find(b => initialData.barber.includes(b.firstName))?.id,
+        customerId: customers.find(c => initialData.clientName.includes(c.name.split(' ')[0]))?.id || '',
+        serviceId: availableServices.find(s => s.name === initialData.service)?.id || '',
+        barberId: availableBarbers.find(b => initialData.barber.includes(b.firstName))?.id || '',
         date: startTime,
         time: format(startTime, 'HH:mm'),
-        price: availableServices.find(s => s.name === initialData.service)?.price,
+        price: availableServices.find(s => s.name === initialData.service)?.price || 0,
         notes: '', // Notes not in mock data
         status: initialData.status,
       });
@@ -119,6 +129,7 @@ export function AddAppointmentForm({
         date: new Date(),
         time: format(new Date(), 'HH:mm'),
         notes: '',
+        price: 0,
         status: 'Confirmado',
       });
     }
@@ -341,7 +352,7 @@ export function AddAppointmentForm({
                         <Input
                           type="number"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value || 0}
                           readOnly
                           className="pl-10 font-bold"
                         />

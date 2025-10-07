@@ -194,7 +194,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                     <div className="relative">
                        <Smile className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input placeholder="Jão" {...field} className="pl-10" />
+                        <Input placeholder="Jão" {...field} value={field.value || ''} className="pl-10" />
                       </FormControl>
                     </div>
                     <FormMessage />
@@ -210,7 +210,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                    <div className="relative">
                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input placeholder="joao.silva@email.com" {...field} className="pl-10" />
+                        <Input placeholder="joao.silva@email.com" {...field} value={field.value || ''} className="pl-10" />
                       </FormControl>
                    </div>
                   <FormMessage />
@@ -227,7 +227,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                        <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <FormControl>
-                              <Input placeholder="(11) 99999-9999" {...field} className="pl-10" />
+                              <Input placeholder="(11) 99999-9999" {...field} value={field.value || ''} className="pl-10" />
                           </FormControl>
                        </div>
                       <FormMessage />
@@ -263,6 +263,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                       <Textarea
                         placeholder="Cliente prefere corte na tesoura..."
                         {...field}
+                        value={field.value || ''}
                         className="pl-10"
                       />
                     </FormControl>
@@ -283,7 +284,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                         <div className="relative flex-grow">
                              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                                <Input placeholder="00000-000" {...field} className="pl-10" />
+                                <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <Button type="button" onClick={handleCepLookup} disabled={isCepLoading}>
@@ -304,7 +305,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                     <div className="relative">
                         <Map className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
-                        <Input placeholder="Rua das Flores" {...field} className="pl-10" />
+                        <Input placeholder="Rua das Flores" {...field} value={field.value || ''} className="pl-10" />
                         </FormControl>
                     </div>
                     <FormMessage />
@@ -321,7 +322,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                         <div className="relative">
                              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                            <Input placeholder="123" {...field} className="pl-10" />
+                            <Input placeholder="123" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <FormMessage />
@@ -337,7 +338,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                          <div className="relative">
                             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                            <Input placeholder="Apto 4B" {...field} className="pl-10" />
+                            <Input placeholder="Apto 4B" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <FormMessage />
@@ -355,7 +356,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                         <div className="relative">
                             <Map className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                            <Input placeholder="Centro" {...field} className="pl-10" />
+                            <Input placeholder="Centro" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <FormMessage />
@@ -371,7 +372,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                          <div className="relative">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                            <Input placeholder="São Paulo" {...field} className="pl-10" />
+                            <Input placeholder="São Paulo" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <FormMessage />
@@ -387,7 +388,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                         <div className="relative">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                            <Input placeholder="SP" {...field} className="pl-10" />
+                            <Input placeholder="SP" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
                         <FormMessage />

@@ -106,7 +106,7 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
                 <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <FormControl>
-                    <Input placeholder="Ex: Fernanda" {...field} className="pl-10" />
+                    <Input placeholder="Ex: Fernanda" {...field} value={field.value || ''} className="pl-10" />
                     </FormControl>
                 </div>
                 <FormMessage />
@@ -144,6 +144,7 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
                     placeholder="Detalhes sobre o fornecedor, pedidos, etc."
                     {...field}
                     className="pl-10"
+                    value={field.value || ''}
                   />
                 </FormControl>
               </div>

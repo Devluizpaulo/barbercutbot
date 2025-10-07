@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome do serviço é obrigatório.'),
-  description: z.string().min(1, 'A descrição é obrigatória.'),
+  description: z.string().optional(),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
   duration: z.coerce.number().min(0, 'A duração deve ser um número positivo em minutos.'),
 });
@@ -92,6 +92,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                     placeholder="Descreva o serviço, ex: Corte clássico ou moderno, na tesoura ou máquina."
                     {...field}
                     className="pl-10"
+                    value={field.value || ''}
                   />
                 </FormControl>
               </div>

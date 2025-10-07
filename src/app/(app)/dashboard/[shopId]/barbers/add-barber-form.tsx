@@ -111,6 +111,7 @@ export function AddBarberForm({ shopId, onSuccess }: AddBarberFormProps) {
                     placeholder="joao.silva@email.com"
                     {...field}
                     className="pl-10"
+                    value={field.value || ''}
                   />
                 </FormControl>
               </div>
@@ -132,6 +133,7 @@ export function AddBarberForm({ shopId, onSuccess }: AddBarberFormProps) {
                     placeholder="(11) 99999-9999"
                     {...field}
                     className="pl-10"
+                    value={field.value || ''}
                   />
                 </FormControl>
               </div>
@@ -153,6 +155,7 @@ export function AddBarberForm({ shopId, onSuccess }: AddBarberFormProps) {
                     placeholder="Especialista em cortes clássicos e modernos..."
                     {...field}
                     className="pl-10"
+                    value={field.value || ''}
                   />
                 </FormControl>
               </div>
