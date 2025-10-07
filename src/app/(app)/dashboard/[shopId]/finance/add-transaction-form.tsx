@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar as CalendarIcon, LoaderCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, LoaderCircle, Delete } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -60,6 +60,17 @@ const incomeCategories = ['Venda de Serviço', 'Venda de Produto', 'Outros'];
 const expenseCategories = ['Aluguel', 'Salários', 'Fornecedores', 'Marketing', 'Contas (Água, Luz, etc.)', 'Outros'];
 const paymentMethods = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'];
 
+const KeypadButton = ({ children, onClick, className }: { children: React.ReactNode, onClick: () => void, className?: string }) => (
+    <Button
+        type="button"
+        variant="outline"
+        className={cn("h-full text-2xl font-bold text-foreground", className)}
+        onClick={onClick}
+    >
+        {children}
+    </Button>
+);
+
 export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProps) {
   const { toast } = useToast();
   
@@ -72,11 +83,35 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
       category: '',
       paymentMethod: '',
       isRecurring: false,
+      amount: 0,
     },
   });
 
   const { isSubmitting } = form.formState;
   const transactionType = form.watch('type');
+
+  const handleKeypadPress = (key: string) => {
+    const currentAmount = form.getValues('amount') || 0;
+    const currentAmountString = currentAmount.toFixed(2);
+
+    let newAmountString;
+
+    if (key === 'backspace') {
+      newAmountString = currentAmountString.slice(0, -1).replace('.', '');
+      if (newAmountString.length < 3) {
+        newAmountString = '0'.repeat(3 - newAmountString.length) + newAmountString;
+      }
+    } else {
+       newAmountString = (currentAmountString + key).replace('.', '');
+    }
+    
+    const integerPart = newAmountString.slice(0, -2);
+    const decimalPart = newAmountString.slice(-2);
+    const newAmount = parseFloat(`${integerPart}.${decimalPart}`);
+
+    form.setValue('amount', newAmount, { shouldValidate: true });
+};
+
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      // NOTE: Database functionality is disabled for simulation.
@@ -92,217 +127,226 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Tipo de Transação</FormLabel>
-               <FormControl>
-                <RadioGroup
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue('category', ''); // Reset category on type change
-                  }}
-                  defaultValue={field.value}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="income" id="income" className="sr-only" />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="income"
-                      className={cn(
-                        "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                        "data-[state=checked]:border-green-500 data-[state=checked]:bg-green-50 data-[state=checked]:text-green-800",
-                        "dark:data-[state=checked]:bg-green-950 dark:data-[state=checked]:text-green-200 dark:data-[state=checked]:border-green-700"
-                      )}
-                    >
-                      Receita
-                    </FormLabel>
-                  </FormItem>
-                   <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="expense" id="expense" className="sr-only" />
-                    </FormControl>
-                    <FormLabel
-                      htmlFor="expense"
-                       className={cn(
-                        "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
-                        "data-[state=checked]:border-destructive data-[state=checked]:bg-red-50 data-[state=checked]:text-red-800",
-                        "dark:data-[state=checked]:bg-red-950 dark:data-[state=checked]:text-red-200 dark:data-[state=checked]:border-red-700"
-                       )}
-                    >
-                      Despesa
-                    </FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor (R$)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0,00" 
-                    className="h-14 text-2xl text-center font-bold"
-                    {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Ex: Corte de cabelo" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Data</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'PPP', { locale: ptBR })
-                        ) : (
-                          <span>Escolha uma data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date('1900-01-01')
-                      }
-                      initialFocus
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+            <FormField
               control={form.control}
-              name="category"
+              name="type"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {(transactionType === 'income' ? incomeCategories : expenseCategories).map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Transação</FormLabel>
+                   <FormControl>
+                    <RadioGroup
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('category', ''); // Reset category on type change
+                      }}
+                      defaultValue={field.value}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="income" id="income" className="sr-only" />
+                        </FormControl>
+                        <FormLabel
+                          htmlFor="income"
+                          className={cn(
+                            "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                            "data-[state=checked]:border-green-500 data-[state=checked]:bg-green-50 data-[state=checked]:text-green-800",
+                            "dark:data-[state=checked]:bg-green-950 dark:data-[state=checked]:text-green-200 dark:data-[state=checked]:border-green-700"
+                          )}
+                        >
+                          Receita
+                        </FormLabel>
+                      </FormItem>
+                       <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="expense" id="expense" className="sr-only" />
+                        </FormControl>
+                        <FormLabel
+                          htmlFor="expense"
+                           className={cn(
+                            "flex-1 text-center font-normal border rounded-md p-3 cursor-pointer transition-colors",
+                            "data-[state=checked]:border-destructive data-[state=checked]:bg-red-50 data-[state=checked]:text-red-800",
+                            "dark:data-[state=checked]:bg-red-950 dark:data-[state=checked]:text-red-200 dark:data-[state=checked]:border-red-700"
+                           )}
+                        >
+                          Despesa
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-        </div>
-        
-        {transactionType === 'income' && (
-          <FormField
+
+            <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="Ex: Corte de cabelo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            <FormField
             control={form.control}
-            name="paymentMethod"
+            name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Forma de Pagamento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a forma de pagamento" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {paymentMethods.map(method => (
-                      <SelectItem key={method} value={method}>{method}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormItem className="flex flex-col">
+                <FormLabel>Data</FormLabel>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <FormControl>
+                        <Button
+                        variant={'outline'}
+                        className={cn(
+                            'pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                        )}
+                        >
+                        {field.value ? (
+                            format(field.value, 'PPP', { locale: ptBR })
+                        ) : (
+                            <span>Escolha uma data</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                    </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                        date > new Date() || date < new Date('1900-01-01')
+                        }
+                        initialFocus
+                        locale={ptBR}
+                    />
+                    </PopoverContent>
+                </Popover>
                 <FormMessage />
-              </FormItem>
+                </FormItem>
             )}
-          />
-        )}
+            />
+            
+            <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor (R$)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="text"
+                        readOnly
+                        placeholder="0,00" 
+                        className="h-14 text-2xl text-center font-bold"
+                        value={field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {transactionType === 'expense' && (
-          <FormField
-            control={form.control}
-            name="isRecurring"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md pt-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>
-                    É uma despesa recorrente?
-                  </FormLabel>
-                  <FormDescription>
-                    Marque se esta despesa se repete (ex: aluguel).
-                  </FormDescription>
-                </div>
-              </FormItem>
+            <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(transactionType === 'income' ? incomeCategories : expenseCategories).map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            
+            {transactionType === 'income' && (
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Forma de Pagamento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a forma de pagamento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {paymentMethods.map(method => (
+                          <SelectItem key={method} value={method}>{method}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
-          />
-        )}
 
-
-        <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
-            {isSubmitting && (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            {transactionType === 'expense' && (
+              <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md pt-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        É uma despesa recorrente?
+                      </FormLabel>
+                      <FormDescription>
+                        Marque se esta despesa se repete (ex: aluguel).
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
             )}
-            Salvar Transação
-          </Button>
+
+
+            <div className="flex justify-end pt-4">
+              <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
+                {isSubmitting && (
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Salvar Transação
+              </Button>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-3 grid-rows-4 gap-2 h-full">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', ''].map((key, i) => (
+                key === '' ? <KeypadButton key={i} onClick={() => handleKeypadPress('backspace')} className="col-span-1"><Delete /></KeypadButton>
+                : <KeypadButton key={i} onClick={() => handleKeypadPress(key)}>{key}</KeypadButton>
+            ))}
         </div>
       </form>
     </Form>
