@@ -266,23 +266,6 @@ export default function AdminDashboard() {
                 ))}
             </CardContent>
            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Ferramentas</CardTitle>
-                    <CardDescription>Acessos rápidos para gerenciamento da plataforma.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-2">
-                    <Button variant="outline" className="justify-start gap-2" asChild>
-                        <Link href="#"><Users className="h-4 w-4"/> Gerenciar Usuários</Link>
-                    </Button>
-                    <Button variant="outline" className="justify-start gap-2" asChild>
-                        <Link href="/dashboard/documents"><FileText className="h-4 w-4"/> Gerenciar Documentos</Link>
-                    </Button>
-                     <Button variant="outline" className="justify-start gap-2" asChild>
-                        <Link href="#"><Settings className="h-4 w-4"/> Configurações Gerais</Link>
-                    </Button>
-                </CardContent>
-            </Card>
          </div>
        </div>
     </div>
