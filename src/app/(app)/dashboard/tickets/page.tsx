@@ -1,0 +1,130 @@
+
+'use client';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { tickets as mockedTickets, shops } from "@/lib/data"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+export default function AdminTicketsPage() {
+
+    const tickets = mockedTickets;
+    const findShopName = (shopId: string) => shops.find(s => s.id === shopId)?.name || 'N/A';
+
+    return (
+        <div className="flex flex-col gap-8">
+            <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+                Tickets de Suporte
+                </h1>
+                <p className="text-muted-foreground">
+                Gerencie todas as solicitações de suporte dos seus parceiros.
+                </p>
+            </div>
+
+            <Card>
+                <CardContent className="pt-6">
+                    <Tabs defaultValue="abertos">
+                        <TabsList>
+                            <TabsTrigger value="abertos">Abertos</TabsTrigger>
+                            <TabsTrigger value="andamento">Em Andamento</TabsTrigger>
+                            <TabsTrigger value="fechados">Fechados</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="abertos" className="mt-4">
+                            <TicketsTable tickets={tickets.filter(t => t.status === 'Aberto')} findShopName={findShopName} />
+                        </TabsContent>
+                        <TabsContent value="andamento" className="mt-4">
+                            <TicketsTable tickets={tickets.filter(t => t.status === 'Em Andamento')} findShopName={findShopName} />
+                        </TabsContent>
+                        <TabsContent value="fechados" className="mt-4">
+                             <TicketsTable tickets={tickets.filter(t => t.status === 'Fechado')} findShopName={findShopName} />
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+
+
+function TicketsTable({ tickets, findShopName }: { tickets: typeof mockedTickets, findShopName: (id: string) => string }) {
+    
+    const getStatusVariant = (status: 'Aberto' | 'Em Andamento' | 'Fechado') => {
+        switch (status) {
+            case 'Aberto': return 'destructive';
+            case 'Em Andamento': return 'default';
+            case 'Fechado': return 'secondary';
+        }
+    };
+    
+    const getPriorityVariant = (priority: 'Baixa' | 'Média' | 'Alta') => {
+        switch (priority) {
+            case 'Baixa': return 'secondary';
+            case 'Média': return 'outline';
+            case 'Alta': return 'destructive';
+        }
+    };
+
+    return (
+         <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Barbearia</TableHead>
+                    <TableHead>Assunto</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Prioridade</TableHead>
+                    <TableHead className="hidden md:table-cell">Última Atualização</TableHead>
+                    <TableHead><span className="sr-only">Ações</span></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {tickets.length > 0 ? tickets.map(ticket => (
+                    <TableRow key={ticket.id}>
+                        <TableCell className="font-medium">{findShopName(ticket.shopId)}</TableCell>
+                        <TableCell>
+                            <div>{ticket.subject}</div>
+                            <div className="text-sm text-muted-foreground md:hidden">
+                                {formatDistanceToNow(ticket.lastUpdate, { addSuffix: true, locale: ptBR })}
+                            </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                             <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            <Badge variant={getPriorityVariant(ticket.priority)}>{ticket.priority}</Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            {formatDistanceToNow(ticket.lastUpdate, { addSuffix: true, locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <Button variant="outline" size="sm">Responder</Button>
+                        </TableCell>
+                    </TableRow>
+                )) : (
+                     <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">Nenhum ticket encontrado nesta categoria.</TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    )
+}

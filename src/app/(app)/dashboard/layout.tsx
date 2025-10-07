@@ -20,6 +20,7 @@ import {
   FileText,
   LogOut,
   User,
+  Ticket,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 
@@ -33,6 +34,7 @@ export default function AdminDashboardLayout({
   const navItems = [
     { href: `/dashboard`, label: "Visão Geral", icon: LayoutDashboard },
     { href: `/dashboard/users`, label: "Usuários", icon: Users },
+    { href: `/dashboard/tickets`, label: "Tickets de Suporte", icon: Ticket },
     { href: `/dashboard/documents`, label: "Documentos", icon: FileText },
     { href: `/dashboard/settings`, label: "Configurações", icon: Settings },
   ];

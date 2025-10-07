@@ -210,4 +210,19 @@ export const suppliers: Supplier[] = [
     { id: 'supplier-3', name: 'Toalhas & Uniformes', contactPerson: 'Beatriz Martins', phone: '(31) 96666-3333', category: 'Uniformes', notes: 'Uniformes personalizados. Boa qualidade, mas prazo de entrega longo.' },
 ];
 
+export type Ticket = {
+    id: string;
+    shopId: string;
+    subject: string;
+    status: 'Aberto' | 'Em Andamento' | 'Fechado';
+    lastUpdate: Date;
+    priority: 'Baixa' | 'Média' | 'Alta';
+};
+
+export const tickets: Ticket[] = [
+    { id: 'ticket-1', shopId: 'shop-2', subject: 'Problema com fatura de Julho', status: 'Aberto', lastUpdate: subDays(today, 1), priority: 'Alta' },
+    { id: 'ticket-2', shopId: 'shop-4', subject: 'Dúvida sobre integração com Google Agenda', status: 'Em Andamento', lastUpdate: subHours(today, 3), priority: 'Média' },
+    { id: 'ticket-3', shopId: 'shop-4', subject: 'Sugestão: adicionar novo tipo de relatório', status: 'Aberto', lastUpdate: subDays(today, 2), priority: 'Baixa' },
+    { id: 'ticket-4', shopId: 'shop-3', subject: 'Erro ao adicionar novo cliente', status: 'Fechado', lastUpdate: subDays(today, 5), priority: 'Média' },
+];
     
