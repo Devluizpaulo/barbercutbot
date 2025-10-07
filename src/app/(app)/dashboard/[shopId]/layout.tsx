@@ -46,7 +46,7 @@ export default function ShopLayout({
   return (
       <div className="flex flex-1">
         <Sidebar>
-          <SidebarHeader>
+          <SidebarHeader className="py-8">
               <Logo />
           </SidebarHeader>
           <SidebarContent>
@@ -105,7 +105,7 @@ export default function ShopLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 pt-[4.2rem] bg-background">
           {children}
         </div>
       </div>
