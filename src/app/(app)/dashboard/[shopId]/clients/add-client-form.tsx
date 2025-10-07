@@ -23,6 +23,7 @@ import { LoaderCircle, Search } from 'lucide-react';
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'O nome é obrigatório.' }),
   lastName: z.string().min(1, { message: 'O sobrenome é obrigatório.' }),
+  nickname: z.string().optional(),
   email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
   whatsapp: z.string().min(1, { message: 'O WhatsApp é obrigatório.' }),
@@ -52,6 +53,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
     defaultValues: {
       firstName: '',
       lastName: '',
+      nickname: '',
       email: '',
       phone: '',
       whatsapp: '',
@@ -156,6 +158,19 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
             )}
           />
         </div>
+        <FormField
+            control={form.control}
+            name="nickname"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Apelido</FormLabel>
+                <FormControl>
+                  <Input placeholder="Jão" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         <FormField
           control={form.control}
           name="email"
