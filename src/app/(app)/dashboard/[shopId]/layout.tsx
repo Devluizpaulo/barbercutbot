@@ -78,14 +78,6 @@ export default function ShopLayout({
           <SidebarSeparator />
           <SidebarFooter>
             <SidebarMenu>
-                <SidebarMenuItem>
-                    <Link href="/dashboard">
-                        <SidebarMenuButton tooltip="Admin" className="justify-start">
-                            <Shield />
-                            <span>Admin</span>
-                        </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
                  <SidebarMenuItem>
                     <Link href={`/dashboard/${shopId}/support`}>
                         <SidebarMenuButton tooltip="Suporte" className="justify-start" isActive={pathname.startsWith(`/dashboard/${shopId}/support`)}>

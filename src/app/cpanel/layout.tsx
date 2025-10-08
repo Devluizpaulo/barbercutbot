@@ -32,11 +32,11 @@ export default function AdminDashboardLayout({
   const pathname = usePathname();
 
   const navItems = [
-    { href: `/dashboard`, label: "Visão Geral", icon: LayoutDashboard },
-    { href: `/dashboard/users`, label: "Usuários", icon: Users },
-    { href: `/dashboard/tickets`, label: "Tickets de Suporte", icon: Ticket },
-    { href: `/dashboard/documents`, label: "Documentos", icon: FileText },
-    { href: `/dashboard/settings`, label: "Configurações", icon: Settings },
+    { href: `/cpanel`, label: "Visão Geral", icon: LayoutDashboard },
+    { href: `/cpanel/users`, label: "Usuários", icon: Users },
+    { href: `/cpanel/tickets`, label: "Tickets de Suporte", icon: Ticket },
+    { href: `/cpanel/documents`, label: "Documentos", icon: FileText },
+    { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
 
   return (
@@ -51,7 +51,7 @@ export default function AdminDashboardLayout({
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
                     <SidebarMenuButton
-                      isActive={pathname === item.href}
+                      isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/cpanel')}
                       tooltip={item.label}
                       className="justify-start"
                     >
@@ -67,8 +67,8 @@ export default function AdminDashboardLayout({
           <SidebarFooter>
             <SidebarMenu>
                <SidebarMenuItem>
-                <Link href={`/dashboard/profile`}>
-                  <SidebarMenuButton tooltip="Perfil" className="justify-start" isActive={pathname.startsWith(`/dashboard/profile`)}>
+                <Link href={`/cpanel/profile`}>
+                  <SidebarMenuButton tooltip="Perfil" className="justify-start" isActive={pathname.startsWith(`/cpanel/profile`)}>
                     <User />
                     <span>Perfil</span>
                   </SidebarMenuButton>
