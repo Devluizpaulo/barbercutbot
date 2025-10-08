@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { shops } from '@/lib/data';
 import {
   Share2,
   Copy,
@@ -23,22 +22,56 @@ import {
   Clock,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { BarberShop } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const params = useParams();
   const shopId = params.shopId as string;
-  const shop = shops.find((s) => s.id === shopId);
+  const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Placeholder data - in a real app, this would come from settings
-  const address = 'Rua das Flores, 123, São Paulo, SP';
-  const phone = '(11) 98765-4321';
-  const workingHours = 'Terça a Sábado, das 9h às 19h';
+  const shopRef = useMemoFirebase(
+    () => doc(firestore, 'barberShops', shopId),
+    [firestore, shopId]
+  );
+  const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
+
   const bookingUrl = `https://bbr.app/${shop?.name.toLowerCase().replace(/\s/g, '-')}`;
+
+  if (isLoading) {
+    return (
+        <div className="flex flex-col gap-8">
+            <Skeleton className="h-10 w-1/2" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-1">
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="md:col-span-2">
+                    <Skeleton className="h-[500px] w-full" />
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   if (!shop) {
     return <div>Barbearia não encontrada.</div>;
   }
+  
+  const workingHours = shop.workingHours?.filter(wh => wh.enabled).map(wh => `${wh.day}: ${wh.open} - ${wh.close}`).join(' | ') || 'Horário não definido';
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(
     bookingUrl
@@ -143,21 +176,21 @@ export default function ProfilePage() {
                   <MapPin className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold">Endereço</h4>
-                    <p className="text-muted-foreground">{address}</p>
+                    <p className="text-muted-foreground">{shop.address || 'Não informado'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <Phone className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold">Telefone</h4>
-                    <p className="text-muted-foreground">{phone}</p>
+                    <p className="text-muted-foreground">{shop.phone || 'Não informado'}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <Clock className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold">Horário</h4>
-                    <p className="text-muted-foreground">{workingHours}</p>
+                    <p className="text-muted-foreground text-xs">{workingHours}</p>
                   </div>
                 </div>
               </div>
