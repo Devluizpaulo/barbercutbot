@@ -22,13 +22,14 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { DollarSign, Users, Calendar, Scissors, Store } from "lucide-react"
-import { format, getMonth, startOfDay, endOfDay } from "date-fns"
+import { format, getMonth, startOfDay, endOfDay, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
 import { CashierDialog } from "./cashier-dialog";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where, Timestamp } from "firebase/firestore";
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig = {
   revenue: {
@@ -45,34 +46,49 @@ export default function ShopDashboardPage() {
 
   // --- Data Fetching ---
   const financialRecordsQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'financialRecords'), [firestore, shopId]);
-  const { data: financialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
+  const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
 
   const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
-  const { data: customers } = useCollection<Customer>(customersQuery);
+  const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
 
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
+  
   const appointmentsQuery = useMemoFirebase(() => query(
-      collection(firestore, 'barberShops', shopId, 'appointments'),
-      where('startTime', '>=', todayStart),
-      where('startTime', '<=', todayEnd)
-  ), [firestore, shopId, todayStart, todayEnd]);
-  const { data: todayAppointments } = useCollection<Appointment>(appointmentsQuery);
+      collection(firestore, 'barberShops', shopId, 'appointments')
+  ), [firestore, shopId]);
+  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+  
+  const todayAppointments = useMemo(() => {
+    if (!allAppointments) return [];
+    return allAppointments.filter(appt => {
+        const apptDate = toDate(appt.startTime);
+        return isSameDay(apptDate, new Date());
+    })
+  }, [allAppointments])
+
 
   const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
-  const { data: services } = useCollection<Service>(servicesQuery);
+  const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
+  
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
 
   // --- Memoized Calculations ---
   const totalRevenueMonth = useMemo(() => {
     if (!financialRecords) return 0;
     const currentMonth = getMonth(new Date());
     return financialRecords
-      .filter(r => r.type === 'income' && getMonth(r.date instanceof Timestamp ? r.date.toDate() : new Date(r.date)) === currentMonth)
+      .filter(r => r.type === 'income' && getMonth(toDate(r.date)) === currentMonth)
       .reduce((acc, r) => acc + r.amount, 0);
   }, [financialRecords]);
   
   const mostPopularService = useMemo(() => {
-    if (!todayAppointments || !services) return { name: 'N/A', percentage: 0 };
+    if (!todayAppointments || !services || todayAppointments.length === 0) return { name: 'N/A', percentage: 0 };
     const serviceCounts: Record<string, number> = {};
     let totalServices = 0;
 
@@ -105,7 +121,7 @@ export default function ShopDashboardPage() {
     }));
 
     financialRecords?.forEach(t => {
-        const transactionDate = t.date instanceof Timestamp ? t.date.toDate() : new Date(t.date);
+        const transactionDate = toDate(t.date);
         const monthIndex = getMonth(transactionDate);
         if (t.type === 'income') {
             revenueData[monthIndex].revenue += t.amount;
@@ -114,12 +130,7 @@ export default function ShopDashboardPage() {
     return revenueData;
   }, [financialRecords]);
 
-  const toDate = (timestamp: Timestamp | Date | string): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    return new Date(timestamp);
-  }
+  const isLoading = isFinancialLoading || isCustomersLoading || isAppointmentsLoading || isServicesLoading;
 
   return (
     <>
@@ -142,7 +153,7 @@ export default function ShopDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R${totalRevenueMonth.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenueMonth.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>}
             <p className="text-xs text-muted-foreground">
               +20.1% do último mês (simulado)
             </p>
@@ -156,7 +167,7 @@ export default function ShopDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+{customers?.length || 0}</div>
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">+{customers?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
               +10% do último mês (simulado)
             </p>
@@ -168,7 +179,7 @@ export default function ShopDashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayAppointments?.length || 0}</div>
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{todayAppointments?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
               {todayAppointments?.filter(a => a.status === 'completed').length || 0} concluídos
             </p>
@@ -180,7 +191,7 @@ export default function ShopDashboardPage() {
             <Scissors className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mostPopularService.name}</div>
+            {isLoading ? <Skeleton className="h-8 w-2/4" /> : <div className="text-2xl font-bold">{mostPopularService.name}</div>}
             <p className="text-xs text-muted-foreground">
               {mostPopularService.percentage}% das reservas de hoje
             </p>
@@ -236,6 +247,11 @@ export default function ShopDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {isLoading && Array.from({length: 3}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell>
+                    </TableRow>
+                ))}
                 {todayAppointments?.slice(0, 5).map((appointment) => (
                   <TableRow key={appointment.id}>
                     <TableCell>
@@ -252,7 +268,7 @@ export default function ShopDashboardPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                 {todayAppointments?.length === 0 && (
+                 {!isLoading && todayAppointments?.length === 0 && (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center h-24">
                             Nenhum agendamento para hoje.
@@ -277,3 +293,5 @@ export default function ShopDashboardPage() {
     </>
   )
 }
+
+    

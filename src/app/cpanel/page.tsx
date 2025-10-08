@@ -43,8 +43,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import type { BarberShop, Customer, FinancialRecord } from '@/lib/types';
+import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
+import type { BarberShop, Customer, FinancialRecord, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMonth } from 'date-fns';
 
@@ -55,7 +55,8 @@ const chartConfig = {
     color: "hsl(var(--primary))",
   },
 }
-const chartData = [
+
+const initialChartData = [
   { month: "Jan", shops: 0 },
   { month: "Fev", shops: 0 },
   { month: "Mar", shops: 0 },
@@ -79,25 +80,37 @@ export default function AdminDashboard() {
     const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
     
-    // This is a simplification. In a real world scenario, you would query each subcollection.
-    // For this prototype, we'll just query all customers and all financial records.
-    const customersQuery = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
-    const { data: customers } = useCollection<Customer>(customersQuery);
+    // As these are sub-collections, we would need to query them differently.
+    // For this prototype, we'll use collectionGroup for a platform-wide query.
+    const customersQuery = useMemoFirebase(() => query(collectionGroup(firestore, 'customers')), [firestore]);
+    const { data: customers, isLoading: isLoadingCustomers } = useCollection<Customer>(customersQuery);
 
-    const financialRecordsQuery = useMemoFirebase(() => collection(firestore, 'financialRecords'), [firestore]);
-    const { data: financialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
+    const financialRecordsQuery = useMemoFirebase(() => query(collectionGroup(firestore, 'financialRecords')), [firestore]);
+    const { data: financialRecords, isLoading: isLoadingFinancialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
 
+    const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
-    const totalRevenue = useMemo(() => financialRecords?.reduce((acc, record) => acc + record.amount, 0) || 0, [financialRecords]);
-    const totalClients = useMemo(() => customers?.length || 0, [customers]);
+    const toDate = (timestamp: Timestamp | Date | string): Date => {
+      if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+      }
+      return new Date(timestamp);
+    }
+    
+    const totalRevenue = useMemo(() => {
+        if (!financialRecords) return 0;
+        return financialRecords.reduce((acc, record) => record.type === 'income' ? acc + record.amount : acc, 0)
+    }, [financialRecords]);
 
     const newShopsChartData = useMemo(() => {
-        const data = [...chartData];
-        shops?.forEach(shop => {
-            // Assuming createdAt exists. Need to add it to the type and data creation.
-            // For now, let's just mock it with a random month
-            const monthIndex = Math.floor(Math.random() * 12);
-            data[monthIndex].shops++;
+        const data = JSON.parse(JSON.stringify(initialChartData));
+        if (!shops) return data;
+        shops.forEach(shop => {
+            if (shop.createdAt) {
+                const monthIndex = getMonth(toDate(shop.createdAt));
+                data[monthIndex].shops++;
+            }
         })
         return data;
     }, [shops])
@@ -122,6 +135,8 @@ export default function AdminDashboard() {
         setShopToDeactivate(null);
     };
 
+    const isLoading = isLoadingShops || isLoadingCustomers || isLoadingFinancialRecords || isLoadingUsers;
+
   return (
     <>
     <div className="flex flex-1 flex-col gap-8">
@@ -143,7 +158,7 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoadingShops ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
             <p className="text-xs text-muted-foreground">
               +5.2% em relação ao mês passado (simulado)
             </p>
@@ -157,7 +172,7 @@ export default function AdminDashboard() {
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoadingShops ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.length || 0}</div>}
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
               +1 no último mês (simulado)
             </p>
@@ -171,7 +186,7 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoadingShops ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{totalClients}</div>}
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{customers?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
               em toda a plataforma
             </p>
@@ -246,7 +261,7 @@ export default function AdminDashboard() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoadingShops && Array.from({length: 3}).map((_, i) => (
+                            {isLoading && Array.from({length: 3}).map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
                                 </TableRow>
@@ -305,7 +320,7 @@ export default function AdminDashboard() {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                             {!isLoadingShops && shops?.length === 0 && (
+                             {!isLoading && shops?.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-24 text-center">Nenhuma barbearia encontrada.</TableCell>
                                 </TableRow>
@@ -322,18 +337,18 @@ export default function AdminDashboard() {
                 <CardDescription>Últimas ações importantes na plataforma.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {isLoadingShops && <Skeleton className="h-24 w-full" />}
-                {shops?.slice(0, 4).map((shop, index) => (
-                    <div className="flex items-start gap-4" key={shop.id}>
+                {isLoading && <Skeleton className="h-24 w-full" />}
+                {users?.slice(0, 4).map((user, index) => (
+                    <div className="flex items-start gap-4" key={user.id}>
                         <Avatar className="h-9 w-9">
-                            <AvatarFallback>{shop.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
                             <p className="text-sm font-medium leading-none">
-                                Nova barbearia cadastrada!
+                                Novo usuário cadastrado!
                             </p>
                             <p className="text-sm text-muted-foreground">
-                                Bem-vinda, {shop.name}.
+                                Bem-vindo(a), {user.firstName}.
                             </p>
                         </div>
                     </div>
@@ -369,3 +384,5 @@ export default function AdminDashboard() {
     </>
   )
 }
+
+    

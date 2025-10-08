@@ -4,9 +4,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Table,
@@ -17,26 +14,31 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { users, shops } from "@/lib/data"
-import type { User } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MoreVertical, PlusCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { BarberShop, UserProfile } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function AdminUsersPage() {
+    const firestore = useFirestore();
+    const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
+
+    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
+
 
     const getShopByOwnerId = (ownerId: string) => {
-        // This is a placeholder logic. In a real app, you'd likely have a more direct relationship.
-        const user = users.find(u => u.id === ownerId);
-        if (!user) return null;
-        
-        // Let's assume shop owner name is in the shop data.
-        return shops.find(s => s.owner.includes(user.firstName));
+        return shops?.find(s => s.ownerId === ownerId);
     }
-
+    
+    const isLoading = isLoadingUsers || isLoadingShops;
 
   return (
     <div className="flex flex-1 flex-col gap-8">
@@ -73,15 +75,21 @@ export default function AdminUsersPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {users.map(user => {
+                    {isLoading && Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
+                        </TableRow>
+                    ))}
+                    {users?.map(user => {
                          const associatedShop = getShopByOwnerId(user.id);
+                         const userRole = user.email === 'admin@bbr.com' ? 'admin' : 'owner';
                          return (
                             <TableRow key={user.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
                                         <Avatar>
-                                            <AvatarImage src={user.avatar} />
-                                            <AvatarFallback>{user.firstName.charAt(0)}{user.lastName.charAt(0)}</AvatarFallback>
+                                            <AvatarImage />
+                                            <AvatarFallback>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <div className="font-medium">
                                             {user.firstName} {user.lastName}
@@ -93,7 +101,7 @@ export default function AdminUsersPage() {
                                     {associatedShop ? associatedShop.name : 'N/A'}
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>{user.role}</Badge>
+                                    <Badge variant={userRole === 'admin' ? 'destructive' : 'outline'}>{userRole}</Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <DropdownMenu>
@@ -112,6 +120,11 @@ export default function AdminUsersPage() {
                             </TableRow>
                          )
                     })}
+                    {!isLoading && users?.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
         </CardContent>
@@ -119,3 +132,5 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
+    

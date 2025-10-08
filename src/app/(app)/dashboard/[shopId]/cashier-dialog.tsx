@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Appointment, Service, Barber, Customer } from '@/lib/types';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddTransactionForm } from './finance/add-transaction-form';
 import { Badge } from '@/components/ui/badge';
@@ -63,14 +63,13 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
     setReceiptOpen(true);
   };
 
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
   const appointmentsQuery = useMemoFirebase(() => query(
-    collection(firestore, 'barberShops', shopId, 'appointments'),
-    where('startTime', '>=', todayStart),
-    where('startTime', '<=', todayEnd)
-  ), [firestore, shopId, todayStart, todayEnd]);
-  const { data: todayAppointments } = useCollection<Appointment>(appointmentsQuery);
+    collection(firestore, 'barberShops', shopId, 'appointments')
+  ), [firestore, shopId]);
+  const { data: allAppointments } = useCollection<Appointment>(appointmentsQuery);
+  
+  const todayAppointments = allAppointments?.filter(appt => isSameDay(toDate(appt.startTime), new Date()));
+
 
   const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
   const { data: allServices } = useCollection<Service>(servicesQuery);
@@ -213,3 +212,5 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
     </>
   );
 }
+
+    

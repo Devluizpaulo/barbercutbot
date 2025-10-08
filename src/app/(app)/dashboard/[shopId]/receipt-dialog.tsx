@@ -37,13 +37,13 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
   const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
-  const serviceRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]), [firestore, shopId, appointment]);
+  const serviceRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment]);
   const { data: service } = useDoc<Service>(serviceRef);
   
-  const barberRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId), [firestore, shopId, appointment]);
+  const barberRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment]);
   const { data: barber } = useDoc<Barber>(barberRef);
   
-  const customerRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId), [firestore, shopId, appointment]);
+  const customerRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment]);
   const { data: customer } = useDoc<Customer>(customerRef);
 
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -109,7 +109,7 @@ Volte sempre!
 
             <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold font-headline">Recibo</h2>
-                <p className="text-sm text-muted-foreground">#{appointment.id.split('-')[0]}</p>
+                <p className="text-sm text-muted-foreground">#{appointment.id.substring(0, 8)}</p>
             </div>
 
             <Separator className="my-4" />
@@ -167,3 +167,5 @@ Volte sempre!
     </Dialog>
   );
 }
+
+    
