@@ -16,7 +16,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import type { Customer, Appointment } from '@/lib/types';
+import type { Customer, Appointment, Service, Barber } from '@/lib/types';
 
 import {
   Card,
@@ -73,6 +73,21 @@ export default function ClientDetailsPage() {
   );
   const { data: clientAppointments, isLoading: areAppointmentsLoading } =
     useCollection<Appointment>(appointmentsQuery);
+
+  // Fetch services and barbers to map names
+  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const { data: services } = useCollection<Service>(servicesQuery);
+  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
+  const { data: barbers } = useCollection<Barber>(barbersQuery);
+
+  const getServiceName = (serviceId: string) => {
+    return services?.find(s => s.id === serviceId)?.name || serviceId;
+  }
+  const getBarberName = (barberId: string) => {
+    const barber = barbers?.find(b => b.id === barberId);
+    return barber ? `${barber.firstName} ${barber.lastName}` : barberId;
+  }
+
 
   const totalSpent = clientAppointments?.reduce((acc, appt) => {
     return acc + (appt.price || 0);
@@ -225,12 +240,11 @@ export default function ClientDetailsPage() {
                       })}
                     </div>
                      <div className="text-sm text-muted-foreground sm:hidden">
-                       {/* This would need another fetch or denormalization */}
-                       Serviço ID: {appointment.serviceIds[0]}
+                       {getServiceName(appointment.serviceIds[0])}
                      </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{appointment.serviceIds.join(', ')}</TableCell>
-                  <TableCell className="hidden md:table-cell">{appointment.barberId}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{getServiceName(appointment.serviceIds[0])}</TableCell>
+                  <TableCell className="hidden md:table-cell">{getBarberName(appointment.barberId)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={appointment.status === 'completed' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'default'}
