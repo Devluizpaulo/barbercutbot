@@ -11,12 +11,13 @@ import {
   DollarSign,
   Calendar as CalendarIcon,
   AlertCircle,
+  LoaderCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { clients, appointments as allAppointments } from '@/lib/data';
-import type { Client, Appointment } from '@/lib/data';
+import { appointments as allAppointments } from '@/lib/data';
+import type { Customer, Appointment } from '@/lib/types';
 
 import {
   Card,
@@ -35,23 +36,64 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  useCollection,
+  useDoc,
+  useFirestore,
+  useMemoFirebase,
+} from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientDetailsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const clientId = params.clientId as string;
+  const firestore = useFirestore();
 
-  // Simulate fetching data
-  const client = clients.find(c => `client-${c.id}` === clientId);
-  const clientAppointments = allAppointments.filter(a => a.clientName.includes(client?.name.split(' ')[0] ?? ''));
+  const clientRef = useMemoFirebase(
+    () => doc(firestore, 'barberShops', shopId, 'customers', clientId),
+    [firestore, shopId, clientId]
+  );
+  const { data: client, isLoading: isClientLoading } = useDoc<Customer>(clientRef);
 
-  const totalSpent = clientAppointments.reduce((acc, appt) => {
-    // Placeholder price for mock data
-    return acc + 50; 
+  const appointmentsQuery = useMemoFirebase(
+    () =>
+      client
+        ? query(
+            collection(firestore, 'barberShops', shopId, 'appointments'),
+            where('customerId', '==', client.id)
+          )
+        : null,
+    [firestore, shopId, client]
+  );
+  const { data: clientAppointments, isLoading: areAppointmentsLoading } =
+    useCollection<Appointment>(appointmentsQuery);
+
+  const totalSpent = clientAppointments?.reduce((acc, appt) => {
+    return acc + (appt.price || 0);
   }, 0);
+  
+  const lastVisit = clientAppointments?.[0]?.startTime ? format(new Date(clientAppointments[0].startTime as Date), 'dd/MM/yyyy', { locale: ptBR }) : "N/A";
 
-  const lastVisit = client?.lastVisit || "N/A";
-
+  if (isClientLoading) {
+    return (
+        <div className="flex flex-col gap-8">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10" />
+                <div>
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+            </div>
+            <Skeleton className="h-64 w-full" />
+        </div>
+    )
+  }
 
   if (!client) {
     return (
@@ -85,7 +127,7 @@ export default function ClientDetailsPage() {
             </Button>
             <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-                {client.name}
+                {client.firstName} {client.lastName}
             </h1>
             <p className="text-muted-foreground">Perfil e Histórico do Cliente</p>
             </div>
@@ -129,7 +171,7 @@ export default function ClientDetailsPage() {
             <div className="flex items-center gap-3">
               <DollarSign className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="font-bold">R${totalSpent.toFixed(2)}</p>
+                <p className="font-bold">R${(totalSpent || 0).toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">Total Gasto</p>
               </div>
             </div>
@@ -161,30 +203,32 @@ export default function ClientDetailsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clientAppointments.map((appointment) => (
+              {areAppointmentsLoading && <TableRow><TableCell colSpan={4}><LoaderCircle className="mx-auto animate-spin" /></TableCell></TableRow>}
+              {clientAppointments?.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell>
                     <div className="font-medium">
-                      {format(new Date(appointment.dateTime), "dd/MM/yy 'às' HH:mm", {
+                      {format(new Date(appointment.startTime as Date), "dd/MM/yy 'às' HH:mm", {
                         locale: ptBR,
                       })}
                     </div>
                      <div className="text-sm text-muted-foreground sm:hidden">
-                       {appointment.service}
+                       {/* This would need another fetch or denormalization */}
+                       Serviço ID: {appointment.serviceIds[0]}
                      </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{appointment.service}</TableCell>
-                  <TableCell className="hidden md:table-cell">{appointment.barber}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{appointment.serviceIds.join(', ')}</TableCell>
+                  <TableCell className="hidden md:table-cell">{appointment.barberId}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={appointment.status === 'Concluído' ? 'secondary' : appointment.status === 'Cancelado' ? 'destructive' : 'default'}
+                      variant={appointment.status === 'completed' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'default'}
                     >
                       {appointment.status}
                     </Badge>
                   </TableCell>
                 </TableRow>
               ))}
-              {clientAppointments.length === 0 && (
+              {!areAppointmentsLoading && clientAppointments?.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={4}

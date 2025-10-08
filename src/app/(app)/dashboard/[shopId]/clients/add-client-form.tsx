@@ -19,6 +19,7 @@ import {
   LoaderCircle,
   Smartphone,
 } from 'lucide-react';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +35,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import type { Customer } from '@/lib/types';
+import { useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'O nome é obrigatório.' }),
@@ -41,7 +45,7 @@ const formSchema = z.object({
   nickname: z.string().optional(),
   email: z.string().email({ message: 'Email inválido.' }).optional().or(z.literal('')),
   phone: z.string().optional(),
-  whatsapp: z.string().min(1, { message: 'O WhatsApp é obrigatório.' }),
+  whatsapp: z.string().optional(),
   notes: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
@@ -56,31 +60,49 @@ type AddClientFormValues = z.infer<typeof formSchema>;
 
 interface AddClientFormProps {
   shopId: string;
+  initialData?: Customer;
   onSuccess?: () => void;
 }
 
-export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
+export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormProps) {
   const { toast } = useToast();
   const [isCepLoading, setIsCepLoading] = useState(false);
+  const firestore = useFirestore();
 
   const form = useForm<AddClientFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      nickname: '',
-      email: '',
-      phone: '',
-      whatsapp: '',
-      notes: '',
-      cep: '',
-      address: '',
-      number: '',
-      complement: '',
-      neighborhood: '',
-      city: '',
-      state: '',
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          nickname: initialData.nickname || '',
+          email: initialData.email || '',
+          phone: initialData.phone || '',
+          whatsapp: initialData.whatsapp || '',
+          notes: initialData.notes || '',
+          cep: initialData.cep || '',
+          address: initialData.address || '',
+          number: initialData.number || '',
+          complement: initialData.complement || '',
+          neighborhood: initialData.neighborhood || '',
+          city: initialData.city || '',
+          state: initialData.state || '',
+        }
+      : {
+          firstName: '',
+          lastName: '',
+          nickname: '',
+          email: '',
+          phone: '',
+          whatsapp: '',
+          notes: '',
+          cep: '',
+          address: '',
+          number: '',
+          complement: '',
+          neighborhood: '',
+          city: '',
+          state: '',
+        },
   });
 
   const { isSubmitting } = form.formState;
@@ -133,13 +155,28 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
 
 
   const onSubmit = async (values: AddClientFormValues) => {
-    // NOTE: Database functionality is disabled for simulation.
-    console.log("Simulating add client:", values);
-    toast({
-      title: 'Modo de Simulação',
-      description: 'Funcionalidade de adicionar cliente desabilitada.',
-    });
-    onSuccess?.();
+    try {
+      const customersRef = collection(firestore, 'barberShops', shopId, 'customers');
+      await addDocumentNonBlocking(customersRef, {
+        ...values,
+        barberShopId: shopId,
+        createdAt: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Cliente Adicionado!',
+        description: `O cliente ${values.firstName} foi salvo com sucesso.`,
+      });
+      onSuccess?.();
+      form.reset();
+    } catch (error) {
+       console.error('Error saving client:', error);
+       toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um problema ao salvar o cliente.',
+      });
+    }
   };
 
   return (
@@ -243,7 +280,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
                       <div className="relative">
                          <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
-                            <Input placeholder="(11) 99999-9999" {...field} className="pl-10" />
+                            <Input placeholder="(11) 99999-9999" {...field} className="pl-10" value={field.value || ''} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -404,7 +441,7 @@ export function AddClientForm({ shopId, onSuccess }: AddClientFormProps) {
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Salvar Cliente
+            {initialData ? 'Salvar Alterações' : 'Salvar Cliente'}
           </Button>
         </div>
       </form>

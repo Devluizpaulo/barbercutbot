@@ -29,9 +29,18 @@ export type Customer = {
   barberShopId: string;
   firstName: string;
   lastName: string;
+  nickname?: string;
   phone?: string;
+  whatsapp?: string;
   email?: string;
   notes?: string;
+  cep?: string;
+  address?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
   createdAt: Timestamp;
 };
 
