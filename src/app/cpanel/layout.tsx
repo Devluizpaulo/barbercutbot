@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarHeader,
@@ -21,8 +21,13 @@ import {
   LogOut,
   User,
   Ticket,
+  LoaderCircle,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { useUser } from "@/firebase";
+import { useEffect } from "react";
+import { signOut } from "firebase/auth";
+import { useAuth } from "@/firebase";
 
 export default function AdminDashboardLayout({
   children,
@@ -30,6 +35,24 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/cpanel/login');
+    } else if (!isUserLoading && user && user.email !== 'admin@bbr.com') {
+        // If a non-admin is logged in, send them away
+        router.push('/dashboard/shops');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/cpanel/login');
+  };
 
   const navItems = [
     { href: `/cpanel`, label: "Visão Geral", icon: LayoutDashboard },
@@ -38,6 +61,14 @@ export default function AdminDashboardLayout({
     { href: `/cpanel/documents`, label: "Documentos", icon: FileText },
     { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
+
+  if (isUserLoading || !user) {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    )
+  }
 
   return (
       <div className="flex flex-1">
@@ -67,20 +98,18 @@ export default function AdminDashboardLayout({
           <SidebarFooter>
             <SidebarMenu>
                <SidebarMenuItem>
-                <Link href={`/cpanel/profile`}>
-                  <SidebarMenuButton tooltip="Perfil" className="justify-start" isActive={pathname.startsWith(`/cpanel/profile`)}>
-                    <User />
-                    <span>Perfil</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
                 <Link href="/dashboard/shops">
                   <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
                     <LogOut className="rotate-180" />
                     <span>Voltar para Lojas</span>
                   </SidebarMenuButton>
                 </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
+                    <LogOut />
+                    <span>Sair</span>
+                  </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
@@ -91,3 +120,4 @@ export default function AdminDashboardLayout({
       </div>
   );
 }
+
