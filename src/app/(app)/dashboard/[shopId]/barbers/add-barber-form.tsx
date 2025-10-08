@@ -4,7 +4,14 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LoaderCircle, Mail, PenSquare, Phone, User, Image as ImageIcon } from 'lucide-react';
+import {
+  LoaderCircle,
+  Mail,
+  PenSquare,
+  Phone,
+  User,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,8 +24,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Barber } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { Barber } from '@/lib/types';
+import { useFirestore }s
+import {
+  setDocumentNonBlocking,
+  addDocumentNonBlocking,
+} from '@/firebase/non-blocking-updates';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -37,19 +50,32 @@ interface AddBarberFormProps {
   onSuccess?: () => void;
 }
 
-export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormProps) {
+export function AddBarberForm({
+  shopId,
+  initialData,
+  onSuccess,
+}: AddBarberFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const form = useForm<AddBarberFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      bio: '',
-      avatar: '',
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          email: initialData.email || '',
+          phone: initialData.phone || '',
+          bio: initialData.bio || '',
+          avatar: initialData.avatar || '',
+        }
+      : {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          bio: '',
+          avatar: '',
+        },
   });
 
   const { isSubmitting } = form.formState;
@@ -57,15 +83,42 @@ export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormP
   const firstName = form.watch('firstName');
 
   const onSubmit = async (values: AddBarberFormValues) => {
-    // NOTE: Database functionality is disabled for simulation.
-    console.log("Simulating save barber for shop:", shopId, values);
-    toast({
-      title: initialData ? 'Barbeiro Atualizado!' : 'Barbeiro Adicionado!',
-      description: `O profissional ${values.firstName} foi salvo.`,
-    });
-    onSuccess?.();
-    if (!initialData) {
-      form.reset();
+    try {
+      if (initialData) {
+        // Update existing barber
+        const barberRef = doc(
+          firestore,
+          'barberShops',
+          shopId,
+          'barbers',
+          initialData.id
+        );
+        setDocumentNonBlocking(barberRef, values, { merge: true });
+      } else {
+        // Create new barber
+        const barbersRef = collection(firestore, 'barberShops', shopId, 'barbers');
+        await addDocumentNonBlocking(barbersRef, {
+          ...values,
+          barberShopId: shopId,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      toast({
+        title: initialData ? 'Barbeiro Atualizado!' : 'Barbeiro Adicionado!',
+        description: `O profissional ${values.firstName} foi salvo com sucesso.`,
+      });
+      onSuccess?.();
+      if (!initialData) {
+        form.reset();
+      }
+    } catch (error) {
+      console.error('Error saving barber:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Ocorreu um problema ao salvar o barbeiro.',
+      });
     }
   };
 
@@ -76,10 +129,14 @@ export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormP
           <Avatar className="h-20 w-20">
             <AvatarImage src={avatarUrl} alt={firstName} />
             <AvatarFallback>
-                {firstName ? firstName.charAt(0) : <User className="h-8 w-8" />}
+              {firstName ? (
+                firstName.charAt(0)
+              ) : (
+                <User className="h-8 w-8" />
+              )}
             </AvatarFallback>
           </Avatar>
-           <FormField
+          <FormField
             control={form.control}
             name="avatar"
             render={({ field }) => (
@@ -208,7 +265,7 @@ export function AddBarberForm({ shopId, initialData, onSuccess }: AddBarberFormP
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Salvar Barbeiro
+            {initialData ? 'Salvar Alterações' : 'Salvar Barbeiro'}
           </Button>
         </div>
       </form>

@@ -21,7 +21,7 @@ export type Appointment = {
   notes?: string;
   price?: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
 
 export type Customer = {
@@ -32,7 +32,7 @@ export type Customer = {
   phone?: string;
   email?: string;
   notes?: string;
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
 
 export type Barber = {
@@ -43,7 +43,8 @@ export type Barber = {
   phone?: string;
   email?: string;
   bio?: string;
-  createdAt: Timestamp | Date;
+  avatar?: string;
+  createdAt: Timestamp;
 };
 
 export type Service = {
@@ -53,7 +54,7 @@ export type Service = {
   description?: string;
   price: number;
   duration: number; // in minutes
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
 
 export type FinancialRecord = {
@@ -66,7 +67,7 @@ export type FinancialRecord = {
   category: string;
   paymentMethod?: string;
   isRecurring?: boolean;
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
 
 export type Supplier = {
@@ -77,7 +78,7 @@ export type Supplier = {
   phone: string;
   category: string;
   notes?: string;
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
 
 
@@ -86,5 +87,5 @@ export type UserProfile = {
   firstName: string;
   lastName: string;
   email: string;
-  createdAt: Timestamp | Date;
+  createdAt: Timestamp;
 };
