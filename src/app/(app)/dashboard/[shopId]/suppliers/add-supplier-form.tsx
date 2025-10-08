@@ -60,7 +60,6 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
       const supplierData = {
         ...values,
         barberShopId: shopId,
-        createdAt: serverTimestamp(),
       };
 
       if (initialData) {
@@ -68,7 +67,7 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
         setDocumentNonBlocking(supplierRef, supplierData, { merge: true });
       } else {
         const supplierRef = collection(firestore, 'barberShops', shopId, 'suppliers');
-        addDocumentNonBlocking(supplierRef, supplierData);
+        addDocumentNonBlocking(supplierRef, {...supplierData, createdAt: serverTimestamp()});
       }
 
       toast({
