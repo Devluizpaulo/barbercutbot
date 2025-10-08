@@ -47,14 +47,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { AddAppointmentForm } from './add-appointment-form';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,7 +61,7 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import type { Appointment, Customer, Barber, Service } from '@/lib/types';
+import type { Appointment, Customer, Barber } from '@/lib/types';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -142,6 +134,16 @@ export default function AppointmentsPage() {
       default: return 'outline';
     }
   };
+  
+  const getStatusLabel = (status: Appointment['status']) => {
+      switch (status) {
+        case 'completed': return 'Concluído';
+        case 'cancelled': return 'Cancelado';
+        case 'confirmed': return 'Confirmado';
+        case 'pending': return 'Pendente';
+        default: return 'Desconhecido';
+      }
+  }
 
   const getClientName = (clientId: string) => {
     const client = customers?.find(c => c.id === clientId);
@@ -258,12 +260,7 @@ export default function AppointmentsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusVariant(appointment.status)}>
-                            {appointment.status === 'pending' ? 'Pendente' :
-                             appointment.status === 'confirmed' ? 'Confirmado' :
-                             appointment.status === 'completed' ? 'Concluído' :
-                             appointment.status === 'cancelled' ? 'Cancelado' :
-                             'No-Show'
-                            }
+                            {getStatusLabel(appointment.status)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -280,7 +277,7 @@ export default function AppointmentsPage() {
                               <DropdownMenuItem
                                 onClick={() => handleEdit(appointment)}
                               >
-                                <Edit className="mr-2" /> Editar
+                                <Edit className="mr-2 h-4 w-4" /> Editar
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
@@ -289,7 +286,7 @@ export default function AppointmentsPage() {
                                   )
                                 }
                               >
-                                <Eye className="mr-2" /> Ver Detalhes
+                                <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
@@ -300,7 +297,7 @@ export default function AppointmentsPage() {
                                 }
                                 disabled={appointment.status === 'completed'}
                               >
-                                <CheckCircle className="mr-2" /> Marcar como
+                                <CheckCircle className="mr-2 h-4 w-4" /> Marcar como
                                 Concluído
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -310,7 +307,7 @@ export default function AppointmentsPage() {
                                 }
                                 disabled={appointment.status === 'cancelled'}
                               >
-                                <XCircle className="mr-2" /> Cancelar
+                                <XCircle className="mr-2 h-4 w-4" /> Cancelar
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
