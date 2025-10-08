@@ -41,16 +41,30 @@ export default function AdminDashboardLayout({
 
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/cpanel/login');
-    } else if (!isUserLoading && user && user.email !== 'admin@bbr.com') {
-        // If a non-admin is logged in, send them away
+    // Se o carregamento do usuário terminou
+    if (!isUserLoading) {
+      // Se não há usuário, redireciona para a página de login do cpanel
+      if (!user) {
+        if (pathname !== '/cpanel/login') {
+            router.push('/cpanel/login');
+        }
+      } 
+      // Se há um usuário, mas não é o admin
+      else if (user.email !== 'admin@bbr.com') {
+        // Redireciona para o dashboard das lojas, que é a área do usuário comum
         router.push('/dashboard/shops');
+      }
+      // Se é o admin e está na página de login, redireciona para o dashboard do cpanel
+      else if (user.email === 'admin@bbr.com' && pathname === '/cpanel/login') {
+        router.push('/cpanel');
+      }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, pathname]);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
     router.push('/cpanel/login');
   };
 
@@ -62,13 +76,21 @@ export default function AdminDashboardLayout({
     { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
 
-  if (isUserLoading || !user) {
+  // Mostra um loader enquanto verifica a autenticação
+  // ou se o usuário não for o admin e estiver em uma rota do cpanel (antes do redirect)
+  if (isUserLoading || (!isUserLoading && user && user.email !== 'admin@bbr.com')) {
     return (
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
         </div>
     )
   }
+  
+  // Se não há usuário e não estamos na página de login, não renderiza nada até o redirect ocorrer.
+  if (!user && pathname !== '/cpanel/login') {
+      return null;
+  }
+
 
   return (
       <div className="flex flex-1">
@@ -120,4 +142,3 @@ export default function AdminDashboardLayout({
       </div>
   );
 }
-
