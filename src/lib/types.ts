@@ -1,6 +1,13 @@
 
 import { Timestamp } from 'firebase/firestore';
 
+export type WorkingHour = {
+  day: string;
+  open: string;
+  close: string;
+  enabled: boolean;
+};
+
 export type BarberShop = {
   id: string;
   name: string;
@@ -8,7 +15,9 @@ export type BarberShop = {
   address?: string;
   phone?: string;
   email?: string;
+  document?: string;
   status?: 'active' | 'inactive';
+  workingHours?: WorkingHour[];
   createdAt?: Timestamp;
 };
 
@@ -107,3 +116,4 @@ export type UserProfile = {
   email: string;
   createdAt: Timestamp;
 };
+

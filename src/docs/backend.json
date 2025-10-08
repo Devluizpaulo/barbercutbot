@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "BarberShop": {
@@ -31,6 +32,23 @@
           "type": "string",
           "description": "Email address of the barber shop.",
           "format": "email"
+        },
+        "document": {
+            "type": "string",
+            "description": "Official document number (CNPJ/CPF)."
+        },
+        "workingHours": {
+            "type": "array",
+            "description": "Working hours for each day of the week.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "day": { "type": "string" },
+                    "open": { "type": "string" },
+                    "close": { "type": "string" },
+                    "enabled": { "type": "boolean" }
+                }
+            }
         }
       },
       "required": [
