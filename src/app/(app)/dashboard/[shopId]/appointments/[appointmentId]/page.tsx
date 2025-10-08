@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
 
 export default function AppointmentDetailsPage() {
@@ -33,17 +33,18 @@ export default function AppointmentDetailsPage() {
   const shopId = params.shopId as string;
   const appointmentId = params.appointmentId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const appointmentRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'appointments', appointmentId), [firestore, shopId, appointmentId]);
+  const appointmentRef = useMemoFirebase(() => user ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null, [firestore, shopId, appointmentId, user]);
   const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
 
-  const customerRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment]);
+  const customerRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
 
-  const barberRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment]);
+  const barberRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
   const { data: barber } = useDoc<Barber>(barberRef);
 
-  const serviceRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment]);
+  const serviceRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
   const { data: service } = useDoc<Service>(serviceRef);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {

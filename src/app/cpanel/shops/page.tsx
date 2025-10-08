@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { BarberShop } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +37,8 @@ import { AddShopForm } from './add-shop-form';
 
 export default function AdminShopsPage() {
     const firestore = useFirestore();
-    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const { user } = useUser();
+    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
     const { data: shops, isLoading } = useCollection<BarberShop>(shopsQuery);
     
     const [isFormOpen, setFormOpen] = useState(false);

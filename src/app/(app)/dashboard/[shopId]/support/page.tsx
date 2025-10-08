@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { AddTicketForm } from './add-ticket-form';
 import { useParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Ticket as TicketType } from '@/lib/types';
 import { format } from 'date-fns';
@@ -40,8 +40,9 @@ export default function SupportPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const ticketsQuery = useMemoFirebase(() => query(collection(firestore, 'tickets'), where('shopId', '==', shopId)), [firestore, shopId]);
+  const ticketsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tickets'), where('shopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: tickets, isLoading } = useCollection<TicketType>(ticketsQuery);
 
   const faqItems = [

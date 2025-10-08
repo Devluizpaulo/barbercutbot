@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, Share2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
 
 interface ReceiptDialogProps {
@@ -33,17 +33,18 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
   
-  const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
+  const shopRef = useMemoFirebase(() => user ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
-  const serviceRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment]);
+  const serviceRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
   const { data: service } = useDoc<Service>(serviceRef);
   
-  const barberRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment]);
+  const barberRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
   const { data: barber } = useDoc<Barber>(barberRef);
   
-  const customerRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment]);
+  const customerRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
 
   const receiptRef = useRef<HTMLDivElement>(null);

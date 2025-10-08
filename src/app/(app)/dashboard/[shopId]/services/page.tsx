@@ -22,6 +22,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -42,7 +43,7 @@ import {
 import { AddServiceForm } from './add-service-form';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -56,10 +57,11 @@ export default function ServicesPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const servicesQuery = useMemoFirebase(
-    () => collection(firestore, 'barberShops', shopId, 'services'),
-    [firestore, shopId]
+    () => user ? collection(firestore, 'barberShops', shopId, 'services') : null,
+    [firestore, shopId, user]
   );
   const { data: services, isLoading } = useCollection<Service>(servicesQuery);
 

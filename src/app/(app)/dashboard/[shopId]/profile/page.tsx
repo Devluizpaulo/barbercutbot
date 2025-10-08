@@ -22,7 +22,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,10 +32,11 @@ export default function ProfilePage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const shopRef = useMemoFirebase(
-    () => doc(firestore, 'barberShops', shopId),
-    [firestore, shopId]
+    () => user ? doc(firestore, 'barberShops', shopId) : null,
+    [firestore, shopId, user]
   );
   const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
 

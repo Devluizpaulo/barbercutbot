@@ -45,7 +45,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { AddTransactionForm } from './add-transaction-form';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -88,11 +88,12 @@ export default function FinancePage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const transactionsQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'financialRecords'), [firestore, shopId]);
+  const transactionsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'financialRecords') : null, [firestore, shopId, user]);
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
-  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services } = useCollection<Service>(servicesQuery);
 
   const serviceChartRef = useRef<HTMLDivElement>(null);

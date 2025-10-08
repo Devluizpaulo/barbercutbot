@@ -1,7 +1,11 @@
 
-'use client';
+"use client";
 
 import { useState, useMemo } from 'react';
+import type { BarberShop, Customer, FinancialRecord, UserProfile } from "@/lib/types";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
+import { getMonth } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -18,19 +22,19 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Activity, MoreVertical, DollarSign, Users, ExternalLink, Shield, Ticket, CreditCard, Store } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { DollarSign, Users, ExternalLink, Shield, Ticket, CreditCard, Store, Activity, MoreVertical } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,11 +46,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Customer, FinancialRecord, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getMonth } from 'date-fns';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
@@ -77,17 +77,18 @@ export default function AdminDashboard() {
     const { toast } = useToast();
     const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
     const firestore = useFirestore();
+    const { user } = useUser();
 
-    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
     
-    const customersQuery = useMemoFirebase(() => query(collectionGroup(firestore, 'customers')), [firestore]);
+    const customersQuery = useMemoFirebase(() => user ? query(collectionGroup(firestore, 'customers')) : null, [firestore, user]);
     const { data: customers, isLoading: isLoadingCustomers } = useCollection<Customer>(customersQuery);
 
-    const financialRecordsQuery = useMemoFirebase(() => query(collectionGroup(firestore, 'financialRecords')), [firestore]);
+    const financialRecordsQuery = useMemoFirebase(() => user ? query(collectionGroup(firestore, 'financialRecords')) : null, [firestore, user]);
     const { data: financialRecords, isLoading: isLoadingFinancialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
 
-    const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const usersQuery = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
     const toDate = (timestamp: Timestamp | Date | string): Date => {

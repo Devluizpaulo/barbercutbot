@@ -40,6 +40,7 @@ import {
   useDoc,
   useFirestore,
   useMemoFirebase,
+  useUser
 } from '@/firebase';
 import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,31 +54,32 @@ export default function ClientDetailsPage() {
   const clientId = params.clientId as string;
   const firestore = useFirestore();
   const [isFormOpen, setFormOpen] = useState(false);
+  const { user } = useUser();
 
 
   const clientRef = useMemoFirebase(
-    () => doc(firestore, 'barberShops', shopId, 'customers', clientId),
-    [firestore, shopId, clientId]
+    () => user ? doc(firestore, 'barberShops', shopId, 'customers', clientId) : null,
+    [firestore, shopId, clientId, user]
   );
   const { data: client, isLoading: isClientLoading } = useDoc<Customer>(clientRef);
 
   const appointmentsQuery = useMemoFirebase(
     () =>
-      client
+      user && client
         ? query(
             collection(firestore, 'barberShops', shopId, 'appointments'),
             where('customerId', '==', client.id)
           )
         : null,
-    [firestore, shopId, client]
+    [firestore, shopId, client, user]
   );
   const { data: clientAppointments, isLoading: areAppointmentsLoading } =
     useCollection<Appointment>(appointmentsQuery);
 
   // Fetch services and barbers to map names
-  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services } = useCollection<Service>(servicesQuery);
-  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
+  const barbersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
   const { data: barbers } = useCollection<Barber>(barbersQuery);
 
   const getServiceName = (serviceId: string) => {

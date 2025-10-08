@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AddSupplierForm } from './add-supplier-form';
 import type { Supplier } from '@/lib/types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -57,10 +57,11 @@ export default function SuppliersPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const suppliersQuery = useMemoFirebase(
-    () => collection(firestore, 'barberShops', shopId, 'suppliers'),
-    [firestore, shopId]
+    () => user ? collection(firestore, 'barberShops', shopId, 'suppliers') : null,
+    [firestore, shopId, user]
   );
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);
 

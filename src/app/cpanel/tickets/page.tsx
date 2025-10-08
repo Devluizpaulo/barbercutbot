@@ -18,18 +18,19 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, Timestamp } from "firebase/firestore";
 import type { BarberShop, Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminTicketsPage() {
     const firestore = useFirestore();
+    const { user } = useUser();
     
-    const ticketsQuery = useMemoFirebase(() => query(collection(firestore, 'tickets')), [firestore]);
+    const ticketsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
     const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
 
-    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
     const findShopName = (shopId: string) => shops?.find(s => s.id === shopId)?.name || 'N/A';

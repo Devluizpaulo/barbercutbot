@@ -9,6 +9,7 @@ import {
   useCollection,
   useFirestore,
   useMemoFirebase,
+  useUser
 } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -41,10 +42,11 @@ export default function ClientsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const customersQuery = useMemoFirebase(
-    () => collection(firestore, 'barberShops', shopId, 'customers'),
-    [firestore, shopId]
+    () => user ? collection(firestore, 'barberShops', shopId, 'customers') : null,
+    [firestore, shopId, user]
   );
   const { data: clients, isLoading } = useCollection<Customer>(customersQuery);
   

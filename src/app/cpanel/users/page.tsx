@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { MoreVertical, PlusCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { BarberShop, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,10 +27,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminUsersPage() {
     const firestore = useFirestore();
-    const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const { user: adminUser } = useUser();
+    const usersQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'users') : null, [firestore, adminUser]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
-    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const shopsQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'barberShops') : null, [firestore, adminUser]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
 
@@ -132,5 +133,3 @@ export default function AdminUsersPage() {
     </div>
   )
 }
-
-    

@@ -56,6 +56,7 @@ import {
   useCollection,
   useFirestore,
   useMemoFirebase,
+  useUser
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -72,10 +73,11 @@ export default function BarbersPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const barbersQuery = useMemoFirebase(
-    () => collection(firestore, 'barberShops', shopId, 'barbers'),
-    [firestore, shopId]
+    () => user ? collection(firestore, 'barberShops', shopId, 'barbers') : null,
+    [firestore, shopId, user]
   );
   const { data: barbers, isLoading } = useCollection<Barber>(barbersQuery);
 

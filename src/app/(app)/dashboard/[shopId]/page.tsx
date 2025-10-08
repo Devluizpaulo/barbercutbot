@@ -26,7 +26,7 @@ import { format, getMonth, startOfDay, endOfDay, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
 import { CashierDialog } from "./cashier-dialog";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, Timestamp } from "firebase/firestore";
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,20 +43,21 @@ export default function ShopDashboardPage() {
   const shopId = params.shopId as string;
   const [isCashierOpen, setCashierOpen] = useState(false);
   const firestore = useFirestore();
+  const { user } = useUser();
 
   // --- Data Fetching ---
-  const financialRecordsQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'financialRecords'), [firestore, shopId]);
+  const financialRecordsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'financialRecords') : null, [firestore, shopId, user]);
   const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
 
-  const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
+  const customersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
   const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
 
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
   
-  const appointmentsQuery = useMemoFirebase(() => query(
+  const appointmentsQuery = useMemoFirebase(() => user ? query(
       collection(firestore, 'barberShops', shopId, 'appointments')
-  ), [firestore, shopId]);
+  ) : null, [firestore, shopId, user]);
   const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
   
   const todayAppointments = useMemo(() => {
@@ -65,10 +66,10 @@ export default function ShopDashboardPage() {
         const apptDate = toDate(appt.startTime);
         return isSameDay(apptDate, new Date());
     })
-  }, [allAppointments])
+  }, [allAppointments]);
 
 
-  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {

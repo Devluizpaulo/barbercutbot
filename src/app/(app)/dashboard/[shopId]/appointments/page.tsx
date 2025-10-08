@@ -54,6 +54,7 @@ import {
   useCollection,
   useFirestore,
   useMemoFirebase,
+  useUser,
 } from '@/firebase';
 import {
   collection,
@@ -62,6 +63,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import type { Appointment, Customer, Barber } from '@/lib/types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -73,17 +75,18 @@ export default function AppointmentsPage() {
   const { toast } = useToast();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const { user } = useUser();
 
   const appointmentsQuery = useMemoFirebase(
-    () => collection(firestore, 'barberShops', shopId, 'appointments'),
-    [firestore, shopId]
+    () => user ? collection(firestore, 'barberShops', shopId, 'appointments') : null,
+    [firestore, shopId, user]
   );
   const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsQuery);
 
-  const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
+  const customersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
   const { data: customers } = useCollection<Customer>(customersQuery);
 
-  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
+  const barbersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
   const { data: barbers } = useCollection<Barber>(barbersQuery);
 
   const handleEdit = (appointment: Appointment) => {
