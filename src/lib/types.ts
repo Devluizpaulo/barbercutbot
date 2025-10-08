@@ -13,9 +13,9 @@ export type BarberShop = {
 export type Appointment = {
   id: string;
   barberShopId: string;
-  customerId: string; // Should reference a document in the Customers collection
-  barberId: string; // Should reference a document in the Barbers collection
-  serviceIds: string[]; // Should reference documents in the Services collection
+  customerId: string;
+  barberId: string;
+  serviceIds: string[];
   startTime: Timestamp | Date | string;
   endTime: Timestamp | Date | string;
   notes?: string;
@@ -62,7 +62,14 @@ export type Service = {
   name: string;
   description?: string;
   price: number;
+  cost?: number;
   duration: number; // in minutes
+  imageUrl?: string;
+  partnership?: {
+    isCommissionEnabled?: boolean;
+    commissionType?: 'fixed' | 'percentage';
+    commissionValue?: number;
+  };
   createdAt: Timestamp;
 };
 

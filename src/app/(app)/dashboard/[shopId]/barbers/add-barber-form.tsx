@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Barber } from '@/lib/types';
-import { useFirestore }s
+import { useFirestore } from '@/firebase';
 import {
   setDocumentNonBlocking,
   addDocumentNonBlocking,

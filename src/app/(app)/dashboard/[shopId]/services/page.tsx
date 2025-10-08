@@ -22,7 +22,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -30,18 +29,39 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AddServiceForm } from './add-service-form';
-import { services as mockedServices } from '@/lib/data';
-import type { Service } from '@/lib/data';
+import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ServicesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | undefined>(undefined);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const params = useParams();
   const shopId = params.shopId as string;
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
-  const services = mockedServices;
+  const servicesQuery = useMemoFirebase(
+    () => collection(firestore, 'barberShops', shopId, 'services'),
+    [firestore, shopId]
+  );
+  const { data: services, isLoading } = useCollection<Service>(servicesQuery);
 
   const handleEdit = (service: Service) => {
     setSelectedService(service);
@@ -56,10 +76,21 @@ export default function ServicesPage() {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setSelectedService(undefined);
-    // Here you would typically refetch the data
+  };
+
+  const handleDelete = () => {
+    if (!serviceToDelete) return;
+    const serviceRef = doc(firestore, 'barberShops', shopId, 'services', serviceToDelete.id);
+    deleteDocumentNonBlocking(serviceRef);
+    toast({
+      title: 'Serviço Removido',
+      description: `O serviço "${serviceToDelete.name}" foi removido.`,
+    });
+    setServiceToDelete(null);
   };
 
   return (
+    <>
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -108,7 +139,16 @@ export default function ServicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.map((service) => (
+              {isLoading && Array.from({length: 3}).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))}
+              {services?.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -133,7 +173,7 @@ export default function ServicesPage() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>R${service.cost.toFixed(2)}</span>
+                      <span>R${(service.cost || 0).toFixed(2)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -155,7 +195,7 @@ export default function ServicesPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500">
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setServiceToDelete(service)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Remover
                         </DropdownMenuItem>
@@ -164,7 +204,7 @@ export default function ServicesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {services.length === 0 && (
+              {!isLoading && services?.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -179,5 +219,29 @@ export default function ServicesPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog
+      open={!!serviceToDelete}
+      onOpenChange={(isOpen) => !isOpen && setServiceToDelete(null)}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta ação não pode ser desfeita. Isso irá remover o serviço{' '}
+            <strong>{serviceToDelete?.name}</strong> permanentemente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDelete}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            Sim, remover
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

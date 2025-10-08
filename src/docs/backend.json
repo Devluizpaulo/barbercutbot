@@ -247,7 +247,6 @@
         "barberShopId",
         "name",
         "price",
-        "cost",
         "duration"
       ]
     },

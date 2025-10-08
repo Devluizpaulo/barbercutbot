@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -18,8 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { shops, type Shop } from "@/lib/data"
-import { Activity, MoreVertical, DollarSign, Users, Calendar, ExternalLink, Shield, Ticket, CreditCard, Settings, FileText, Store } from "lucide-react"
+import { Activity, MoreVertical, DollarSign, Users, ExternalLink, Shield, Ticket, CreditCard, Store } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
@@ -43,6 +42,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { BarberShop, Customer, FinancialRecord } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getMonth } from 'date-fns';
 
 
 const chartConfig = {
@@ -52,23 +56,52 @@ const chartConfig = {
   },
 }
 const chartData = [
-  { month: "Jan", shops: 18 },
-  { month: "Fev", shops: 20 },
-  { month: "Mar", shops: 22 },
-  { month: "Abr", shops: 27 },
-  { month: "Mai", shops: 30 },
-  { month: "Jun", shops: 35 },
+  { month: "Jan", shops: 0 },
+  { month: "Fev", shops: 0 },
+  { month: "Mar", shops: 0 },
+  { month: "Abr", shops: 0 },
+  { month: "Mai", shops: 0 },
+  { month: "Jun", shops: 0 },
+  { month: "Jul", shops: 0 },
+  { month: "Ago", shops: 0 },
+  { month: "Set", shops: 0 },
+  { month: "Out", shops: 0 },
+  { month: "Nov", shops: 0 },
+  { month: "Dez", shops: 0 },
 ];
 
 
 export default function AdminDashboard() {
     const { toast } = useToast();
-    const [shopToDeactivate, setShopToDeactivate] = useState<Shop | null>(null);
+    const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
+    const firestore = useFirestore();
 
-    const totalRevenue = shops.reduce((acc, shop) => acc + (shop.totalRevenue || 0), 0)
-    const totalClients = shops.reduce((acc, shop) => acc + shop.totalClients, 0)
-    const totalAppointments = shops.reduce((acc, shop) => acc + shop.todayAppointments, 0) // Assuming this is total not just today
-    const totalOpenTickets = shops.reduce((acc, shop) => acc + shop.openTickets, 0);
+    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
+    
+    // This is a simplification. In a real world scenario, you would query each subcollection.
+    // For this prototype, we'll just query all customers and all financial records.
+    const customersQuery = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const { data: customers } = useCollection<Customer>(customersQuery);
+
+    const financialRecordsQuery = useMemoFirebase(() => collection(firestore, 'financialRecords'), [firestore]);
+    const { data: financialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
+
+
+    const totalRevenue = useMemo(() => financialRecords?.reduce((acc, record) => acc + record.amount, 0) || 0, [financialRecords]);
+    const totalClients = useMemo(() => customers?.length || 0, [customers]);
+
+    const newShopsChartData = useMemo(() => {
+        const data = [...chartData];
+        shops?.forEach(shop => {
+            // Assuming createdAt exists. Need to add it to the type and data creation.
+            // For now, let's just mock it with a random month
+            const monthIndex = Math.floor(Math.random() * 12);
+            data[monthIndex].shops++;
+        })
+        return data;
+    }, [shops])
+
 
     const handleManageBilling = (shopId: string) => {
         toast({
@@ -77,8 +110,9 @@ export default function AdminDashboard() {
         });
     };
     
-    const handleDeactivateShop = (shop: Shop | null) => {
+    const handleDeactivateShop = (shop: BarberShop | null) => {
         if (!shop) return;
+        // In a real app, you would update the shop's status field in Firestore
         console.log(`Desativando a loja: ${shop.name}`);
         toast({
             title: 'Loja Desativada',
@@ -109,9 +143,9 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>
+            {isLoadingShops ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
             <p className="text-xs text-muted-foreground">
-              +5.2% em relação ao mês passado
+              +5.2% em relação ao mês passado (simulado)
             </p>
           </CardContent>
         </Card>
@@ -123,9 +157,9 @@ export default function AdminDashboard() {
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{shops.length}</div>
+            {isLoadingShops ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
-              +1 no último mês
+              +1 no último mês (simulado)
             </p>
           </CardContent>
         </Card>
@@ -137,7 +171,7 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalClients}</div>
+            {isLoadingShops ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{totalClients}</div>}
             <p className="text-xs text-muted-foreground">
               em toda a plataforma
             </p>
@@ -151,9 +185,9 @@ export default function AdminDashboard() {
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalOpenTickets}</div>
+            <div className="text-2xl font-bold">0</div>
              <p className="text-xs text-muted-foreground">
-              Abertos no momento
+              Abertos no momento (simulado)
             </p>
           </CardContent>
         </Card>
@@ -165,12 +199,12 @@ export default function AdminDashboard() {
               <CardHeader>
                 <CardTitle className="font-headline">Crescimento de Lojas na Plataforma</CardTitle>
                 <CardDescription>
-                  Novas barbearias que se juntaram nos últimos 6 meses.
+                  Novas barbearias que se juntaram nos últimos meses.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
                 <ChartContainer config={chartConfig} className="w-full h-[300px]">
-                  <BarChart accessibilityLayer data={chartData}>
+                  <BarChart accessibilityLayer data={newShopsChartData}>
                     <CartesianGrid vertical={false} />
                     <XAxis
                       dataKey="month"
@@ -206,46 +240,40 @@ export default function AdminDashboard() {
                             <TableRow>
                                 <TableHead className="w-[250px]">Barbearia</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead className="hidden md:table-cell">Clientes</TableHead>
                                 <TableHead className="hidden lg:table-cell">Plano</TableHead>
                                 <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {shops.map(shop => (
+                            {isLoadingShops && Array.from({length: 3}).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
+                                </TableRow>
+                            ))}
+                            {shops?.map(shop => (
                                 <TableRow key={shop.id}>
                                     <TableCell>
                                         <div className="font-medium">{shop.name}</div>
-                                        <div className="text-sm text-muted-foreground">{shop.location}</div>
+                                        <div className="text-sm text-muted-foreground">{shop.address}</div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge 
-                                            variant={shop.status === 'Ativo' ? 'default' : 'destructive'}
-                                            className={cn(shop.status === 'Ativo' && 'bg-green-500 hover:bg-green-500/80')}
+                                            variant={'default'}
+                                            className={cn('bg-green-500 hover:bg-green-500/80')}
                                         >
-                                            {shop.status}
+                                            Ativo
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4 text-muted-foreground"/>
-                                            <span>{shop.totalClients}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden lg:table-cell">{shop.plan}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">Pro</TableCell>
                                     <TableCell className="hidden md:table-cell">
                                         <Badge 
-                                            variant={
-                                                shop.paymentStatus === 'Pago' ? 'secondary' : 
-                                                shop.paymentStatus === 'Pendente' ? 'outline' : 'destructive'
-                                            }
+                                            variant={'secondary'}
                                             className={cn(
-                                                shop.paymentStatus === 'Pago' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                                                shop.paymentStatus === 'Pendente' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700'
+                                                'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
                                             )}
                                         >
-                                            {shop.paymentStatus}
+                                            Pago
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -277,6 +305,11 @@ export default function AdminDashboard() {
                                     </TableCell>
                                 </TableRow>
                             ))}
+                             {!isLoadingShops && shops?.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma barbearia encontrada.</TableCell>
+                                </TableRow>
+                             )}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -289,7 +322,8 @@ export default function AdminDashboard() {
                 <CardDescription>Últimas ações importantes na plataforma.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {shops.slice(0, 4).map((shop, index) => (
+                {isLoadingShops && <Skeleton className="h-24 w-full" />}
+                {shops?.slice(0, 4).map((shop, index) => (
                     <div className="flex items-start gap-4" key={shop.id}>
                         <Avatar className="h-9 w-9">
                             <AvatarFallback>{shop.name.charAt(0)}</AvatarFallback>

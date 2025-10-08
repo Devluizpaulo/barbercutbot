@@ -17,9 +17,6 @@ import { ptBR } from 'date-fns/locale';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -61,8 +58,18 @@ import {
 import { AddAppointmentForm } from './add-appointment-form';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { appointments as mockedAppointments } from '@/lib/data';
-import type { Appointment } from '@/lib/data';
+import {
+  useCollection,
+  useFirestore,
+  useMemoFirebase,
+} from '@/firebase';
+import {
+  collection,
+  doc,
+  Timestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -73,10 +80,19 @@ export default function AppointmentsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const shopId = params.shopId as string;
+  const firestore = useFirestore();
 
-  // Use mock data
-  const appointments = mockedAppointments;
-  const isLoading = false;
+  const appointmentsQuery = useMemoFirebase(
+    () => collection(firestore, 'barberShops', shopId, 'appointments'),
+    [firestore, shopId]
+  );
+  const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsQuery);
+
+  const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
+  const { data: customers } = useCollection<Customer>(customersQuery);
+
+  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
+  const { data: barbers } = useCollection<Barber>(barbersQuery);
 
   const handleEdit = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -91,36 +107,58 @@ export default function AppointmentsPage() {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setSelectedAppointment(undefined);
-    toast({
-      title: selectedAppointment
-        ? 'Agendamento Atualizado!'
-        : 'Agendamento Criado!',
-      description: 'As informações foram salvas com sucesso (simulação).',
-    });
+    // Toast is handled in the form
   };
 
   const handleStatusUpdate = async (
     appointmentId: string,
-    status: 'Concluído' | 'Cancelado'
+    status: 'completed' | 'cancelled'
   ) => {
-    console.log(`Simulating update status for ${appointmentId} to ${status}`);
-    toast({
-      title: 'Status Atualizado!',
-      description: `O agendamento foi marcado como ${status}.`,
-    });
-    if (status === 'Cancelado') {
-      setAppointmentToCancel(null);
+    try {
+      const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, { status });
+      toast({
+        title: 'Status Atualizado!',
+        description: `O agendamento foi marcado como ${status === 'completed' ? 'Concluído' : 'Cancelado'}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar status',
+        description: 'Não foi possível atualizar o status do agendamento.',
+      });
+    } finally {
+        if (status === 'cancelled') {
+            setAppointmentToCancel(null);
+        }
     }
   };
 
   const getStatusVariant = (status: Appointment['status']) => {
     switch (status) {
-      case 'Concluído': return 'secondary';
-      case 'Cancelado': return 'destructive';
-      case 'Confirmado': return 'default';
+      case 'completed': return 'secondary';
+      case 'cancelled': return 'destructive';
+      case 'confirmed': return 'default';
       default: return 'outline';
     }
   };
+
+  const getClientName = (clientId: string) => {
+    const client = customers?.find(c => c.id === clientId);
+    return client ? `${client.firstName} ${client.lastName}` : '...';
+  }
+
+  const getBarberName = (barberId: string) => {
+    const barber = barbers?.find(b => b.id === barberId);
+    return barber ? `${barber.firstName} ${barber.lastName}` : '...';
+  }
+
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
 
   return (
     <>
@@ -202,25 +240,30 @@ export default function AppointmentsPage() {
                       <TableRow key={appointment.id}>
                         <TableCell>
                           <div className="font-medium">
-                            {appointment.clientName}
+                            {getClientName(appointment.customerId)}
                           </div>
                           <div className="text-sm text-muted-foreground md:hidden">
-                            {appointment.barber}
+                            {getBarberName(appointment.barberId)}
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {appointment.barber}
+                          {getBarberName(appointment.barberId)}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {format(
-                            new Date(appointment.dateTime),
+                            toDate(appointment.startTime),
                             "dd/MM/yyyy 'às' HH:mm",
                             { locale: ptBR }
                           )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusVariant(appointment.status)}>
-                            {appointment.status}
+                            {appointment.status === 'pending' ? 'Pendente' :
+                             appointment.status === 'confirmed' ? 'Confirmado' :
+                             appointment.status === 'completed' ? 'Concluído' :
+                             appointment.status === 'cancelled' ? 'Cancelado' :
+                             'No-Show'
+                            }
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -252,10 +295,10 @@ export default function AppointmentsPage() {
                                 onClick={() =>
                                   handleStatusUpdate(
                                     appointment.id,
-                                    'Concluído'
+                                    'completed'
                                   )
                                 }
-                                disabled={appointment.status === 'Concluído'}
+                                disabled={appointment.status === 'completed'}
                               >
                                 <CheckCircle className="mr-2" /> Marcar como
                                 Concluído
@@ -265,7 +308,7 @@ export default function AppointmentsPage() {
                                 onClick={() =>
                                   setAppointmentToCancel(appointment)
                                 }
-                                disabled={appointment.status === 'Cancelado'}
+                                disabled={appointment.status === 'cancelled'}
                               >
                                 <XCircle className="mr-2" /> Cancelar
                               </DropdownMenuItem>
@@ -320,7 +363,7 @@ export default function AppointmentsPage() {
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
-                handleStatusUpdate(appointmentToCancel!.id, 'Cancelado')
+                handleStatusUpdate(appointmentToCancel!.id, 'cancelled')
               }
               className="bg-destructive hover:bg-destructive/90"
             >

@@ -20,12 +20,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useFirestore } from '@/firebase';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { Service } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome do serviço é obrigatório.'),
   description: z.string().optional(),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
-  cost: z.coerce.number().min(0, 'O custo não pode ser negativo.'),
+  cost: z.coerce.number().min(0, 'O custo não pode ser negativo.').optional(),
   duration: z.coerce.number().min(0, 'A duração deve ser um número positivo em minutos.'),
   imageUrl: z.string().url('URL inválida.').optional().or(z.literal('')),
   isCommissionEnabled: z.boolean().default(false),
@@ -37,12 +41,13 @@ type AddServiceFormValues = z.infer<typeof formSchema>;
 
 interface AddServiceFormProps {
   shopId: string;
-  initialData?: AddServiceFormValues & { id: string };
+  initialData?: Service;
   onSuccess?: () => void;
 }
 
 export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const form = useForm<AddServiceFormValues>({
     resolver: zodResolver(formSchema),
@@ -50,6 +55,10 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       ...initialData,
       imageUrl: initialData.imageUrl || '',
       description: initialData.description || '',
+      cost: initialData.cost || 0,
+      isCommissionEnabled: initialData.partnership?.isCommissionEnabled || false,
+      commissionType: initialData.partnership?.commissionType,
+      commissionValue: initialData.partnership?.commissionValue,
     } : {
       name: '',
       description: '',
@@ -67,14 +76,46 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   const isCommissionEnabled = form.watch('isCommissionEnabled');
 
   const onSubmit = async (values: AddServiceFormValues) => {
-    // NOTE: Database functionality is disabled for simulation.
-    console.log("Simulating add/edit service for shop:", shopId, values);
-    toast({
-      title: initialData ? 'Serviço Atualizado!' : 'Serviço Adicionado!',
-      description: `O serviço "${values.name}" foi salvo com sucesso.`,
-    });
-    onSuccess?.();
-    if (!initialData) form.reset();
+    try {
+        const serviceData = {
+            name: values.name,
+            description: values.description,
+            price: values.price,
+            cost: values.cost,
+            duration: values.duration,
+            imageUrl: values.imageUrl,
+            barberShopId: shopId,
+            partnership: {
+                isCommissionEnabled: values.isCommissionEnabled,
+                commissionType: values.commissionType,
+                commissionValue: values.commissionValue,
+            },
+            createdAt: serverTimestamp()
+        };
+
+        if (initialData) {
+            const serviceRef = doc(firestore, 'barberShops', shopId, 'services', initialData.id);
+            setDocumentNonBlocking(serviceRef, serviceData, { merge: true });
+        } else {
+            const serviceRef = collection(firestore, 'barberShops', shopId, 'services');
+            addDocumentNonBlocking(serviceRef, serviceData);
+        }
+
+        toast({
+            title: initialData ? 'Serviço Atualizado!' : 'Serviço Adicionado!',
+            description: `O serviço "${values.name}" foi salvo com sucesso.`,
+        });
+        onSuccess?.();
+        if (!initialData) form.reset();
+
+    } catch(error) {
+        console.error("Error saving service: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao salvar',
+            description: 'Não foi possível salvar o serviço.',
+        });
+    }
   };
 
   return (
@@ -299,7 +340,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Salvar Serviço
+            {initialData ? 'Salvar Alterações' : 'Salvar Serviço'}
           </Button>
         </div>
       </form>

@@ -16,28 +16,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User as UserIcon } from "lucide-react"
-import { users } from "@/lib/data"
-
-// For demonstration, we'll pick a user. In a real app, this would come from an auth hook.
-const currentUser = users[1]; 
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 
 export function UserNav() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  }
+  
+  if (isUserLoading) {
+    return null;
+  }
+
+  if (!user) {
+    return (
+       <Button asChild>
+          <Link href="/cpanel/login">Login</Link>
+        </Button>
+    )
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={currentUser.avatar} alt={`@${currentUser.firstName}`} />
-            <AvatarFallback>{currentUser.firstName.charAt(0)}</AvatarFallback>
+            <AvatarImage src={user.photoURL || undefined} alt={`@${user.displayName}`} />
+            <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{currentUser.firstName} {currentUser.lastName}</p>
+            <p className="text-sm font-medium leading-none">{user.displayName || 'Usuário'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {currentUser.email}
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -53,11 +73,9 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">
+        <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Sair</span>
-          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

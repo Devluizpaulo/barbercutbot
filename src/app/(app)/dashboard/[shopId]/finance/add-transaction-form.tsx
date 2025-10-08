@@ -33,6 +33,11 @@ import { Calendar as CalendarIcon, LoaderCircle, Trash2, Coins, BookText, Layout
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import { useFirestore } from '@/firebase';
+import { collection, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import type { FinancialRecord } from '@/lib/types';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   description: z.string().min(1, { message: 'A descrição é obrigatória.' }),
@@ -52,6 +57,7 @@ type AddTransactionFormValues = z.infer<typeof formSchema>;
 
 interface AddTransactionFormProps {
   shopId: string;
+  initialData?: FinancialRecord;
   onSuccess?: () => void;
 }
 
@@ -71,8 +77,9 @@ const KeypadButton = ({ children, onClick, className }: { children: React.ReactN
     </Button>
   );
 
-export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProps) {
+export function AddTransactionForm({ shopId, initialData, onSuccess }: AddTransactionFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
   
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -89,6 +96,22 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
   const { isSubmitting } = form.formState;
   const transactionType = form.watch('type');
+
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        date: toDate(initialData.date),
+      });
+    }
+  }, [initialData, form]);
 
   // Logic function moved before the return statement
   const handleKeypadPress = (key: string) => {
@@ -118,14 +141,37 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
 
 
   const onSubmit = async (values: AddTransactionFormValues) => {
-     console.log("Simulating add transaction:", values);
-     toast({
-       title: 'Modo de Simulação',
-       description: 'Funcionalidade de adicionar transação desabilitada.',
-     });
- 
-     onSuccess?.();
-     form.reset();
+     try {
+       const transactionData = {
+         ...values,
+         barberShopId: shopId,
+         date: Timestamp.fromDate(values.date),
+         createdAt: serverTimestamp(),
+       };
+       if(transactionData.type === 'expense') delete transactionData.paymentMethod;
+       if(transactionData.type === 'income') delete transactionData.isRecurring;
+
+       if (initialData) {
+         const recordRef = doc(firestore, 'barberShops', shopId, 'financialRecords', initialData.id);
+         setDocumentNonBlocking(recordRef, transactionData, { merge: true });
+       } else {
+         const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
+         addDocumentNonBlocking(recordsRef, transactionData);
+       }
+       toast({
+         title: initialData ? 'Transação Atualizada!' : 'Transação Adicionada!',
+         description: 'A transação foi salva com sucesso.',
+       });
+       onSuccess?.();
+       if (!initialData) form.reset();
+     } catch (error) {
+       console.error("Error saving transaction: ", error);
+       toast({
+         variant: 'destructive',
+         title: 'Erro ao salvar',
+         description: 'Não foi possível salvar a transação.',
+       });
+     }
   };
 
   return (
@@ -232,13 +278,13 @@ export function AddTransactionForm({ shopId, onSuccess }: AddTransactionFormProp
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{transactionType === 'income' ? 'Serviço' : 'Categoria'}</FormLabel>
+                      <FormLabel>{transactionType === 'income' ? 'Categoria da Receita' : 'Categoria da Despesa'}</FormLabel>
                       <div className="relative">
                         <LayoutList className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="pl-10">
-                              <SelectValue placeholder={transactionType === 'income' ? 'Selecione um serviço' : 'Selecione uma categoria'} />
+                              <SelectValue placeholder={'Selecione uma categoria'} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>

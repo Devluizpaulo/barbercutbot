@@ -15,12 +15,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
-import type { Appointment } from '@/lib/data';
-import { services, shops } from '@/lib/data';
+import type { Appointment, Service, Barber, Customer, BarberShop } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, Share2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, Timestamp } from 'firebase/firestore';
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -31,9 +32,28 @@ interface ReceiptDialogProps {
 export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialogProps) {
   const params = useParams();
   const shopId = params.shopId as string;
-  const shop = shops.find((s) => s.id === shopId);
-  const service = services.find((s) => s.name === appointment.service);
+  const firestore = useFirestore();
+  
+  const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
+  const { data: shop } = useDoc<BarberShop>(shopRef);
+
+  const serviceRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]), [firestore, shopId, appointment]);
+  const { data: service } = useDoc<Service>(serviceRef);
+  
+  const barberRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId), [firestore, shopId, appointment]);
+  const { data: barber } = useDoc<Barber>(barberRef);
+  
+  const customerRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId), [firestore, shopId, appointment]);
+  const { data: customer } = useDoc<Customer>(customerRef);
+
   const receiptRef = useRef<HTMLDivElement>(null);
+
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
 
   const handleDownloadPdf = () => {
     if (!receiptRef.current) return;
@@ -43,20 +63,21 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 15, 25, pdfWidth - 30, pdfHeight - 30);
-      pdf.save(`recibo-${appointment.clientName.toLowerCase().replace(' ', '-')}.pdf`);
+      pdf.save(`recibo-${customer?.firstName?.toLowerCase() || 'cliente'}.pdf`);
     });
   };
 
   const handleShareWhatsApp = () => {
+    if(!customer || !service || !barber || !shop) return;
     const receiptText = `
 *Recibo de Pagamento - ${shop?.name}*
 
-Olá, ${appointment.clientName}!
+Olá, ${customer.firstName}!
 Obrigado por sua preferência.
 
-*Serviço:* ${appointment.service}
-*Barbeiro:* ${appointment.barber}
-*Data:* ${format(appointment.dateTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+*Serviço:* ${service.name}
+*Barbeiro:* ${barber.firstName}
+*Data:* ${format(toDate(appointment.startTime), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
 
 *Valor Pago:* R$${service?.price.toFixed(2)}
 
@@ -82,13 +103,13 @@ Volte sempre!
                 <Logo />
                 <div className="text-right">
                     <p className="font-bold text-lg">{shop?.name}</p>
-                    <p className="text-xs text-muted-foreground">{shop?.location}</p>
+                    <p className="text-xs text-muted-foreground">{shop?.address}</p>
                 </div>
             </div>
 
             <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold font-headline">Recibo</h2>
-                <p className="text-sm text-muted-foreground">#{appointment.id.split('-')[1]}</p>
+                <p className="text-sm text-muted-foreground">#{appointment.id.split('-')[0]}</p>
             </div>
 
             <Separator className="my-4" />
@@ -96,11 +117,11 @@ Volte sempre!
             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div>
                     <p className="text-muted-foreground">CLIENTE</p>
-                    <p className="font-semibold">{appointment.clientName}</p>
+                    <p className="font-semibold">{customer?.firstName} {customer?.lastName}</p>
                 </div>
                 <div className="text-right">
                     <p className="text-muted-foreground">DATA</p>
-                    <p className="font-semibold">{format(appointment.dateTime, "dd/MM/yyyy", { locale: ptBR })}</p>
+                    <p className="font-semibold">{format(toDate(appointment.startTime), "dd/MM/yyyy", { locale: ptBR })}</p>
                 </div>
             </div>
 
@@ -114,8 +135,8 @@ Volte sempre!
                 <tbody>
                     <tr>
                         <td className="py-2">
-                           <p>{appointment.service}</p>
-                           <p className="text-xs text-muted-foreground">com {appointment.barber}</p>
+                           <p>{service?.name}</p>
+                           <p className="text-xs text-muted-foreground">com {barber?.firstName}</p>
                         </td>
                         <td className="text-right py-2">R${service?.price.toFixed(2)}</td>
                     </tr>

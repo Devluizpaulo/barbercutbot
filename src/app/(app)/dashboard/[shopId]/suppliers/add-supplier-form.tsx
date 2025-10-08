@@ -17,6 +17,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore } from '@/firebase';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import type { Supplier } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome do fornecedor é obrigatório.'),
@@ -30,12 +34,13 @@ type AddSupplierFormValues = z.infer<typeof formSchema>;
 
 interface AddSupplierFormProps {
   shopId: string;
-  initialData?: AddSupplierFormValues & { id: string };
+  initialData?: Supplier;
   onSuccess?: () => void;
 }
 
 export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const form = useForm<AddSupplierFormValues>({
     resolver: zodResolver(formSchema),
@@ -51,14 +56,35 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: AddSupplierFormValues) => {
-    // NOTE: Database functionality is disabled for simulation.
-    console.log("Simulating add/edit supplier for shop:", shopId, values);
-    toast({
-      title: initialData ? 'Fornecedor Atualizado!' : 'Fornecedor Adicionado!',
-      description: `O fornecedor "${values.name}" foi salvo com sucesso.`,
-    });
-    onSuccess?.();
-    if (!initialData) form.reset();
+    try {
+      const supplierData = {
+        ...values,
+        barberShopId: shopId,
+        createdAt: serverTimestamp(),
+      };
+
+      if (initialData) {
+        const supplierRef = doc(firestore, 'barberShops', shopId, 'suppliers', initialData.id);
+        setDocumentNonBlocking(supplierRef, supplierData, { merge: true });
+      } else {
+        const supplierRef = collection(firestore, 'barberShops', shopId, 'suppliers');
+        addDocumentNonBlocking(supplierRef, supplierData);
+      }
+
+      toast({
+        title: initialData ? 'Fornecedor Atualizado!' : 'Fornecedor Adicionado!',
+        description: `O fornecedor "${values.name}" foi salvo com sucesso.`,
+      });
+      onSuccess?.();
+      if (!initialData) form.reset();
+    } catch (error) {
+      console.error("Error saving supplier: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar o fornecedor.',
+      });
+    }
   };
 
   return (
@@ -158,7 +184,7 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Salvar Fornecedor
+            {initialData ? 'Salvar Alterações' : 'Salvar Fornecedor'}
           </Button>
         </div>
       </form>

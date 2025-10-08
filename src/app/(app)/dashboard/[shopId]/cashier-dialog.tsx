@@ -22,15 +22,16 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { appointments, services as allServices } from '@/lib/data';
-import type { Appointment } from '@/lib/data';
-import { format } from 'date-fns';
+import type { Appointment, Service, Barber, Customer } from '@/lib/types';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddTransactionForm } from './finance/add-transaction-form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign } from 'lucide-react';
 import { ReceiptDialog } from './receipt-dialog';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 
 interface CashierDialogProps {
   open: boolean;
@@ -43,30 +44,56 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   const [openingBalance, setOpeningBalance] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isReceiptOpen, setReceiptOpen] = useState(false);
+  const firestore = useFirestore();
 
   const handleOpenCashier = () => {
-    // Here you would typically save the opening balance and timestamp
     console.log('Caixa aberto com saldo inicial de:', openingBalance);
     setIsCashierOpen(true);
   };
 
   const handleCloseCashier = () => {
-    // Here you would run closing calculations and save the closing state
     console.log('Fechando caixa...');
     setIsCashierOpen(false);
     setOpeningBalance('');
-    onOpenChange(false); // Close the dialog
+    onOpenChange(false);
   };
   
   const handleFinalizeAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setReceiptOpen(true);
-    // Here you could also update appointment status to 'Concluído'
   };
 
-  const todayAppointments = appointments.filter(
-    (appt) => format(appt.dateTime, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-  );
+  const todayStart = startOfDay(new Date());
+  const todayEnd = endOfDay(new Date());
+  const appointmentsQuery = useMemoFirebase(() => query(
+    collection(firestore, 'barberShops', shopId, 'appointments'),
+    where('startTime', '>=', todayStart),
+    where('startTime', '<=', todayEnd)
+  ), [firestore, shopId, todayStart, todayEnd]);
+  const { data: todayAppointments } = useCollection<Appointment>(appointmentsQuery);
+
+  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const { data: allServices } = useCollection<Service>(servicesQuery);
+
+  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
+  const { data: allBarbers } = useCollection<Barber>(barbersQuery);
+  
+  const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
+  const { data: allCustomers } = useCollection<Customer>(customersQuery);
+
+  const getAssociatedData = (appt: Appointment) => {
+    const service = allServices?.find(s => appt.serviceIds.includes(s.id));
+    const barber = allBarbers?.find(b => b.id === appt.barberId);
+    const customer = allCustomers?.find(c => c.id === appt.customerId);
+    return { service, barber, customer };
+  };
+
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
 
   return (
     <>
@@ -120,22 +147,22 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                 </TabsList>
                 <TabsContent value="appointments" className="flex-1 overflow-y-auto p-1">
                   <div className="space-y-4">
-                      {todayAppointments.length > 0 ? todayAppointments.map(appt => {
-                        const service = allServices.find(s => s.name === appt.service);
+                      {todayAppointments && todayAppointments.length > 0 ? todayAppointments.map(appt => {
+                        const { service, barber, customer } = getAssociatedData(appt);
                         return (
                           <Card key={appt.id}>
                               <CardContent className="p-4 flex items-center justify-between">
                                   <div>
-                                      <p className="font-semibold">{appt.clientName}</p>
-                                      <p className="text-sm text-muted-foreground">{appt.service} com {appt.barber}</p>
-                                      <p className="text-sm font-mono">{format(appt.dateTime, 'HH:mm', {locale: ptBR})}</p>
+                                      <p className="font-semibold">{customer?.firstName || 'Cliente'}</p>
+                                      <p className="text-sm text-muted-foreground">{service?.name || 'Serviço'} com {barber?.firstName || 'Barbeiro'}</p>
+                                      <p className="text-sm font-mono">{format(toDate(appt.startTime), 'HH:mm', {locale: ptBR})}</p>
                                   </div>
                                   <div className="flex items-center gap-4">
-                                      <Badge variant={appt.status === 'Cancelado' ? 'destructive' : (appt.status === 'Concluído' ? 'secondary' : 'default')}>
+                                      <Badge variant={appt.status === 'cancelled' ? 'destructive' : (appt.status === 'completed' ? 'secondary' : 'default')}>
                                           {appt.status}
                                       </Badge>
                                       {service && <p className="font-bold text-lg">R${service.price.toFixed(2)}</p>}
-                                      <Button size="sm" onClick={() => handleFinalizeAppointment(appt)} disabled={appt.status === 'Concluído'}>
+                                      <Button size="sm" onClick={() => handleFinalizeAppointment(appt)} disabled={appt.status === 'completed'}>
                                         Finalizar
                                       </Button>
                                   </div>

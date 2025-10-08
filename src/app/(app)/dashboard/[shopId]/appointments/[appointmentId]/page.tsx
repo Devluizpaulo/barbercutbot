@@ -24,22 +24,34 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { appointments, clients, barbers, services } from '@/lib/data';
-import type { Appointment, Client, Barber, Service } from '@/lib/data';
+import type { Appointment, Customer, Barber, Service } from '@/lib/types';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, Timestamp } from 'firebase/firestore';
 
 export default function AppointmentDetailsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const appointmentId = params.appointmentId as string;
+  const firestore = useFirestore();
 
-  // Simulate fetching data
-  const appointment = appointments.find(a => a.id === appointmentId);
-  const customer = clients.find(c => appointment?.clientName.includes(c.name.split(' ')[0]));
-  const barber = barbers.find(b => appointment?.barber.includes(b.firstName));
-  const service = services.find(s => s.name === appointment?.service);
+  const appointmentRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId, 'appointments', appointmentId), [firestore, shopId, appointmentId]);
+  const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
 
-  const isLoading = false;
-  const error = null;
+  const customerRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment]);
+  const { data: customer } = useDoc<Customer>(customerRef);
+
+  const barberRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment]);
+  const { data: barber } = useDoc<Barber>(barberRef);
+
+  const serviceRef = useMemoFirebase(() => appointment ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment]);
+  const { data: service } = useDoc<Service>(serviceRef);
+  
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
 
   if (isLoading) {
     return (
@@ -81,14 +93,24 @@ export default function AppointmentDetailsPage() {
 
   const getStatusVariant = (status: Appointment['status']) => {
     switch (status) {
-      case 'Concluído': return 'secondary';
-      case 'Cancelado': return 'destructive';
-      case 'Confirmado': return 'default';
+      case 'completed': return 'secondary';
+      case 'cancelled': return 'destructive';
+      case 'confirmed': return 'default';
       default: return 'outline';
     }
   };
+  
+  const getStatusLabel = (status: Appointment['status']) => {
+      switch (status) {
+        case 'completed': return 'Concluído';
+        case 'cancelled': return 'Cancelado';
+        case 'confirmed': return 'Confirmado';
+        case 'pending': return 'Pendente';
+        default: return 'Desconhecido';
+      }
+  }
 
-  const startTime = appointment.dateTime;
+  const startTime = toDate(appointment.startTime);
 
   return (
     <div className="flex flex-col gap-8">
@@ -105,12 +127,12 @@ export default function AppointmentDetailsPage() {
               Detalhes do Agendamento
             </h1>
             <p className="text-muted-foreground">
-              Agendamento de {customer ? `${customer.name}` : '...'}
+              Agendamento de {customer ? `${customer.firstName} ${customer.lastName}` : '...'}
             </p>
           </div>
         </div>
         <Badge variant={getStatusVariant(appointment.status)} className="w-fit text-base">
-          {appointment.status}
+          {getStatusLabel(appointment.status)}
         </Badge>
       </div>
 
@@ -137,7 +159,7 @@ export default function AppointmentDetailsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold">
-              {customer ? `${customer.name}` : <Skeleton className="h-6 w-3/4" />}
+              {customer ? `${customer.firstName} ${customer.lastName}` : <Skeleton className="h-6 w-3/4" />}
             </div>
             <p className="text-muted-foreground text-sm">{customer?.email}</p>
           </CardContent>
