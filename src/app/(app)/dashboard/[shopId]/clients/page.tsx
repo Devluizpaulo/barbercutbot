@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Search, ChevronRight, PlusCircle } from 'lucide-react';
+import { Search, ChevronRight, PlusCircle, Edit } from 'lucide-react';
 import {
   useCollection,
   useFirestore,
@@ -113,7 +113,7 @@ export default function ClientsPage() {
                     Telefone
                   </TableHead>
                   <TableHead>
-                    <span className="sr-only">Ver</span>
+                    <span className="sr-only">Ações</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -153,8 +153,14 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
-                          <ChevronRight className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                           <span className="sr-only">Editar Cliente</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/dashboard/${shopId}/clients/${client.id}`}>
+                            <ChevronRight className="h-4 w-4" />
+                            <span className="sr-only">Ver Detalhes</span>
+                          </Link>
                       </Button>
                     </TableCell>
                   </TableRow>
