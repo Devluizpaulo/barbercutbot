@@ -4,9 +4,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Table,
@@ -17,17 +14,26 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { tickets as mockedTickets, shops } from "@/lib/data"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, Timestamp } from "firebase/firestore";
+import type { BarberShop, Ticket } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminTicketsPage() {
+    const firestore = useFirestore();
+    
+    const ticketsQuery = useMemoFirebase(() => query(collection(firestore, 'tickets')), [firestore]);
+    const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
 
-    const tickets = mockedTickets;
-    const findShopName = (shopId: string) => shops.find(s => s.id === shopId)?.name || 'N/A';
+    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
+
+    const findShopName = (shopId: string) => shops?.find(s => s.id === shopId)?.name || 'N/A';
+    const isLoading = isLoadingTickets || isLoadingShops;
 
     return (
         <div className="flex flex-col gap-8">
@@ -50,13 +56,25 @@ export default function AdminTicketsPage() {
                         </TabsList>
                         
                         <TabsContent value="abertos" className="mt-4">
-                            <TicketsTable tickets={tickets.filter(t => t.status === 'Aberto')} findShopName={findShopName} />
+                            <TicketsTable 
+                                tickets={tickets?.filter(t => t.status === 'Aberto')} 
+                                findShopName={findShopName} 
+                                isLoading={isLoading}
+                            />
                         </TabsContent>
                         <TabsContent value="andamento" className="mt-4">
-                            <TicketsTable tickets={tickets.filter(t => t.status === 'Em Andamento')} findShopName={findShopName} />
+                            <TicketsTable 
+                                tickets={tickets?.filter(t => t.status === 'Em Andamento')} 
+                                findShopName={findShopName} 
+                                isLoading={isLoading}
+                            />
                         </TabsContent>
                         <TabsContent value="fechados" className="mt-4">
-                             <TicketsTable tickets={tickets.filter(t => t.status === 'Fechado')} findShopName={findShopName} />
+                             <TicketsTable 
+                                tickets={tickets?.filter(t => t.status === 'Fechado')} 
+                                findShopName={findShopName} 
+                                isLoading={isLoading}
+                             />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -66,15 +84,22 @@ export default function AdminTicketsPage() {
 }
 
 
-function TicketsTable({ tickets, findShopName }: { tickets: (typeof mockedTickets)[0][], findShopName: (id: string) => string }) {
+function TicketsTable({ tickets, findShopName, isLoading }: { tickets?: Ticket[], findShopName: (id: string) => string, isLoading: boolean }) {
     
-    const getStatusVariant = (status: 'Aberto' | 'Em Andamento' | 'Fechado') => {
+    const getStatusVariant = (status: Ticket['status']) => {
         switch (status) {
             case 'Aberto': return 'destructive';
             case 'Em Andamento': return 'default';
             case 'Fechado': return 'secondary';
         }
     };
+    
+    const toDate = (timestamp: Timestamp | Date | string): Date => {
+        if (timestamp instanceof Timestamp) {
+            return timestamp.toDate();
+        }
+        return new Date(timestamp);
+    }
     
     return (
          <Table>
@@ -88,27 +113,32 @@ function TicketsTable({ tickets, findShopName }: { tickets: (typeof mockedTicket
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {tickets.length > 0 ? tickets.map(ticket => (
+                {isLoading && Array.from({length: 3}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell colSpan={5}><Skeleton className="h-8 w-full"/></TableCell>
+                    </TableRow>
+                ))}
+                {!isLoading && tickets && tickets.length > 0 ? tickets.map(ticket => (
                     <TableRow key={ticket.id}>
                         <TableCell className="font-medium">{findShopName(ticket.shopId)}</TableCell>
                         <TableCell>
                             <div>{ticket.subject}</div>
                             <div className="text-sm text-muted-foreground md:hidden">
-                                {formatDistanceToNow(ticket.lastUpdate, { addSuffix: true, locale: ptBR })}
+                                {formatDistanceToNow(toDate(ticket.lastUpdatedAt), { addSuffix: true, locale: ptBR })}
                             </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                              <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                            {formatDistanceToNow(ticket.lastUpdate, { addSuffix: true, locale: ptBR })}
+                            {formatDistanceToNow(toDate(ticket.lastUpdatedAt), { addSuffix: true, locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right">
                             <Button variant="outline" size="sm">Responder</Button>
                         </TableCell>
                     </TableRow>
                 )) : (
-                     <TableRow>
+                     !isLoading && <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">Nenhum ticket encontrado nesta categoria.</TableCell>
                     </TableRow>
                 )}

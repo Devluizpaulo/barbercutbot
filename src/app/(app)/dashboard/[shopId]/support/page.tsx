@@ -28,11 +28,21 @@ import {
 } from '@/components/ui/dialog';
 import { AddTicketForm } from './add-ticket-form';
 import { useParams } from 'next/navigation';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, Timestamp } from 'firebase/firestore';
+import type { Ticket as TicketType } from '@/lib/types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
 
 export default function SupportPage() {
   const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
   const params = useParams();
   const shopId = params.shopId as string;
+  const firestore = useFirestore();
+
+  const ticketsQuery = useMemoFirebase(() => query(collection(firestore, 'tickets'), where('shopId', '==', shopId)), [firestore, shopId]);
+  const { data: tickets, isLoading } = useCollection<TicketType>(ticketsQuery);
 
   const faqItems = [
     {
@@ -53,6 +63,22 @@ export default function SupportPage() {
     }
   ];
 
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+
+  const getStatusVariant = (status: TicketType['status']) => {
+    switch (status) {
+        case 'Aberto': return 'destructive';
+        case 'Em Andamento': return 'default';
+        case 'Fechado': return 'secondary';
+    }
+  };
+
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -71,14 +97,29 @@ export default function SupportPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                 <Ticket />
-                Sistema de Tickets
+                Meus Tickets de Suporte
                 </CardTitle>
                 <CardDescription>
-                Tem alguma dúvida ou problema? Abra um chamado e nossa equipe responderá em breve.
+                Acompanhe o andamento dos seus chamados.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow space-y-4">
+               {isLoading && <p className="text-sm text-muted-foreground">Carregando seus tickets...</p>}
+               {!isLoading && tickets && tickets.length > 0 ? (
+                    tickets.map(ticket => (
+                        <div key={ticket.id} className="flex justify-between items-center p-2 rounded-md border">
+                            <div>
+                                <p className="font-medium text-sm">{ticket.subject}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    Atualizado em {format(toDate(ticket.lastUpdatedAt), "dd/MM/yyyy", { locale: ptBR })}
+                                </p>
+                            </div>
+                            <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
+                        </div>
+                    ))
+               ) : (
                 <p className="text-sm text-muted-foreground">Você não possui nenhum chamado aberto no momento.</p>
+               )}
             </CardContent>
             <CardFooter>
                 <DialogTrigger asChild>

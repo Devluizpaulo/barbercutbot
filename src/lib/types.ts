@@ -117,4 +117,13 @@ export type UserProfile = {
   createdAt: Timestamp;
 };
 
-
+export type Ticket = {
+    id: string;
+    shopId: string;
+    userId: string;
+    subject: string;
+    description: string;
+    status: 'Aberto' | 'Em Andamento' | 'Fechado';
+    createdAt: Timestamp;
+    lastUpdatedAt: Timestamp;
+};

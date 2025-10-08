@@ -17,6 +17,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
   subject: z.string().min(5, 'O assunto deve ter pelo menos 5 caracteres.'),
@@ -32,6 +34,8 @@ interface AddTicketFormProps {
 
 export function AddTicketForm({ shopId, onSuccess }: AddTicketFormProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
   const form = useForm<AddTicketFormValues>({
     resolver: zodResolver(formSchema),
@@ -44,13 +48,41 @@ export function AddTicketForm({ shopId, onSuccess }: AddTicketFormProps) {
   const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: AddTicketFormValues) => {
-    console.log("Simulating opening ticket for shop:", shopId, values);
-    toast({
-      title: 'Ticket Aberto!',
-      description: 'Sua solicitação foi enviada para nossa equipe de suporte.',
-    });
-    onSuccess?.();
-    form.reset();
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Usuário não autenticado',
+        description: 'Você precisa estar logado para abrir um ticket.',
+      });
+      return;
+    }
+
+    try {
+      const ticketsRef = collection(firestore, 'tickets');
+      const ticketData = {
+        ...values,
+        shopId,
+        userId: user.uid,
+        status: 'Aberto',
+        createdAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+      };
+      await addDocumentNonBlocking(ticketsRef, ticketData);
+      
+      toast({
+        title: 'Ticket Aberto!',
+        description: 'Sua solicitação foi enviada para nossa equipe de suporte.',
+      });
+      onSuccess?.();
+      form.reset();
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+       toast({
+        variant: 'destructive',
+        title: 'Erro ao abrir ticket',
+        description: 'Não foi possível enviar sua solicitação. Tente novamente.',
+      });
+    }
   };
 
   return (
