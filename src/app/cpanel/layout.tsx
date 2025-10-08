@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
   SidebarProvider, 
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -23,12 +24,14 @@ import {
   User,
   Ticket,
   LoaderCircle,
+  Store,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useUser } from "@/firebase";
 import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
+import { Button } from "@/components/ui/button";
 
 export default function AdminDashboardLayout({
   children,
@@ -71,25 +74,19 @@ export default function AdminDashboardLayout({
 
   const navItems = [
     { href: `/cpanel`, label: "Visão Geral", icon: LayoutDashboard },
+    { href: `/cpanel/shops`, label: "Lojas", icon: Store },
     { href: `/cpanel/users`, label: "Usuários", icon: Users },
     { href: `/cpanel/tickets`, label: "Tickets de Suporte", icon: Ticket },
     { href: `/cpanel/documents`, label: "Documentos", icon: FileText },
     { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
 
-  // Mostra um loader enquanto verifica a autenticação
-  // ou se o usuário não for o admin e estiver em uma rota do cpanel (antes do redirect)
-  if (isUserLoading || (!isUserLoading && user && user.email !== 'admin@bbr.com' && pathname !== '/cpanel/login')) {
+  if (isUserLoading || (!user && pathname !== '/cpanel/login')) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
         </div>
     )
-  }
-  
-  // Se não há usuário e não estamos na página de login, não renderiza nada até o redirect ocorrer.
-  if (!user && pathname !== '/cpanel/login') {
-      return null;
   }
   
   if (pathname === '/cpanel/login') {
@@ -99,10 +96,15 @@ export default function AdminDashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-screen">
         <Sidebar>
-          <SidebarHeader className="py-8">
+          <SidebarHeader className="p-4 flex items-center justify-between">
               <Logo />
+              <div className="md:hidden">
+                <SidebarTrigger asChild>
+                    <Button variant="ghost" size="icon"><LogOut /></Button>
+                </SidebarTrigger>
+              </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
@@ -142,7 +144,7 @@ export default function AdminDashboardLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
           {children}
         </main>
       </div>

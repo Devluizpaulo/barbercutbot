@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import {
   LoaderCircle,
   Smartphone,
 } from 'lucide-react';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,7 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { Customer } from '@/lib/types';
 import { useFirestore } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'O nome é obrigatório.' }),
@@ -71,8 +71,27 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
 
   const form = useForm<AddClientFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData
-      ? {
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      nickname: '',
+      email: '',
+      phone: '',
+      whatsapp: '',
+      notes: '',
+      cep: '',
+      address: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+    },
+  });
+  
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
           ...initialData,
           nickname: initialData.nickname || '',
           email: initialData.email || '',
@@ -86,24 +105,26 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
           neighborhood: initialData.neighborhood || '',
           city: initialData.city || '',
           state: initialData.state || '',
-        }
-      : {
-          firstName: '',
-          lastName: '',
-          nickname: '',
-          email: '',
-          phone: '',
-          whatsapp: '',
-          notes: '',
-          cep: '',
-          address: '',
-          number: '',
-          complement: '',
-          neighborhood: '',
-          city: '',
-          state: '',
-        },
-  });
+      });
+    } else {
+        form.reset({
+            firstName: '',
+            lastName: '',
+            nickname: '',
+            email: '',
+            phone: '',
+            whatsapp: '',
+            notes: '',
+            cep: '',
+            address: '',
+            number: '',
+            complement: '',
+            neighborhood: '',
+            city: '',
+            state: '',
+        });
+    }
+  }, [initialData, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -156,19 +177,25 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
 
   const onSubmit = async (values: AddClientFormValues) => {
     try {
-      const customersRef = collection(firestore, 'barberShops', shopId, 'customers');
-      await addDocumentNonBlocking(customersRef, {
-        ...values,
-        barberShopId: shopId,
-        createdAt: serverTimestamp(),
-      });
+      if (initialData) {
+          const clientRef = doc(firestore, 'barberShops', shopId, 'customers', initialData.id);
+          setDocumentNonBlocking(clientRef, values, { merge: true });
+      } else {
+          const customersRef = collection(firestore, 'barberShops', shopId, 'customers');
+          await addDocumentNonBlocking(customersRef, {
+            ...values,
+            barberShopId: shopId,
+            createdAt: serverTimestamp(),
+          });
+      }
+
 
       toast({
-        title: 'Cliente Adicionado!',
+        title: initialData ? 'Cliente Atualizado!' : 'Cliente Adicionado!',
         description: `O cliente ${values.firstName} foi salvo com sucesso.`,
       });
       onSuccess?.();
-      form.reset();
+      if (!initialData) form.reset();
     } catch (error) {
        console.error('Error saving client:', error);
        toast({

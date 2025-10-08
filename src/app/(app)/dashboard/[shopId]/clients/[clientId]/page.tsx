@@ -16,7 +16,6 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { appointments as allAppointments } from '@/lib/data';
 import type { Customer, Appointment } from '@/lib/types';
 
 import {
@@ -42,14 +41,19 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AddClientForm } from '../add-client-form';
 
 export default function ClientDetailsPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const clientId = params.clientId as string;
   const firestore = useFirestore();
+  const [isFormOpen, setFormOpen] = useState(false);
+
 
   const clientRef = useMemoFirebase(
     () => doc(firestore, 'barberShops', shopId, 'customers', clientId),
@@ -74,7 +78,14 @@ export default function ClientDetailsPage() {
     return acc + (appt.price || 0);
   }, 0);
   
-  const lastVisit = clientAppointments?.[0]?.startTime ? format(new Date(clientAppointments[0].startTime as Date), 'dd/MM/yyyy', { locale: ptBR }) : "N/A";
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+
+  const lastVisit = clientAppointments?.[0]?.startTime ? format(toDate(clientAppointments[0].startTime), 'dd/MM/yyyy', { locale: ptBR }) : "N/A";
 
   if (isClientLoading) {
     return (
@@ -116,6 +127,7 @@ export default function ClientDetailsPage() {
   }
 
   return (
+    <>
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -132,7 +144,7 @@ export default function ClientDetailsPage() {
             <p className="text-muted-foreground">Perfil e Histórico do Cliente</p>
             </div>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button className="w-full sm:w-auto" onClick={() => setFormOpen(true)}>
           <Edit className="mr-2 h-4 w-4" />
           Editar Cliente
         </Button>
@@ -208,7 +220,7 @@ export default function ClientDetailsPage() {
                 <TableRow key={appointment.id}>
                   <TableCell>
                     <div className="font-medium">
-                      {format(new Date(appointment.startTime as Date), "dd/MM/yy 'às' HH:mm", {
+                      {format(toDate(appointment.startTime), "dd/MM/yy 'às' HH:mm", {
                         locale: ptBR,
                       })}
                     </div>
@@ -243,5 +255,18 @@ export default function ClientDetailsPage() {
         </CardContent>
       </Card>
     </div>
+     <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+        </DialogHeader>
+        <AddClientForm
+            shopId={shopId}
+            initialData={client}
+            onSuccess={() => setFormOpen(false)}
+        />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

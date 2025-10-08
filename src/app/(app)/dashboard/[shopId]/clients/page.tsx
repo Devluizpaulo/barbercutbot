@@ -36,7 +36,8 @@ import { AddClientForm } from './add-client-form';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientsPage() {
-  const [isAddClientOpen, setAddClientOpen] = useState(false);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Customer | undefined>(undefined);
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -46,6 +47,22 @@ export default function ClientsPage() {
     [firestore, shopId]
   );
   const { data: clients, isLoading } = useCollection<Customer>(customersQuery);
+  
+  const handleEdit = (client: Customer) => {
+    setSelectedClient(client);
+    setFormOpen(true);
+  };
+  
+  const handleAddNew = () => {
+    setSelectedClient(undefined);
+    setFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    setFormOpen(false);
+    setSelectedClient(undefined);
+  };
+
 
   return (
     <>
@@ -64,20 +81,21 @@ export default function ClientsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Buscar clientes..." className="pl-8 w-full" />
             </div>
-            <Dialog open={isAddClientOpen} onOpenChange={setAddClientOpen}>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedClient(undefined); setFormOpen(isOpen); }}>
               <DialogTrigger asChild>
-                <Button className="w-full sm:w-auto">
+                <Button className="w-full sm:w-auto" onClick={handleAddNew}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Adicionar Cliente
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Adicionar Novo Cliente</DialogTitle>
+                  <DialogTitle>{selectedClient ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</DialogTitle>
                 </DialogHeader>
                 <AddClientForm
                   shopId={shopId}
-                  onSuccess={() => setAddClientOpen(false)}
+                  initialData={selectedClient}
+                  onSuccess={handleFormSuccess}
                 />
               </DialogContent>
             </Dialog>
@@ -134,13 +152,9 @@ export default function ClientsPage() {
                       {client.phone || '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link
-                          href={`/dashboard/${shopId}/clients/${client.id}`}
-                        >
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
                           <ChevronRight className="h-4 w-4" />
-                          <span className="sr-only">Ver Cliente</span>
-                        </Link>
+                          <span className="sr-only">Editar Cliente</span>
                       </Button>
                     </TableCell>
                   </TableRow>

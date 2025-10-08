@@ -19,8 +19,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Building, Clock, CreditCard, Link as LinkIcon, User, Trash2, Save, MapPin, Search } from 'lucide-react';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useParams } from 'next/navigation';
+import { doc } from 'firebase/firestore';
+import type { BarberShop } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
+    const params = useParams();
+    const shopId = params.shopId as string;
+    const firestore = useFirestore();
+
+    const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
+    const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -50,55 +62,59 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="shop-name">Nome da Barbearia</Label>
-                <Input id="shop-name" placeholder="Ex: Barbearia Corte Clássico" defaultValue="Corte Clássico" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shop-doc">Documento (CNPJ/CPF)</Label>
-                <Input id="shop-doc" placeholder="00.000.000/0001-00" />
-              </div>
-              
-              <div className="space-y-4 pt-4 border-t">
-                 <h3 className="text-lg font-medium">Endereço</h3>
-                 <div className="flex items-center gap-2">
-                    <div className="relative flex-grow">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="00000-000" className="pl-10" />
-                    </div>
-                    <Button type="button" variant="secondary">
-                        <Search className="h-4 w-4" />
-                        <span className="ml-2 hidden sm:inline">Buscar CEP</span>
-                    </Button>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2 space-y-2">
-                      <Label htmlFor="shop-street">Logradouro</Label>
-                      <Input id="shop-street" placeholder="Rua das Flores" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shop-number">Número</Label>
-                      <Input id="shop-number" placeholder="123" />
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shop-neighborhood">Bairro</Label>
-                      <Input id="shop-neighborhood" placeholder="Centro" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shop-city">Cidade</Label>
-                      <Input id="shop-city" placeholder="São Paulo" />
-                    </div>
-                 </div>
-              </div>
+                {isLoading ? <Skeleton className="h-40 w-full" /> : (
+                    <>
+                        <div className="space-y-2">
+                            <Label htmlFor="shop-name">Nome da Barbearia</Label>
+                            <Input id="shop-name" placeholder="Ex: Barbearia Corte Clássico" defaultValue={shop?.name} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="shop-doc">Documento (CNPJ/CPF)</Label>
+                            <Input id="shop-doc" placeholder="00.000.000/0001-00" />
+                        </div>
+                        
+                        <div className="space-y-4 pt-4 border-t">
+                            <h3 className="text-lg font-medium">Endereço</h3>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-grow">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input placeholder="00000-000" className="pl-10" />
+                                </div>
+                                <Button type="button" variant="secondary">
+                                    <Search className="h-4 w-4" />
+                                    <span className="ml-2 hidden sm:inline">Buscar CEP</span>
+                                </Button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="md:col-span-2 space-y-2">
+                                <Label htmlFor="shop-street">Logradouro</Label>
+                                <Input id="shop-street" placeholder="Rua das Flores" defaultValue={shop?.address} />
+                                </div>
+                                <div className="space-y-2">
+                                <Label htmlFor="shop-number">Número</Label>
+                                <Input id="shop-number" placeholder="123" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                <Label htmlFor="shop-neighborhood">Bairro</Label>
+                                <Input id="shop-neighborhood" placeholder="Centro" />
+                                </div>
+                                <div className="space-y-2">
+                                <Label htmlFor="shop-city">Cidade</Label>
+                                <Input id="shop-city" placeholder="São Paulo" />
+                                </div>
+                            </div>
+                        </div>
 
-              <div className="flex justify-end pt-4">
-                <Button>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                </Button>
-              </div>
+                        <div className="flex justify-end pt-4">
+                            <Button>
+                                <Save className="mr-2 h-4 w-4" />
+                                Salvar Alterações
+                            </Button>
+                        </div>
+                    </>
+                )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -47,6 +47,7 @@ import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'fir
 import type { BarberShop, Customer, FinancialRecord, UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMonth } from 'date-fns';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 const chartConfig = {
@@ -80,8 +81,6 @@ export default function AdminDashboard() {
     const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
     
-    // As these are sub-collections, we would need to query them differently.
-    // For this prototype, we'll use collectionGroup for a platform-wide query.
     const customersQuery = useMemoFirebase(() => query(collectionGroup(firestore, 'customers')), [firestore]);
     const { data: customers, isLoading: isLoadingCustomers } = useCollection<Customer>(customersQuery);
 
@@ -125,8 +124,9 @@ export default function AdminDashboard() {
     
     const handleDeactivateShop = (shop: BarberShop | null) => {
         if (!shop) return;
-        // In a real app, you would update the shop's status field in Firestore
-        console.log(`Desativando a loja: ${shop.name}`);
+        const shopRef = doc(firestore, 'barberShops', shop.id);
+        setDocumentNonBlocking(shopRef, { status: 'inactive' }, { merge: true });
+
         toast({
             title: 'Loja Desativada',
             description: `A barbearia "${shop.name}" foi desativada com sucesso.`,
@@ -172,9 +172,9 @@ export default function AdminDashboard() {
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.length || 0}</div>}
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.filter(s => s.status === 'active').length || 0}</div>}
             <p className="text-xs text-muted-foreground">
-              +1 no último mês (simulado)
+              {shops?.length || 0} no total
             </p>
           </CardContent>
         </Card>
@@ -274,10 +274,10 @@ export default function AdminDashboard() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge 
-                                            variant={'default'}
-                                            className={cn('bg-green-500 hover:bg-green-500/80')}
+                                            variant={shop.status === 'active' ? 'default' : 'destructive'}
+                                            className={cn(shop.status === 'active' && 'bg-green-500 hover:bg-green-500/80')}
                                         >
-                                            Ativo
+                                            {shop.status === 'active' ? 'Ativo' : 'Inativo'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="hidden lg:table-cell">Pro</TableCell>
@@ -384,5 +384,3 @@ export default function AdminDashboard() {
     </>
   )
 }
-
-    

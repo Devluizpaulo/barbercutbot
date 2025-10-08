@@ -8,6 +8,8 @@ export type BarberShop = {
   address?: string;
   phone?: string;
   email?: string;
+  status?: 'active' | 'inactive';
+  createdAt?: Timestamp;
 };
 
 export type Appointment = {
