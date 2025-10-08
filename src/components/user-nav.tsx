@@ -1,3 +1,4 @@
+'use client';
 
 import Link from "next/link";
 import {
@@ -26,7 +27,9 @@ export function UserNav() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
     router.push('/');
   }
   
