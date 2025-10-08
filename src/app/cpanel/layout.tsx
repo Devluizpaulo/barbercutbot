@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  SidebarProvider, 
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -78,7 +79,7 @@ export default function AdminDashboardLayout({
 
   // Mostra um loader enquanto verifica a autenticação
   // ou se o usuário não for o admin e estiver em uma rota do cpanel (antes do redirect)
-  if (isUserLoading || (!isUserLoading && user && user.email !== 'admin@bbr.com')) {
+  if (isUserLoading || (!isUserLoading && user && user.email !== 'admin@bbr.com' && pathname !== '/cpanel/login')) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -90,9 +91,14 @@ export default function AdminDashboardLayout({
   if (!user && pathname !== '/cpanel/login') {
       return null;
   }
+  
+  if (pathname === '/cpanel/login') {
+    return <>{children}</>;
+  }
 
 
   return (
+    <SidebarProvider>
       <div className="flex flex-1">
         <Sidebar>
           <SidebarHeader className="py-8">
@@ -136,9 +142,10 @@ export default function AdminDashboardLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <main className="flex-1 p-4 sm:p-6 md:p-8 pt-[4.2rem] bg-background">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
           {children}
         </main>
       </div>
+    </SidebarProvider>
   );
 }

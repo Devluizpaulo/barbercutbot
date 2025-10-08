@@ -33,17 +33,17 @@ export default function AppLayout({
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search..."
+                placeholder="Buscar..."
                 className="w-full rounded-lg bg-muted pl-8 md:w-[200px] lg:w-[320px]"
               />
             </div>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Sun className="h-5 w-5" />
-              <span className="sr-only">Toggle theme</span>
+              <span className="sr-only">Alternar tema</span>
             </Button>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
+              <span className="sr-only">Notificações</span>
             </Button>
             <UserNav />
           </div>

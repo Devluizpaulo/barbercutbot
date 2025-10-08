@@ -19,17 +19,15 @@ import {
   Users,
   CreditCard,
   Settings,
-  Shield,
   LogOut,
   User,
-  Scissors,
   ClipboardList,
   Truck,
-  FileText,
   LifeBuoy,
 } from "lucide-react";
 import { shops } from "@/lib/data";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
 
 export default function ShopLayout({
   children,
@@ -54,8 +52,11 @@ export default function ShopLayout({
   return (
       <div className="flex flex-1">
         <Sidebar>
-          <SidebarHeader className="py-8">
+          <SidebarHeader className="p-4 flex items-center justify-between">
               <Logo />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground">
+                  <Settings />
+              </Button>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
@@ -115,9 +116,9 @@ export default function ShopLayout({
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex-1 p-4 sm:p-6 md:p-8 pt-[4.2rem] bg-background">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
           {children}
-        </div>
+        </main>
       </div>
   );
 }
