@@ -25,9 +25,11 @@ import {
   Truck,
   LifeBuoy,
 } from "lucide-react";
-import { shops } from "@/lib/data";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { BarberShop } from "@/lib/types";
 
 export default function ShopLayout({
   children,
@@ -37,7 +39,13 @@ export default function ShopLayout({
   const pathname = usePathname();
   const params = useParams();
   const shopId = params.shopId as string;
-  const shop = shops.find((s) => s.id === shopId);
+  const firestore = useFirestore();
+
+  const shopRef = useMemoFirebase(
+    () => (shopId ? doc(firestore, "barberShops", shopId) : null),
+    [firestore, shopId]
+  );
+  const { data: shop } = useDoc<BarberShop>(shopRef);
 
   const navItems = [
     { href: `/dashboard/${shopId}`, label: "Visão Geral", icon: LayoutDashboard },
