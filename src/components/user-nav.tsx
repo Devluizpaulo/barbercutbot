@@ -30,7 +30,7 @@ export function UserNav() {
     if (auth) {
       await signOut(auth);
     }
-    router.push('/');
+    router.push('/login');
   }
   
   if (isUserLoading) {
@@ -40,7 +40,7 @@ export function UserNav() {
   if (!user) {
     return (
        <Button asChild>
-          <Link href="/cpanel/login">Login</Link>
+          <Link href="/login">Login</Link>
         </Button>
     )
   }

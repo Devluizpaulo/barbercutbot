@@ -1,17 +1,65 @@
 
+"use client";
+
 import Link from "next/link";
+import { usePathname, useParams, useRouter } from "next/navigation";
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+import {
+  LayoutDashboard,
+  Calendar,
+  Users,
+  CreditCard,
+  Settings,
+  LogOut,
+  User,
+  ClipboardList,
+  Truck,
+  LifeBuoy,
+  LoaderCircle,
+} from "lucide-react";
 import { Logo } from "@/components/logo";
-import { UserNav } from "@/components/user-nav";
+import { Button } from "@/components/ui/button";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { BarberShop } from "@/lib/types";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Search, Bell, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { UserNav } from "@/components/user-nav";
+import { useEffect } from "react";
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full flex-col bg-background">
