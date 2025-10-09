@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Search, ChevronRight, PlusCircle, Edit } from 'lucide-react';
@@ -39,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ClientsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Customer | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState('');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -49,6 +50,18 @@ export default function ClientsPage() {
     [firestore, shopId, user]
   );
   const { data: clients, isLoading } = useCollection<Customer>(customersQuery);
+
+  const filteredClients = useMemo(() => {
+    if (!clients) return [];
+    if (!searchTerm) return clients;
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return clients.filter(client => 
+      client.firstName.toLowerCase().includes(lowercasedTerm) ||
+      client.lastName.toLowerCase().includes(lowercasedTerm) ||
+      (client.email && client.email.toLowerCase().includes(lowercasedTerm))
+    );
+  }, [clients, searchTerm]);
   
   const handleEdit = (client: Customer) => {
     setSelectedClient(client);
@@ -81,7 +94,12 @@ export default function ClientsPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar clientes..." className="pl-8 w-full" />
+              <Input
+                placeholder="Buscar clientes..."
+                className="pl-8 w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedClient(undefined); setFormOpen(isOpen); }}>
               <DialogTrigger asChild>
@@ -137,7 +155,7 @@ export default function ClientsPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                {clients?.map((client) => (
+                {filteredClients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">
                       <Link
@@ -167,10 +185,10 @@ export default function ClientsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                 {!isLoading && clients?.length === 0 && (
+                 {!isLoading && filteredClients.length === 0 && (
                     <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            Nenhum cliente encontrado. Adicione o primeiro!
+                            {searchTerm ? `Nenhum cliente encontrado para "${searchTerm}"` : "Nenhum cliente encontrado. Adicione o primeiro!"}
                         </TableCell>
                     </TableRow>
                  )}
