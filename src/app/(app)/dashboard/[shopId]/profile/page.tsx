@@ -78,12 +78,21 @@ export default function ProfilePage() {
     bookingUrl
   )}`;
   
-  const handleCopy = () => {
-    navigator.clipboard.writeText(bookingUrl);
-    toast({
-      title: 'Link copiado!',
-      description: 'O link de agendamento foi copiado para sua área de transferência.',
-    });
+  const handleCopy = async () => {
+    try {
+        await navigator.clipboard.writeText(bookingUrl);
+        toast({
+            title: 'Link copiado!',
+            description: 'O link de agendamento foi copiado para sua área de transferência.',
+        });
+    } catch (err) {
+        console.error('Failed to copy: ', err);
+        toast({
+            variant: 'destructive',
+            title: 'Falha ao copiar',
+            description: 'Não foi possível copiar o link. Tente manualmente.',
+        });
+    }
   };
 
   const handleShare = async () => {
