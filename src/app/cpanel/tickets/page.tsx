@@ -42,6 +42,7 @@ import { AddTicketForm } from './add-ticket-form';
 
 
 export default function AdminTicketsPage() {
+    const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
     const firestore = useFirestore();
     const { user } = useUser();
     
@@ -67,14 +68,36 @@ export default function AdminTicketsPage() {
 
     return (
         <div className="flex flex-col gap-8">
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                    <TicketIcon />
-                    Tickets de Suporte
-                </h1>
-                <p className="text-muted-foreground">
-                Gerencie todas as solicitações de suporte dos seus parceiros.
-                </p>
+            <div className="flex items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+                        <TicketIcon />
+                        Tickets de Suporte
+                    </h1>
+                    <p className="text-muted-foreground">
+                    Gerencie todas as solicitações de suporte dos seus parceiros.
+                    </p>
+                </div>
+                 <Dialog open={isTicketDialogOpen} onOpenChange={setTicketDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Abrir Ticket (Simulação)
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl">
+                        <DialogHeader>
+                        <DialogTitle>Abrir Novo Ticket de Suporte</DialogTitle>
+                        <DialogDescription>
+                            Simule a abertura de um ticket por um usuário.
+                        </DialogDescription>
+                        </DialogHeader>
+                        <AddTicketForm
+                            shopId="simulatedShopId"
+                            onSuccess={() => setTicketDialogOpen(false)}
+                        />
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <Card>
@@ -129,6 +152,7 @@ function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { ti
             case 'Aberto': return 'destructive';
             case 'Em Andamento': return 'default';
             case 'Fechado': return 'secondary';
+            default: return 'outline';
         }
     };
     
