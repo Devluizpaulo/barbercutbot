@@ -4,59 +4,56 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user's UID is in the admins collection.
+    // Função auxiliar para verificar se o usuário é um administrador
     function isAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Admins can read and write all data across the platform.
-    match /{document=**} {
+    // Usuários podem ler/escrever seus próprios perfis. Admins podem ler todos.
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Admins podem ler/escrever todos os documentos de usuários.
+    match /users/{userId} {
       allow read, write: if isAdmin();
     }
 
-    // Rules for user profiles
-    match /users/{userId} {
-      // Any authenticated user can create their own profile.
-      allow create: if request.auth != null;
-      // Users can only read, update, or delete their own profile.
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Rules for the main barberShops collection
-    match /barberShops/{shopId} {
-      // Any user can read shop details (for public profiles, listings, etc.).
-      allow read: if true;
-      // An authenticated user can create a shop, but must be its owner.
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      // Only the owner of a shop can update or delete it.
-      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
-
-      // Rules for subcollections within a barberShop
-      match /{subcollection}/{docId} {
-        // The owner of the shop can do anything within their shop's subcollections.
-        allow read, write: if request.auth != null && get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
-      }
-    }
-    
-    // Rules for platform-wide collections (tickets, documents, admins)
-    match /tickets/{ticketId} {
-        // Admins can manage all tickets. Users can create tickets and read/update their own.
-        allow read, update, delete: if isAdmin();
-        allow create: if request.auth != null;
-        allow read, update: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    
-    match /documents/{docId} {
-        // Admins can manage all documents. Anyone can read them.
-        allow read: if true;
-        allow write: if isAdmin();
-    }
-    
+    // Regras para a coleção 'admins'
     match /admins/{adminId} {
-        // Only other admins can see or manage the list of admins.
-        allow read, write: if isAdmin();
+      // Apenas admins podem ler a lista de admins.
+      allow read: if isAdmin();
+      // Ninguém pode escrever diretamente (controlado via backend/funções)
+      allow write: if false; 
+    }
+
+    // Barbearias podem ser lidas por qualquer um, escritas pelo dono ou admin.
+    match /barberShops/{shopId} {
+      allow read: if true;
+      allow write: if request.auth.uid == resource.data.ownerId || isAdmin();
+    }
+
+    // Subcoleções das barbearias (clientes, agendamentos, etc.)
+    match /barberShops/{shopId}/{collection}/{docId} {
+      // O dono da loja ou um admin pode ler e escrever.
+      allow read, write: if get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid || isAdmin();
+    }
+    
+    // Coleção de tickets de suporte
+    match /tickets/{ticketId} {
+      // O usuário que criou o ticket ou um admin pode ler.
+      allow read: if resource.data.userId == request.auth.uid || isAdmin();
+      // O usuário que criou ou um admin pode criar/atualizar.
+      allow write: if request.resource.data.userId == request.auth.uid || isAdmin();
+    }
+
+    // Coleção de documentos legais
+    match /documents/{documentId} {
+      // Todos podem ler documentos.
+      allow read: if true;
+      // Apenas admins podem criar/atualizar/excluir.
+      allow write: if isAdmin();
     }
   }
 }
-
-    
