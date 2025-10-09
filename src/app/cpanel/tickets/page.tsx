@@ -22,6 +22,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, Timestamp } from "firebase/firestore";
 import type { BarberShop, Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CPanelLayout } from '../cpanel-layout';
 
 export default function AdminTicketsPage() {
     const firestore = useFirestore();
@@ -37,6 +38,7 @@ export default function AdminTicketsPage() {
     const isLoading = isLoadingTickets || isLoadingShops;
 
     return (
+      <CPanelLayout>
         <div className="flex flex-col gap-8">
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -81,6 +83,7 @@ export default function AdminTicketsPage() {
                 </CardContent>
             </Card>
         </div>
+        </CPanelLayout>
     )
 }
 

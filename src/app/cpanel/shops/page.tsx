@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AddShopForm } from './add-shop-form';
+import { CPanelLayout } from '../cpanel-layout';
 
 export default function AdminShopsPage() {
     const firestore = useFirestore();
@@ -69,7 +70,7 @@ export default function AdminShopsPage() {
 
 
   return (
-    <>
+    <CPanelLayout>
     <div className="flex flex-1 flex-col gap-8">
        <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
@@ -172,6 +173,6 @@ export default function AdminShopsPage() {
         </CardContent>
       </Card>
     </div>
-    </>
+    </CPanelLayout>
   )
 }

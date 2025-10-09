@@ -48,6 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { CPanelLayout } from './cpanel-layout';
 
 
 const chartConfig = {
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
     const isLoading = isLoadingShops || isLoadingCustomers || isLoadingFinancialRecords || isLoadingUsers;
 
   return (
-    <>
+    <CPanelLayout>
     <div className="flex flex-1 flex-col gap-8">
        <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
@@ -382,6 +383,6 @@ export default function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </CPanelLayout>
   )
 }

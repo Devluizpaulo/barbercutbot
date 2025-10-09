@@ -19,9 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText } from 'lucide-react';
+import { CPanelLayout } from '../cpanel-layout';
 
 export default function GlobalSettingsPage() {
   return (
+    <CPanelLayout>
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -144,5 +146,6 @@ export default function GlobalSettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </CPanelLayout>
   );
 }

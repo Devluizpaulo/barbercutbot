@@ -21,8 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building, Clock, CreditCard, Link as LinkIcon, User, Trash2, Save, MapPin, Search } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { CreditCard, Save, MapPin, Search } from 'lucide-react';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
@@ -31,6 +31,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { useEffect } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { CPanelLayout } from '@/app/cpanel/cpanel-layout';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -124,12 +125,10 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 mb-6">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="hours">Horários</TabsTrigger>
           <TabsTrigger value="payment">Pagamentos</TabsTrigger>
-          <TabsTrigger value="integrations">Integrações</TabsTrigger>
-          <TabsTrigger value="account">Conta</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -377,64 +376,13 @@ export default function SettingsPage() {
                     <div className="flex justify-end pt-4">
                         <Button>
                             <Save className="mr-2 h-4 w-4" />
-                            Salvar Configurações de Pagamento
+                            Salvar Configurações
                         </Button>
                     </div>
                 </CardContent>
             </Card>
         </TabsContent>
-        
-        <TabsContent value="integrations">
-          <Card>
-            <CardHeader>
-              <CardTitle>Integrações</CardTitle>
-              <CardDescription>
-                Conecte sua conta a outros serviços para automatizar tarefas.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                         <div className="flex-shrink-0 bg-gray-100 p-2 rounded-full">
-                            <svg className="h-6 w-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                            </svg>
-                         </div>
-                        <div>
-                            <h4 className="font-semibold">Google Agenda</h4>
-                            <p className="text-sm text-muted-foreground">Sincronize os agendamentos da plataforma com sua Google Agenda.</p>
-                        </div>
-                    </div>
-                    <Button variant="secondary">Conectar</Button>
-                </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="account">
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
-              <CardDescription>
-                Ações irreversíveis relacionadas à sua conta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-                    <div>
-                        <h4 className="font-semibold text-destructive">Excluir Conta</h4>
-                        <p className="text-sm text-destructive/80">Isto irá apagar permanentemente todos os dados da sua barbearia.</p>
-                    </div>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir Minha Conta
-                    </Button>
-                </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
 }
-

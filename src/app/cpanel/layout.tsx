@@ -21,7 +21,6 @@ import {
   Settings,
   FileText,
   LogOut,
-  User,
   Ticket,
   LoaderCircle,
   Store,
@@ -31,12 +30,11 @@ import { useUser } from "@/firebase";
 import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
-import { Button } from "@/components/ui/button";
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 
-export default function AdminDashboardLayout({
+export function CPanelLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -168,9 +166,9 @@ export default function AdminDashboardLayout({
               </SidebarMenu>
             </SidebarFooter>
           </Sidebar>
-          <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
             {children}
-          </main>
+          </div>
         </main>
       </div>
     </SidebarProvider>
