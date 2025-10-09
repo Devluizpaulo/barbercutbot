@@ -112,7 +112,7 @@ export default function CpanelLoginPage() {
                 </Button>
                  <p className="text-sm text-center text-muted-foreground">
                     Não tem uma conta de admin?{' '}
-                    <Link href="/signup" className="underline hover:text-primary">
+                    <Link href="/cpanel/signup" className="underline hover:text-primary">
                         Cadastre-se
                     </Link>
                 </p>

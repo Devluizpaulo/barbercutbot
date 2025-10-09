@@ -254,6 +254,7 @@ export default function LandingPage() {
           <nav className="flex flex-wrap justify-center gap-4 text-center md:gap-6">
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
+             <Link href="/cpanel/login" className="text-sm text-muted-foreground hover:text-primary">Admin</Link>
           </nav>
           <p className="text-sm text-muted-foreground text-center md:text-right">
             © {new Date().getFullYear()} Barbearia SaaS. Todos os direitos reservados.
