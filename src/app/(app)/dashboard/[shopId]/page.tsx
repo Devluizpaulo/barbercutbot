@@ -61,7 +61,7 @@ export default function ShopDashboardPage() {
   const appointmentsQuery = useMemoFirebase(() => user ? query(
       collection(firestore, 'barberShops', shopId, 'appointments')
   ) : null, [firestore, shopId, user]);
-  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(allAppointments);
+  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
   
   const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
@@ -99,7 +99,7 @@ export default function ShopDashboardPage() {
       .filter(r => r.type === 'income' && isWithinInterval(toDate(r.date), interval))
       .reduce((acc, r) => acc + r.amount, 0);
       
-    const appointments = allAppointments.filter(a => isWithinInterval(toDate(a.startTime), interval));
+    const appointments = allAppointments.filter((a: Appointment) => isWithinInterval(toDate(a.startTime), interval));
     
     return { revenue, appointments };
   }, [financialRecords, allAppointments, period]);
@@ -109,8 +109,8 @@ export default function ShopDashboardPage() {
     const serviceCounts: Record<string, number> = {};
     let totalServices = 0;
 
-    filteredData.appointments.forEach(appt => {
-        appt.serviceIds.forEach(serviceId => {
+    filteredData.appointments.forEach((appt: Appointment) => {
+        appt.serviceIds.forEach((serviceId: string) => {
             if(serviceCounts[serviceId]) {
                 serviceCounts[serviceId]++;
             } else {
@@ -208,7 +208,7 @@ export default function ShopDashboardPage() {
           <CardContent>
             {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{filteredData.appointments?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
-              {filteredData.appointments?.filter(a => a.status === 'completed').length || 0} concluídos
+              {filteredData.appointments?.filter((a: Appointment) => a.status === 'completed').length || 0} concluídos
             </p>
           </CardContent>
         </Card>
@@ -279,7 +279,7 @@ export default function ShopDashboardPage() {
                         <TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell>
                     </TableRow>
                 ))}
-                {filteredData.appointments?.slice(0, 5).map((appointment) => (
+                {filteredData.appointments?.slice(0, 5).map((appointment: Appointment) => (
                   <TableRow key={appointment.id}>
                     <TableCell>
                       <div className="font-medium">{customers?.find(c => c.id === appointment.customerId)?.firstName}</div>
