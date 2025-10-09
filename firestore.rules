@@ -4,50 +4,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Helper function to check if a user's UID is in the admins collection.
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'admin@bbr.com';
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-    
-    function isShopOwner(shopId) {
-        return request.auth != null && get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
-    }
-
-    // Admin can read and write anything
-    match /{path=**} {
+    // Admins can read and write all data across the platform.
+    match /{document=**} {
       allow read, write: if isAdmin();
     }
-    
-    // Users can read/update their own profile
+
+    // Rules for user profiles
     match /users/{userId} {
-      allow read, update: if isOwner(userId);
-    }
-    
-    // BarberShops can be read by anyone (for public profiles), created by any authenticated user, 
-    // and updated/deleted only by the owner.
-    match /barberShops/{shopId} {
-        allow read: if true;
-        allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-        allow update, delete: if isShopOwner(shopId);
-    }
-    
-    // Subcollections of BarberShops can be managed by the shop owner.
-    match /barberShops/{shopId}/{subcollection}/{documentId} {
-        allow read, write: if isShopOwner(shopId);
-    }
-    
-    // Specific rules for platform-wide collections like tickets and documents
-    match /tickets/{ticketId} {
-        allow create: if request.auth != null;
-        allow read, update: if get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId == request.auth.uid;
+      // Any authenticated user can create their own profile.
+      allow create: if request.auth != null;
+      // Users can only read, update, or delete their own profile.
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    match /documents/{documentId} {
+    // Rules for the main barberShops collection
+    match /barberShops/{shopId} {
+      // Any user can read shop details (for public profiles, listings, etc.).
+      allow read: if true;
+      // An authenticated user can create a shop, but must be its owner.
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      // Only the owner of a shop can update or delete it.
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      // Rules for subcollections within a barberShop
+      match /{subcollection}/{docId} {
+        // The owner of the shop can do anything within their shop's subcollections.
+        allow read, write: if request.auth != null && get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+      }
+    }
+    
+    // Rules for platform-wide collections (tickets, documents, admins)
+    match /tickets/{ticketId} {
+        // Admins can manage all tickets. Users can create tickets and read/update their own.
+        allow read, update, delete: if isAdmin();
+        allow create: if request.auth != null;
+        allow read, update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    match /documents/{docId} {
+        // Admins can manage all documents. Anyone can read them.
         allow read: if true;
+        allow write: if isAdmin();
+    }
+    
+    match /admins/{adminId} {
+        // Only other admins can see or manage the list of admins.
+        allow read, write: if isAdmin();
     }
   }
 }
+
+    
