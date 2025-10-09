@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
@@ -104,11 +105,17 @@ export default function CpanelLoginPage() {
                 />
             </div>
             </CardContent>
-            <CardFooter>
-            <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                Entrar
-            </Button>
+            <CardFooter className="flex flex-col gap-4">
+                <Button className="w-full" type="submit" disabled={isLoading}>
+                    {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    Entrar
+                </Button>
+                 <p className="text-sm text-center text-muted-foreground">
+                    Não tem uma conta de admin?{' '}
+                    <Link href="/signup" className="underline hover:text-primary">
+                        Cadastre-se
+                    </Link>
+                </p>
             </CardFooter>
         </form>
       </Card>
