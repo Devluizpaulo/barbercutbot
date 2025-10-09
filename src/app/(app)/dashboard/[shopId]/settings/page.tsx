@@ -119,7 +119,7 @@ export default function SettingsPage() {
         toast({ title: 'Perfil atualizado!', description: 'As informações da sua barbearia foram salvas.' });
     };
 
-    const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>>) => {
+    const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
         setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
     }
@@ -406,7 +406,7 @@ export default function SettingsPage() {
                                  <Button variant={subscriptionStatus === 'active' ? 'destructive' : 'outline'} onClick={handleManageSubscription} disabled={isBillingLoading}>
                                     {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     {subscriptionStatus === 'active' ? 'Cancelar Assinatura' : 'Fazer Upgrade para Pro'}
-                                </Button>
+                                 </Button>
                             </div>
                         )}
                     </div>
