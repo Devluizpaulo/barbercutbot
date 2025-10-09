@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from 'firebase/firestore';
 
 export type WorkingHour = {
@@ -20,6 +19,12 @@ export type BarberShop = {
   status?: 'active' | 'inactive';
   workingHours?: WorkingHour[];
   createdAt?: Timestamp;
+  subscription?: {
+    plan: 'free' | 'pro';
+    status: 'active' | 'trialing' | 'past_due' | 'canceled';
+    mercadoPagoId?: string;
+    currentPeriodEnd?: Timestamp;
+  }
 };
 
 export type Appointment = {

@@ -48,6 +48,16 @@
                     "enabled": { "type": "boolean" }
                 }
             }
+        },
+        "subscription": {
+            "type": "object",
+            "description": "Subscription details for the barber shop.",
+            "properties": {
+                "plan": { "type": "string", "enum": ["free", "pro"] },
+                "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"] },
+                "mercadoPagoId": { "type": "string" },
+                "currentPeriodEnd": { "type": "string", "format": "date-time" }
+            }
         }
       },
       "required": [

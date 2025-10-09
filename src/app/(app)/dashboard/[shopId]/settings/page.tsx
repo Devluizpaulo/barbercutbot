@@ -124,10 +124,10 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="profile">Perfil</TabsTrigger>
           <TabsTrigger value="hours">Horários</TabsTrigger>
-          <TabsTrigger value="payment">Pagamentos</TabsTrigger>
+          <TabsTrigger value="billing">Faturamento e Assinatura</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -163,7 +163,7 @@ export default function SettingsPage() {
                                         <FormItem>
                                             <Label>Documento (CNPJ/CPF)</Label>
                                             <FormControl>
-                                                <Input placeholder="00.000.000/0001-00" {...field} />
+                                                <Input placeholder="00.000.000/0001-00" {...field} value={field.value || ''} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -181,7 +181,7 @@ export default function SettingsPage() {
                                                     <div className="relative flex-grow">
                                                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                         <FormControl>
-                                                            <Input placeholder="00000-000" {...field} className="pl-10" />
+                                                            <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
                                                         </FormControl>
                                                     </div>
                                                     <Button type="button" variant="secondary">
@@ -202,7 +202,7 @@ export default function SettingsPage() {
                                                     <FormItem>
                                                         <Label>Logradouro</Label>
                                                         <FormControl>
-                                                            <Input placeholder="Rua das Flores" {...field} />
+                                                            <Input placeholder="Rua das Flores" {...field} value={field.value || ''} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                                                     <FormItem>
                                                         <Label>Número</Label>
                                                         <FormControl>
-                                                            <Input placeholder="123" {...field} />
+                                                            <Input placeholder="123" {...field} value={field.value || ''} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                                                     <FormItem>
                                                         <Label>Bairro</Label>
                                                         <FormControl>
-                                                            <Input placeholder="Centro" {...field} />
+                                                            <Input placeholder="Centro" {...field} value={field.value || ''} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                                                     <FormItem>
                                                         <Label>Cidade</Label>
                                                         <FormControl>
-                                                            <Input placeholder="São Paulo" {...field} />
+                                                            <Input placeholder="São Paulo" {...field} value={field.value || ''} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -342,26 +342,15 @@ export default function SettingsPage() {
             </Form>
         </TabsContent>
 
-        <TabsContent value="payment">
+        <TabsContent value="billing">
             <Card>
                 <CardHeader>
-                    <CardTitle>Pagamentos</CardTitle>
+                    <CardTitle>Faturamento e Assinatura</CardTitle>
                     <CardDescription>
-                        Configure as formas de pagamento aceitas e gerencie sua assinatura.
+                        Gerencie seu plano e visualize seu histórico de faturas.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                     <div>
-                        <h3 className="text-lg font-medium mb-4">Formas de Pagamento Aceitas</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix'].map(method => (
-                                <div key={method} className="flex items-center space-x-2">
-                                <Checkbox id={method.toLowerCase()} defaultChecked />
-                                <Label htmlFor={method.toLowerCase()}>{method}</Label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                      <div className="pt-8 border-t">
                         <h3 className="text-lg font-medium">Plano e Assinatura</h3>
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
