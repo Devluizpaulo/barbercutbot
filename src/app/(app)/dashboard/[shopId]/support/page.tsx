@@ -76,6 +76,7 @@ export default function SupportPage() {
         case 'Aberto': return 'destructive';
         case 'Em Andamento': return 'default';
         case 'Fechado': return 'secondary';
+        default: return 'outline';
     }
   };
 

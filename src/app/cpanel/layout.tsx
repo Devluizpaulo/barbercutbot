@@ -34,7 +34,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 
-export function CPanelLayout({
+export default function CPanelLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -90,6 +90,7 @@ export function CPanelLayout({
     )
   }
   
+  // Do not render the layout on the login page
   if (pathname === '/cpanel/login') {
     return <>{children}</>;
   }

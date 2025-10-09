@@ -1,9 +1,13 @@
 
 'use client';
 
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from "@/components/ui/card"
 import {
   Table,
@@ -22,6 +26,18 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, Timestamp } from "firebase/firestore";
 import type { BarberShop, Ticket } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Ticket as TicketIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
+
 
 export default function AdminTicketsPage() {
     const firestore = useFirestore();
@@ -36,11 +52,23 @@ export default function AdminTicketsPage() {
     const findShopName = (shopId: string) => shops?.find(s => s.id === shopId)?.name || 'N/A';
     const isLoading = isLoadingTickets || isLoadingShops;
 
+    const { toast } = useToast();
+
+    const handleStatusChange = (ticket: Ticket, status: Ticket['status']) => {
+        const ticketRef = doc(firestore, 'tickets', ticket.id);
+        setDocumentNonBlocking(ticketRef, { status, lastUpdatedAt: new Date() }, { merge: true });
+        toast({
+            title: `Ticket #${ticket.id.substring(0,6)}... atualizado`,
+            description: `O status do ticket foi alterado para ${status}.`,
+        });
+    };
+
     return (
         <div className="flex flex-col gap-8">
             <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-                Tickets de Suporte
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+                    <TicketIcon />
+                    Tickets de Suporte
                 </h1>
                 <p className="text-muted-foreground">
                 Gerencie todas as solicitações de suporte dos seus parceiros.
@@ -48,6 +76,10 @@ export default function AdminTicketsPage() {
             </div>
 
             <Card>
+                <CardHeader>
+                    <CardTitle>Caixa de Entrada</CardTitle>
+                    <CardDescription>Veja e responda aos tickets de suporte abertos pelos usuários.</CardDescription>
+                </CardHeader>
                 <CardContent className="pt-6">
                     <Tabs defaultValue="abertos">
                         <TabsList>
@@ -61,6 +93,7 @@ export default function AdminTicketsPage() {
                                 tickets={tickets?.filter(t => t.status === 'Aberto')} 
                                 findShopName={findShopName} 
                                 isLoading={isLoading}
+                                onStatusChange={handleStatusChange}
                             />
                         </TabsContent>
                         <TabsContent value="andamento" className="mt-4">
@@ -68,6 +101,7 @@ export default function AdminTicketsPage() {
                                 tickets={tickets?.filter(t => t.status === 'Em Andamento')} 
                                 findShopName={findShopName} 
                                 isLoading={isLoading}
+                                onStatusChange={handleStatusChange}
                             />
                         </TabsContent>
                         <TabsContent value="fechados" className="mt-4">
@@ -75,6 +109,7 @@ export default function AdminTicketsPage() {
                                 tickets={tickets?.filter(t => t.status === 'Fechado')} 
                                 findShopName={findShopName} 
                                 isLoading={isLoading}
+                                onStatusChange={handleStatusChange}
                              />
                         </TabsContent>
                     </Tabs>
@@ -85,7 +120,7 @@ export default function AdminTicketsPage() {
 }
 
 
-function TicketsTable({ tickets, findShopName, isLoading }: { tickets?: Ticket[], findShopName: (id: string) => string, isLoading: boolean }) {
+function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { tickets?: Ticket[], findShopName: (id: string) => string, isLoading: boolean, onStatusChange: (ticket: Ticket, status: Ticket['status']) => void }) {
     
     const getStatusVariant = (status: Ticket['status']) => {
         switch (status) {
@@ -135,7 +170,21 @@ function TicketsTable({ tickets, findShopName, isLoading }: { tickets?: Ticket[]
                             {formatDistanceToNow(toDate(ticket.lastUpdatedAt), { addSuffix: true, locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right">
-                            <Button variant="outline" size="sm">Responder</Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => onStatusChange(ticket, 'Em Andamento')}>
+                                        Marcar como "Em Andamento"
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => onStatusChange(ticket, 'Fechado')}>
+                                        Marcar como "Fechado"
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                     </TableRow>
                 )) : (

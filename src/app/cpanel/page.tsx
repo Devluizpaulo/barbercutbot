@@ -281,15 +281,16 @@ export default function AdminDashboard() {
                                               {shop.status === 'active' ? 'Ativo' : 'Inativo'}
                                           </Badge>
                                       </TableCell>
-                                      <TableCell className="hidden lg:table-cell">Pro</TableCell>
+                                      <TableCell className="hidden lg:table-cell">{shop.subscription?.plan === 'pro' ? 'Pro' : 'Gratuito'}</TableCell>
                                       <TableCell className="hidden md:table-cell">
                                           <Badge 
                                               variant={'secondary'}
                                               className={cn(
-                                                  'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                                  shop.subscription?.status === 'active' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                                  shop.subscription?.status === 'past_due' && 'bg-yellow-100 text-yellow-800'
                                               )}
                                           >
-                                              Pago
+                                              {shop.subscription?.status === 'active' ? 'Pago' : 'Pendente'}
                                           </Badge>
                                       </TableCell>
                                       <TableCell className="text-right">
