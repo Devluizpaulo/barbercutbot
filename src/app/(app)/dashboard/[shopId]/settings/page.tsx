@@ -21,16 +21,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { createPayment } from '@/ai/flows/create-payment-flow';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -53,9 +54,11 @@ const workingHoursFormSchema = z.object({
 
 export default function SettingsPage() {
     const params = useParams();
+    const router = useRouter();
     const { toast } = useToast();
     const shopId = params.shopId as string;
     const firestore = useFirestore();
+    const [isBillingLoading, setIsBillingLoading] = useState(false);
 
     const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
     const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
@@ -110,6 +113,32 @@ export default function SettingsPage() {
     const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
         setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
+    }
+
+    const handleManageSubscription = async () => {
+        setIsBillingLoading(true);
+        try {
+            const { checkoutUrl } = await createPayment({
+                shopId: shopId,
+                planId: 'pro', // Simulando a seleção do plano Pro
+                shopName: shop?.name || 'Assinatura Barbearia SaaS',
+                price: 79.90, // Simulando o preço do plano
+            });
+
+            if (checkoutUrl) {
+                router.push(checkoutUrl);
+            } else {
+                throw new Error('URL de checkout não foi retornada.');
+            }
+        } catch (error) {
+            console.error("Erro ao criar preferência de pagamento:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao gerar pagamento',
+                description: 'Não foi possível iniciar o processo de assinatura. Tente novamente mais tarde.',
+            });
+            setIsBillingLoading(false);
+        }
     }
 
   return (
@@ -355,17 +384,14 @@ export default function SettingsPage() {
                         <h3 className="text-lg font-medium">Plano e Assinatura</h3>
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
                             <div>
-                                <p className="font-semibold">Plano Atual: <span className="text-primary">Pro</span></p>
+                                <p className="font-semibold">Plano Atual: <span className="text-primary">{shop?.subscription?.plan || 'N/A'}</span></p>
                                 <p className="text-sm text-muted-foreground">Sua próxima cobrança será em 15 de Agosto de 2024.</p>
                             </div>
-                            <Button variant="outline">Gerenciar Assinatura</Button>
+                            <Button variant="outline" onClick={handleManageSubscription} disabled={isBillingLoading}>
+                                {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                Gerenciar Assinatura
+                            </Button>
                         </div>
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button>
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar Configurações
-                        </Button>
                     </div>
                 </CardContent>
             </Card>
