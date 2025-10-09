@@ -97,7 +97,16 @@ export default function DocumentsPage() {
     return new Date(timestamp);
   };
 
+  const getStatusVariant = (status: DocumentType['status']) => {
+    switch (status) {
+        case 'Publicado': return 'secondary';
+        default: return 'outline';
+    }
+  };
+
+
   return (
+    <>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -155,7 +164,7 @@ export default function DocumentsPage() {
                       <div className="text-sm text-muted-foreground max-w-xs truncate">{doc.content}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Badge variant={doc.status === 'Publicado' ? 'secondary' : 'outline'}>{doc.status}</Badge>
+                      <Badge variant={getStatusVariant(doc.status)}>{doc.status}</Badge>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       {doc.lastUpdatedAt ? format(toDate(doc.lastUpdatedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '-'}
@@ -216,5 +225,6 @@ export default function DocumentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
   );
 }

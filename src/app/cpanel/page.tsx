@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import type { BarberShop, Customer, FinancialRecord, UserProfile } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
@@ -139,248 +139,249 @@ export default function AdminDashboard() {
     const isLoading = isLoadingShops || isLoadingCustomers || isLoadingFinancialRecords || isLoadingUsers;
 
   return (
-    <div className="flex flex-1 flex-col gap-8">
-       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-          <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
-        </h1>
-        <p className="text-muted-foreground">
-          Gerencie suas barbearias parceiras, finanças e performance geral.
-        </p>
-      </div>
+    <>
+      <div className="flex flex-1 flex-col gap-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+            <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie suas barbearias parceiras, finanças e performance geral.
+          </p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Receita Total (Mês)
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
-            <p className="text-xs text-muted-foreground">
-              +5.2% em relação ao mês passado (simulado)
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Barbearias Ativas
-            </CardTitle>
-            <Store className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.filter(s => s.status === 'active').length || 0}</div>}
-            <p className="text-xs text-muted-foreground">
-              {shops?.length || 0} no total
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total de Clientes
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{customers?.length || 0}</div>}
-            <p className="text-xs text-muted-foreground">
-              em toda a plataforma
-            </p>
-          </CardContent>
-        </Card>
-         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tickets de Suporte
-            </CardTitle>
-            <Ticket className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-             <p className="text-xs text-muted-foreground">
-              Abertos no momento (simulado)
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Receita Total (Mês)
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
+              <p className="text-xs text-muted-foreground">
+                +5.2% em relação ao mês passado (simulado)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Barbearias Ativas
+              </CardTitle>
+              <Store className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.filter(s => s.status === 'active').length || 0}</div>}
+              <p className="text-xs text-muted-foreground">
+                {shops?.length || 0} no total
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total de Clientes
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{customers?.length || 0}</div>}
+              <p className="text-xs text-muted-foreground">
+                em toda a plataforma
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Tickets de Suporte
+              </CardTitle>
+              <Ticket className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">
+                Abertos no momento (simulado)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-       <div className="grid gap-8 lg:grid-cols-3">
-         <div className="lg:col-span-2 space-y-8">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-headline">Crescimento de Lojas na Plataforma</CardTitle>
+                  <CardDescription>
+                    Novas barbearias que se juntaram nos últimos meses.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <ChartContainer config={chartConfig} className="w-full h-[300px]">
+                    <BarChart accessibilityLayer data={newShopsChartData}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="month"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        dataKey="shops"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={10}
+                        allowDecimals={false}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dot" />}
+                      />
+                      <Bar dataKey="shops" fill="var(--color-shops)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="font-headline">Barbearias Parceiras</CardTitle>
+                      <CardDescription>Uma lista de todas as barbearias na sua plataforma.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="w-[250px]">Barbearia</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="hidden lg:table-cell">Plano</TableHead>
+                                  <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
+                                  <TableHead className="text-right">Ações</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {isLoading && Array.from({length: 3}).map((_, i) => (
+                                  <TableRow key={i}>
+                                      <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
+                                  </TableRow>
+                              ))}
+                              {shops?.map(shop => (
+                                  <TableRow key={shop.id}>
+                                      <TableCell>
+                                          <div className="font-medium">{shop.name}</div>
+                                          <div className="text-sm text-muted-foreground">{shop.address}</div>
+                                      </TableCell>
+                                      <TableCell>
+                                          <Badge 
+                                              variant={shop.status === 'active' ? 'default' : 'destructive'}
+                                              className={cn(shop.status === 'active' && 'bg-green-500 hover:bg-green-500/80')}
+                                          >
+                                              {shop.status === 'active' ? 'Ativo' : 'Inativo'}
+                                          </Badge>
+                                      </TableCell>
+                                      <TableCell className="hidden lg:table-cell">Pro</TableCell>
+                                      <TableCell className="hidden md:table-cell">
+                                          <Badge 
+                                              variant={'secondary'}
+                                              className={cn(
+                                                  'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                              )}
+                                          >
+                                              Pago
+                                          </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                          <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="icon">
+                                                      <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem asChild>
+                                                      <Link href={`/dashboard/${shop.id}`}>
+                                                          <ExternalLink className="mr-2 h-4 w-4" />
+                                                          Ver Dashboard
+                                                      </Link>
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleManageBilling(shop.id)}>
+                                                      <CreditCard className="mr-2 h-4 w-4" />
+                                                      Gerenciar Fatura
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                    className="text-red-500"
+                                                    onClick={() => setShopToDeactivate(shop)}
+                                                  >
+                                                    Desativar
+                                                  </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                          </DropdownMenu>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                              {!isLoading && shops?.length === 0 && (
+                                  <TableRow>
+                                      <TableCell colSpan={5} className="h-24 text-center">Nenhuma barbearia encontrada.</TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </CardContent>
+              </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline">Crescimento de Lojas na Plataforma</CardTitle>
-                <CardDescription>
-                  Novas barbearias que se juntaram nos últimos meses.
-                </CardDescription>
+                  <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Atividades Recentes</CardTitle>
+                  <CardDescription>Últimas ações importantes na plataforma.</CardDescription>
               </CardHeader>
-              <CardContent className="pl-2">
-                <ChartContainer config={chartConfig} className="w-full h-[300px]">
-                  <BarChart accessibilityLayer data={newShopsChartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      dataKey="shops"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                      allowDecimals={false}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="dot" />}
-                    />
-                    <Bar dataKey="shops" fill="var(--color-shops)" radius={4} />
-                  </BarChart>
-                </ChartContainer>
+              <CardContent className="space-y-4">
+                  {isLoading && <Skeleton className="h-24 w-full" />}
+                  {users?.slice(0, 4).map((user, index) => (
+                      <div className="flex items-start gap-4" key={user.id}>
+                          <Avatar className="h-9 w-9">
+                              <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">
+                                  Novo usuário cadastrado!
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                  Bem-vindo(a), {user.firstName}.
+                              </p>
+                          </div>
+                      </div>
+                  ))}
               </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Barbearias Parceiras</CardTitle>
-                    <CardDescription>Uma lista de todas as barbearias na sua plataforma.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[250px]">Barbearia</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="hidden lg:table-cell">Plano</TableHead>
-                                <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading && Array.from({length: 3}).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
-                                </TableRow>
-                            ))}
-                            {shops?.map(shop => (
-                                <TableRow key={shop.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{shop.name}</div>
-                                        <div className="text-sm text-muted-foreground">{shop.address}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge 
-                                            variant={shop.status === 'active' ? 'default' : 'destructive'}
-                                            className={cn(shop.status === 'active' && 'bg-green-500 hover:bg-green-500/80')}
-                                        >
-                                            {shop.status === 'active' ? 'Ativo' : 'Inativo'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="hidden lg:table-cell">Pro</TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <Badge 
-                                            variant={'secondary'}
-                                            className={cn(
-                                                'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                                            )}
-                                        >
-                                            Pago
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/dashboard/${shop.id}`}>
-                                                        <ExternalLink className="mr-2 h-4 w-4" />
-                                                        Ver Dashboard
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleManageBilling(shop.id)}>
-                                                    <CreditCard className="mr-2 h-4 w-4" />
-                                                    Gerenciar Fatura
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                  className="text-red-500"
-                                                  onClick={() => setShopToDeactivate(shop)}
-                                                >
-                                                  Desativar
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                             {!isLoading && shops?.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma barbearia encontrada.</TableCell>
-                                </TableRow>
-                             )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-         </div>
-         <div className="lg:col-span-1 space-y-8">
-           <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Atividades Recentes</CardTitle>
-                <CardDescription>Últimas ações importantes na plataforma.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {isLoading && <Skeleton className="h-24 w-full" />}
-                {users?.slice(0, 4).map((user, index) => (
-                    <div className="flex items-start gap-4" key={user.id}>
-                        <Avatar className="h-9 w-9">
-                            <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium leading-none">
-                                Novo usuário cadastrado!
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                Bem-vindo(a), {user.firstName}.
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </CardContent>
-           </Card>
-         </div>
-       </div>
-    </div>
-    <AlertDialog
-        open={!!shopToDeactivate}
-        onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação irá desativar a barbearia "{shopToDeactivate?.name}".
-              Isso pode ser revertido, mas bloqueará o acesso do proprietário.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => handleDeactivateShop(shopToDeactivate)}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Sim, desativar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </CPanelLayout>
+          </div>
+        </div>
+      </div>
+      <AlertDialog
+          open={!!shopToDeactivate}
+          onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação irá desativar a barbearia "{shopToDeactivate?.name}".
+                Isso pode ser revertido, mas bloqueará o acesso do proprietário.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDeactivateShop(shopToDeactivate)}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Sim, desativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+    </>
   )
 }
