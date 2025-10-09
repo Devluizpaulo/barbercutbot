@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -19,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
 import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function SignupPage() {
             displayName: `${firstName} ${lastName}`
         });
 
+        // Create user document
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, {
             id: user.uid,
@@ -62,11 +64,24 @@ export default function SignupPage() {
             email: user.email,
         });
 
+        // Check if the user is an admin and add to the admins collection
+        if (user.email === 'admin@bbr.com') {
+            const adminDocRef = doc(firestore, 'admins', user.uid);
+            await setDoc(adminDocRef, {
+                createdAt: serverTimestamp(),
+            });
+        }
+
         toast({
           title: 'Conta criada com sucesso!',
           description: 'Você será redirecionado para o painel.',
         });
-        router.push('/dashboard/shops');
+        
+        if (user.email === 'admin@bbr.com') {
+            router.push('/cpanel');
+        } else {
+            router.push('/dashboard/shops');
+        }
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
