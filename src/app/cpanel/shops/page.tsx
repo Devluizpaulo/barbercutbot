@@ -5,9 +5,6 @@ import { useState } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -32,7 +29,7 @@ import { collection } from "firebase/firestore";
 import type { BarberShop } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AddShopForm } from './add-shop-form';
 
 export default function AdminShopsPage() {

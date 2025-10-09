@@ -142,14 +142,16 @@ export function AddTransactionForm({ shopId, initialData, onSuccess }: AddTransa
 
   const onSubmit = async (values: AddTransactionFormValues) => {
      try {
-       const transactionData = {
-         ...values,
-         barberShopId: shopId,
-         date: Timestamp.fromDate(values.date),
-         createdAt: serverTimestamp(),
-       };
-       if(transactionData.type === 'expense') delete transactionData.paymentMethod;
-       if(transactionData.type === 'income') delete transactionData.isRecurring;
+        const { isRecurring, paymentMethod, ...restOfValues } = values;
+
+        const transactionData: Omit<FinancialRecord, 'id' | 'createdAt'> & {createdAt: any} = {
+            ...restOfValues,
+            barberShopId: shopId,
+            date: Timestamp.fromDate(values.date),
+            createdAt: serverTimestamp(),
+            ...(values.type === 'income' && { paymentMethod }),
+            ...(values.type === 'expense' && { isRecurring }),
+        };
 
        if (initialData) {
          const recordRef = doc(firestore, 'barberShops', shopId, 'financialRecords', initialData.id);

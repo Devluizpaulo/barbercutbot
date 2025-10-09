@@ -1,5 +1,4 @@
 
-import { faker } from '@faker-js/faker/locale/pt_BR';
 
 export type Shop = {
   id: string;
@@ -59,7 +58,7 @@ export const shops: Shop[] = [
 
 // Mocked Tickets
 export const tickets: Ticket[] = [
-    { id: 'ticket-1', shopId: 'shop-1', subject: 'Problema com fatura de Maio', status: 'Aberto', lastUpdate: faker.date.recent({ days: 1 }) },
-    { id: 'ticket-2', shopId: 'shop-2', subject: 'Dúvida sobre integração com Google Agenda', status: 'Em Andamento', lastUpdate: faker.date.recent({ days: 2}) },
-    { id: 'ticket-3', shopId: 'shop-1', subject: 'Erro ao adicionar novo cliente', status: 'Fechado', lastUpdate: faker.date.recent({ days: 10}) },
+    { id: 'ticket-1', shopId: 'shop-1', subject: 'Problema com fatura de Maio', status: 'Aberto', lastUpdate: new Date() },
+    { id: 'ticket-2', shopId: 'shop-2', subject: 'Dúvida sobre integração com Google Agenda', status: 'Em Andamento', lastUpdate: new Date() },
+    { id: 'ticket-3', shopId: 'shop-1', subject: 'Erro ao adicionar novo cliente', status: 'Fechado', lastUpdate: new Date() },
 ]

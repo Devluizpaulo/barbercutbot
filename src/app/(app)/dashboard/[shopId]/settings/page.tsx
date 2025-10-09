@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Building, Clock, CreditCard, Link as LinkIcon, User, Trash2, Save, MapPin, Search } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useParams } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
@@ -94,7 +94,7 @@ export default function SettingsPage() {
             });
              if (shop.workingHours) {
                 const currentHours = workingHoursForm.getValues('hours').map(daySetting => {
-                    const savedDay = shop.workingHours.find(h => h.day === daySetting.day);
+                    const savedDay = shop.workingHours?.find(h => h.day === daySetting.day);
                     return savedDay || daySetting;
                 });
                 replace(currentHours);
