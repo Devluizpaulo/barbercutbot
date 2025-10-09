@@ -18,10 +18,49 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText } from 'lucide-react';
-import { CPanelLayout } from '../cpanel-layout';
+import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText, Key, LoaderCircle } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { useState } from 'react';
+
+
+const paymentFormSchema = z.object({
+  publicKey: z.string().min(1, "A Public Key é obrigatória."),
+  accessToken: z.string().min(1, "O Access Token é obrigatório."),
+});
+
+type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
 
 export default function GlobalSettingsPage() {
+    const { toast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
+
+    const paymentForm = useForm<PaymentFormValues>({
+        resolver: zodResolver(paymentFormSchema),
+        // Aqui você buscaria as credenciais salvas do banco de dados
+        defaultValues: {
+            publicKey: '',
+            accessToken: '',
+        }
+    });
+
+    const onPaymentSubmit = (values: PaymentFormValues) => {
+        setIsSaving(true);
+        console.log("Salvando credenciais do Mercado Pago:", values);
+        // Aqui iria a lógica para salvar as credenciais de forma segura no backend/Firestore
+        setTimeout(() => {
+            toast({
+                title: "Credenciais Salvas!",
+                description: "Suas credenciais do Mercado Pago foram atualizadas com sucesso.",
+            });
+            setIsSaving(false);
+        }, 1000);
+    };
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -89,36 +128,68 @@ export default function GlobalSettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing">
-            <Card>
-                <CardHeader>
-                    <CardTitle  className="flex items-center gap-2"><CreditCardIcon /> Pagamentos</CardTitle>
-                    <CardDescription>
-                        Integre com provedores de pagamento para gerenciar as assinaturas.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                     <div className="space-y-4">
-                        <Label>Gateway de Pagamento</Label>
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div>
-                                <h4 className="font-semibold">Stripe</h4>
-                                <p className="text-sm text-muted-foreground">Conectado com a chave <code className="font-mono">pk_test_...1234</code></p>
+            <Form {...paymentForm}>
+                <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle  className="flex items-center gap-2"><CreditCardIcon /> Pagamentos</CardTitle>
+                            <CardDescription>
+                                Integre com o Mercado Pago para gerenciar as assinaturas das barbearias.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-start gap-4 p-4 border rounded-lg bg-muted/30">
+                                <img src="https://logopng.com.br/logos/mercado-pago-24.svg" alt="Mercado Pago Logo" className="h-10 w-10 mt-1" />
+                                <div>
+                                    <h4 className="font-semibold">Integração com Mercado Pago</h4>
+                                    <p className="text-sm text-muted-foreground">Insira suas credenciais de produção para começar a aceitar pagamentos.</p>
+                                </div>
                             </div>
-                            <Button variant="destructive">Desconectar</Button>
-                        </div>
-                     </div>
-                      <div className="space-y-2">
-                        <Label>Chave da API</Label>
-                        <Input placeholder="sk_test_... ou pk_test_..." />
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button>
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar Configurações
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                            <FormField
+                                control={paymentForm.control}
+                                name="publicKey"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>Public Key</Label>
+                                        <div className="relative">
+                                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input type="password" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} className="pl-10" />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={paymentForm.control}
+                                name="accessToken"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>Access Token</Label>
+                                        <div className="relative">
+                                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input type="password" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {...field} className="pl-10" />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                        <CardContent>
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={isSaving}>
+                                    {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Credenciais
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </form>
+            </Form>
         </TabsContent>
 
         <TabsContent value="advanced">
