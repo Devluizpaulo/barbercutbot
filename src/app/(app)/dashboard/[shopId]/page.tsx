@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { DollarSign, Users, Calendar, Scissors, Store } from "lucide-react"
-import { format, getMonth, startOfDay, endOfDay, isSameDay } from "date-fns"
+import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
 import { CashierDialog } from "./cashier-dialog";
@@ -30,6 +30,8 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, where, Timestamp } from "firebase/firestore";
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const chartConfig = {
   revenue: {
@@ -38,10 +40,14 @@ const chartConfig = {
   },
 }
 
+type Period = 'today' | 'week' | 'month' | 'year';
+
+
 export default function ShopDashboardPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const [isCashierOpen, setCashierOpen] = useState(false);
+  const [period, setPeriod] = useState<Period>('month');
   const firestore = useFirestore();
   const { user } = useUser();
 
@@ -51,24 +57,12 @@ export default function ShopDashboardPage() {
 
   const customersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
   const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
-
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
   
   const appointmentsQuery = useMemoFirebase(() => user ? query(
       collection(firestore, 'barberShops', shopId, 'appointments')
   ) : null, [firestore, shopId, user]);
-  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(allAppointments);
   
-  const todayAppointments = useMemo(() => {
-    if (!allAppointments) return [];
-    return allAppointments.filter(appt => {
-        const apptDate = toDate(appt.startTime);
-        return isSameDay(apptDate, new Date());
-    })
-  }, [allAppointments]);
-
-
   const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
   
@@ -80,20 +74,42 @@ export default function ShopDashboardPage() {
   }
 
   // --- Memoized Calculations ---
-  const totalRevenueMonth = useMemo(() => {
-    if (!financialRecords) return 0;
-    const currentMonth = getMonth(new Date());
-    return financialRecords
-      .filter(r => r.type === 'income' && getMonth(toDate(r.date)) === currentMonth)
+  const filteredData = useMemo(() => {
+    if (!financialRecords || !allAppointments) return { revenue: 0, appointments: [] };
+
+    const now = new Date();
+    let interval: { start: Date; end: Date };
+
+    switch (period) {
+      case 'today':
+        interval = { start: startOfDay(now), end: endOfDay(now) };
+        break;
+      case 'week':
+        interval = { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
+        break;
+      case 'month':
+        interval = { start: startOfMonth(now), end: endOfMonth(now) };
+        break;
+      case 'year':
+        interval = { start: startOfYear(now), end: endOfYear(now) };
+        break;
+    }
+
+    const revenue = financialRecords
+      .filter(r => r.type === 'income' && isWithinInterval(toDate(r.date), interval))
       .reduce((acc, r) => acc + r.amount, 0);
-  }, [financialRecords]);
+      
+    const appointments = allAppointments.filter(a => isWithinInterval(toDate(a.startTime), interval));
+    
+    return { revenue, appointments };
+  }, [financialRecords, allAppointments, period]);
   
   const mostPopularService = useMemo(() => {
-    if (!todayAppointments || !services || todayAppointments.length === 0) return { name: 'N/A', percentage: 0 };
+    if (!filteredData.appointments || !services || filteredData.appointments.length === 0) return { name: 'N/A', percentage: 0 };
     const serviceCounts: Record<string, number> = {};
     let totalServices = 0;
 
-    todayAppointments.forEach(appt => {
+    filteredData.appointments.forEach(appt => {
         appt.serviceIds.forEach(serviceId => {
             if(serviceCounts[serviceId]) {
                 serviceCounts[serviceId]++;
@@ -112,7 +128,7 @@ export default function ShopDashboardPage() {
     const percentage = (count / totalServices) * 100;
     
     return { name: service?.name || 'N/A', percentage: Math.round(percentage) };
-  }, [todayAppointments, services]);
+  }, [filteredData.appointments, services]);
 
 
   const monthlyRevenueChartData = useMemo(() => {
@@ -136,27 +152,37 @@ export default function ShopDashboardPage() {
   return (
     <>
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          Visão Geral
-        </h1>
-        <p className="text-muted-foreground">
-          Aqui está uma visão geral do desempenho da sua barbearia.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+            Visão Geral
+          </h1>
+          <p className="text-muted-foreground">
+            Aqui está uma visão geral do desempenho da sua barbearia.
+          </p>
+        </div>
+        <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">
+          <TabsList className="grid w-full grid-cols-4 sm:w-auto">
+            <TabsTrigger value="today">Hoje</TabsTrigger>
+            <TabsTrigger value="week">Semana</TabsTrigger>
+            <TabsTrigger value="month">Mês</TabsTrigger>
+            <TabsTrigger value="year">Ano</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Receita do Mês
+              Receita no Período
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenueMonth.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>}
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${filteredData.revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>}
             <p className="text-xs text-muted-foreground">
-              +20.1% do último mês (simulado)
+              Total de receita para o período selecionado.
             </p>
           </CardContent>
         </Card>
@@ -176,13 +202,13 @@ export default function ShopDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Agendamentos de Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium">Agendamentos no Período</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{todayAppointments?.length || 0}</div>}
+            {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{filteredData.appointments?.length || 0}</div>}
             <p className="text-xs text-muted-foreground">
-              {todayAppointments?.filter(a => a.status === 'completed').length || 0} concluídos
+              {filteredData.appointments?.filter(a => a.status === 'completed').length || 0} concluídos
             </p>
           </CardContent>
         </Card>
@@ -194,7 +220,7 @@ export default function ShopDashboardPage() {
           <CardContent>
             {isLoading ? <Skeleton className="h-8 w-2/4" /> : <div className="text-2xl font-bold">{mostPopularService.name}</div>}
             <p className="text-xs text-muted-foreground">
-              {mostPopularService.percentage}% das reservas de hoje
+              {mostPopularService.percentage}% das reservas no período
             </p>
           </CardContent>
         </Card>
@@ -203,7 +229,7 @@ export default function ShopDashboardPage() {
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle className="font-headline">Receita Mensal</CardTitle>
+            <CardTitle className="font-headline">Receita Mensal (Anual)</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -233,9 +259,9 @@ export default function ShopDashboardPage() {
 
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle className="font-headline">Agendamentos Recentes</CardTitle>
+            <CardTitle className="font-headline">Agendamentos de Hoje</CardTitle>
             <CardDescription>
-              Uma lista de agendamentos recentes e futuros.
+              Uma lista dos agendamentos de hoje.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -253,7 +279,7 @@ export default function ShopDashboardPage() {
                         <TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell>
                     </TableRow>
                 ))}
-                {todayAppointments?.slice(0, 5).map((appointment) => (
+                {filteredData.appointments?.slice(0, 5).map((appointment) => (
                   <TableRow key={appointment.id}>
                     <TableCell>
                       <div className="font-medium">{customers?.find(c => c.id === appointment.customerId)?.firstName}</div>
@@ -261,7 +287,7 @@ export default function ShopDashboardPage() {
                          {format(toDate(appointment.startTime), "HH:mm", { locale: ptBR })}
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{format(toDate(appointment.startTime), "MMM d, HH:mm", { locale: ptBR })}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{format(toDate(appointment.startTime), "HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>
                       <Badge variant={appointment.status === 'completed' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'default'}>
                         {appointment.status}
@@ -269,7 +295,7 @@ export default function ShopDashboardPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                 {!isLoading && todayAppointments?.length === 0 && (
+                 {!isLoading && filteredData.appointments?.length === 0 && (
                     <TableRow>
                         <TableCell colSpan={3} className="text-center h-24">
                             Nenhum agendamento para hoje.
@@ -294,5 +320,3 @@ export default function ShopDashboardPage() {
     </>
   )
 }
-
-    
