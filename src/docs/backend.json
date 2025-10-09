@@ -494,6 +494,41 @@
         "createdAt",
         "lastUpdatedAt"
       ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents legal documents like Terms of Service.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Rascunho", "Publicado"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -668,6 +703,22 @@
             {
               "name": "ticketId",
               "description": "The unique ID of the support ticket."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores platform-wide legal documents.",
+          "params": [
+            {
+              "name": "documentId",
+              "description": "The unique ID of the document."
             }
           ]
         }

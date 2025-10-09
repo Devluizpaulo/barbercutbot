@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from 'firebase/firestore';
 
 export type WorkingHour = {
@@ -126,4 +127,13 @@ export type Ticket = {
     status: 'Aberto' | 'Em Andamento' | 'Fechado';
     createdAt: Timestamp;
     lastUpdatedAt: Timestamp;
+};
+
+export type Document = {
+  id: string;
+  title: string;
+  content: string;
+  status: 'Rascunho' | 'Publicado';
+  createdAt: Timestamp;
+  lastUpdatedAt: Timestamp;
 };
