@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import {
   PlusCircle,
@@ -69,6 +69,7 @@ export default function BarbersPage() {
   const [selectedBarber, setSelectedBarber] = useState<Barber | undefined>(
     undefined
   );
+  const [searchTerm, setSearchTerm] = useState('');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -80,6 +81,18 @@ export default function BarbersPage() {
     [firestore, shopId, user]
   );
   const { data: barbers, isLoading } = useCollection<Barber>(barbersQuery);
+
+  const filteredBarbers = useMemo(() => {
+    if (!barbers) return [];
+    if (!searchTerm) return barbers;
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return barbers.filter(barber => 
+      barber.firstName.toLowerCase().includes(lowercasedTerm) ||
+      barber.lastName.toLowerCase().includes(lowercasedTerm) ||
+      (barber.email && barber.email.toLowerCase().includes(lowercasedTerm))
+    );
+  }, [barbers, searchTerm]);
 
   const handleEdit = (barber: Barber) => {
     setSelectedBarber(barber);
@@ -131,6 +144,8 @@ export default function BarbersPage() {
               <Input
                 placeholder="Buscar barbeiro..."
                 className="pl-8 w-full md:w-[200px] lg:w-[320px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Dialog
@@ -200,7 +215,7 @@ export default function BarbersPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                {!isLoading && barbers?.map((barber) => (
+                {!isLoading && filteredBarbers.map((barber) => (
                   <TableRow key={barber.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -256,13 +271,13 @@ export default function BarbersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {!isLoading && barbers?.length === 0 && (
+                {!isLoading && filteredBarbers.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={3}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Nenhum barbeiro encontrado.
+                      {searchTerm ? `Nenhum barbeiro encontrado para "${searchTerm}"` : "Nenhum barbeiro encontrado."}
                     </TableCell>
                   </TableRow>
                 )}
