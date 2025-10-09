@@ -24,7 +24,6 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection } from "firebase/firestore";
 import type { BarberShop, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CPanelLayout } from '../cpanel-layout';
 
 
 export default function AdminUsersPage() {
@@ -56,7 +55,6 @@ export default function AdminUsersPage() {
     const isLoading = isLoadingUsers || isLoadingShops;
 
   return (
-    <CPanelLayout>
     <div className="flex flex-1 flex-col gap-8">
        <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -153,6 +151,5 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
     </div>
-    </CPanelLayout>
   )
 }

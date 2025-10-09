@@ -34,7 +34,6 @@ import type { Ticket as TicketType } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
-import { CPanelLayout } from '../cpanel-layout';
 
 export default function SupportPage() {
   const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
@@ -82,7 +81,6 @@ export default function SupportPage() {
 
 
   return (
-    <CPanelLayout>
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
@@ -213,6 +211,5 @@ export default function SupportPage() {
         </Card>
       </div>
     </div>
-    </CPanelLayout>
   );
 }

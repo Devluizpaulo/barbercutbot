@@ -51,7 +51,6 @@ import type { Document as DocumentType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { CPanelLayout } from '../cpanel-layout';
 
 export default function DocumentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -99,7 +98,6 @@ export default function DocumentsPage() {
   };
 
   return (
-    <CPanelLayout>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -218,6 +216,5 @@ export default function DocumentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
   );
 }

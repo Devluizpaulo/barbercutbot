@@ -31,7 +31,6 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { useEffect } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { CPanelLayout } from '@/app/cpanel/cpanel-layout';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),

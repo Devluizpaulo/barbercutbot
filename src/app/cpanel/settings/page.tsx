@@ -23,7 +23,6 @@ import { CPanelLayout } from '../cpanel-layout';
 
 export default function GlobalSettingsPage() {
   return (
-    <CPanelLayout>
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
@@ -146,6 +145,5 @@ export default function GlobalSettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-    </CPanelLayout>
   );
 }
