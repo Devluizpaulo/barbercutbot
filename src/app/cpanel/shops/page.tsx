@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -40,6 +40,17 @@ export default function AdminShopsPage() {
     
     const [isFormOpen, setFormOpen] = useState(false);
     const [selectedShop, setSelectedShop] = useState<BarberShop | undefined>(undefined);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredShops = useMemo(() => {
+        if (!shops) return [];
+        if (!searchTerm) return shops;
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return shops.filter(shop => 
+            shop.name.toLowerCase().includes(lowercasedTerm) ||
+            (shop.address && shop.address.toLowerCase().includes(lowercasedTerm))
+        );
+    }, [shops, searchTerm]);
 
     const handleEdit = (shop: BarberShop) => {
         setSelectedShop(shop);
@@ -73,7 +84,12 @@ export default function AdminShopsPage() {
         <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 md:grow-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar loja..." className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]" />
+                <Input 
+                    placeholder="Buscar loja..." 
+                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
             <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedShop(undefined); setFormOpen(isOpen); }}>
               <DialogTrigger asChild>
@@ -112,7 +128,7 @@ export default function AdminShopsPage() {
                             <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
                         </TableRow>
                     ))}
-                    {shops?.map(shop => {
+                    {filteredShops?.map(shop => {
                          return (
                             <TableRow key={shop.id}>
                                 <TableCell>
@@ -144,9 +160,11 @@ export default function AdminShopsPage() {
                             </TableRow>
                          )
                     })}
-                    {!isLoading && shops?.length === 0 && (
+                    {!isLoading && filteredShops?.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">Nenhuma loja encontrada.</TableCell>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                {searchTerm ? `Nenhuma loja encontrada para "${searchTerm}"` : "Nenhuma loja encontrada."}
+                            </TableCell>
                         </TableRow>
                     )}
                 </TableBody>

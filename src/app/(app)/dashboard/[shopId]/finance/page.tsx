@@ -32,7 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal, Download, Edit, Trash2 } from "lucide-react"
+import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, MoreHorizontal, Download, Edit, Trash2, Search } from "lucide-react"
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ import { collection, doc, Timestamp } from 'firebase/firestore';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
 
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
@@ -85,6 +86,7 @@ export default function FinancePage() {
   const [selectedTransaction, setSelectedTransaction] = useState<FinancialRecord | undefined>(undefined);
   const [transactionToDelete, setTransactionToDelete] = useState<FinancialRecord | null>(null);
   const [period, setPeriod] = useState<Period>('month');
+  const [searchTerm, setSearchTerm] = useState('');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -144,12 +146,20 @@ export default function FinancePage() {
             break;
     }
     
-    return transactions.filter(t => {
+    let timeFiltered = transactions.filter(t => {
       const transactionDate = toDate(t.date);
       return transactionDate >= startDate && transactionDate <= endDate;
     });
 
-}, [period, transactions]);
+    if (!searchTerm) return timeFiltered;
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return timeFiltered.filter(t => 
+      t.description.toLowerCase().includes(lowercasedTerm) ||
+      t.category.toLowerCase().includes(lowercasedTerm)
+    );
+
+}, [period, transactions, searchTerm]);
 
   const { totalIncome, totalExpense, netProfit, incomeRecords, expenseRecords } = useMemo(() => {
     let totalIncome = 0;
@@ -419,8 +429,21 @@ export default function FinancePage() {
 
       <Card>
         <CardHeader>
-            <CardTitle className="font-headline">Histórico de Transações</CardTitle>
-            <CardDescription>Visualize todas as receitas e despesas registradas no período selecionado.</CardDescription>
+            <div className="flex items-center justify-between gap-4">
+                <div>
+                    <CardTitle className="font-headline">Histórico de Transações</CardTitle>
+                    <CardDescription>Visualize todas as receitas e despesas registradas no período selecionado.</CardDescription>
+                </div>
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Buscar transação..." 
+                        className="pl-8" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all">

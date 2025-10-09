@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { PlusCircle, MoreVertical, Trash2, Edit, Phone, User } from 'lucide-react';
+import { PlusCircle, MoreVertical, Trash2, Edit, Phone, User, Search } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -48,11 +48,13 @@ import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Input } from '@/components/ui/input';
 
 export default function SuppliersPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | undefined>(undefined);
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -64,6 +66,16 @@ export default function SuppliersPage() {
     [firestore, shopId, user]
   );
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);
+
+  const filteredSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+    if (!searchTerm) return suppliers;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return suppliers.filter(supplier =>
+      supplier.name.toLowerCase().includes(lowercasedTerm) ||
+      supplier.category.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [suppliers, searchTerm]);
 
   const handleEdit = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -103,27 +115,38 @@ export default function SuppliersPage() {
             Gerencie seus contatos e anotações de fornecedores.
           </p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedSupplier(undefined); setFormOpen(isOpen); }}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddNew}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Fornecedor
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>{selectedSupplier ? 'Editar Fornecedor' : 'Adicionar Novo Fornecedor'}</DialogTitle>
-              <p className="text-sm text-muted-foreground pt-1">
-                Preencha os detalhes do contato.
-              </p>
-            </DialogHeader>
-            <AddSupplierForm
-              shopId={shopId}
-              initialData={selectedSupplier}
-              onSuccess={handleFormSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+         <div className="flex items-center gap-2">
+            <div className="relative flex-1 md:grow-0">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar fornecedor..."
+                className="pl-8 w-full md:w-[200px] lg:w-[320px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedSupplier(undefined); setFormOpen(isOpen); }}>
+              <DialogTrigger asChild>
+                <Button onClick={handleAddNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Fornecedor
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>{selectedSupplier ? 'Editar Fornecedor' : 'Adicionar Novo Fornecedor'}</DialogTitle>
+                  <p className="text-sm text-muted-foreground pt-1">
+                    Preencha os detalhes do contato.
+                  </p>
+                </DialogHeader>
+                <AddSupplierForm
+                  shopId={shopId}
+                  initialData={selectedSupplier}
+                  onSuccess={handleFormSuccess}
+                />
+              </DialogContent>
+            </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -148,7 +171,7 @@ export default function SuppliersPage() {
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
-              {suppliers?.map((supplier) => (
+              {filteredSuppliers?.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">
                     {supplier.name}
@@ -190,13 +213,13 @@ export default function SuppliersPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!isLoading && suppliers?.length === 0 && (
+              {!isLoading && filteredSuppliers?.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={4}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    Nenhum fornecedor encontrado.
+                    {searchTerm ? `Nenhum fornecedor encontrado para "${searchTerm}"` : "Nenhum fornecedor encontrado."}
                   </TableCell>
                 </TableRow>
               )}

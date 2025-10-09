@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -28,12 +29,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AdminUsersPage() {
     const firestore = useFirestore();
     const { user: adminUser } = useUser();
+    const [searchTerm, setSearchTerm] = useState('');
+
     const usersQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'users') : null, [firestore, adminUser]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
     const shopsQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'barberShops') : null, [firestore, adminUser]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
+    const filteredUsers = useMemo(() => {
+        if (!users) return [];
+        if (!searchTerm) return users;
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return users.filter(user =>
+            user.firstName.toLowerCase().includes(lowercasedTerm) ||
+            user.lastName.toLowerCase().includes(lowercasedTerm) ||
+            user.email.toLowerCase().includes(lowercasedTerm)
+        );
+    }, [users, searchTerm]);
 
     const getShopByOwnerId = (ownerId: string) => {
         return shops?.find(s => s.ownerId === ownerId);
@@ -55,9 +68,14 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-between gap-4">
             <div className="relative flex-1 md:grow-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar usuário..." className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]" />
+                <Input 
+                  placeholder="Buscar usuário..." 
+                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
-            <Button>
+            <Button disabled>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Usuário
             </Button>
@@ -81,7 +99,7 @@ export default function AdminUsersPage() {
                             <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
                         </TableRow>
                     ))}
-                    {users?.map(user => {
+                    {filteredUsers?.map(user => {
                          const associatedShop = getShopByOwnerId(user.id);
                          const userRole = user.email === 'admin@bbr.com' ? 'admin' : 'owner';
                          return (
@@ -112,18 +130,20 @@ export default function AdminUsersPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>Editar</DropdownMenuItem>
-                                            <DropdownMenuItem>Resetar Senha</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-500">Suspender</DropdownMenuItem>
+                                            <DropdownMenuItem disabled>Editar</DropdownMenuItem>
+                                            <DropdownMenuItem disabled>Resetar Senha</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-500" disabled>Suspender</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
                             </TableRow>
                          )
                     })}
-                    {!isLoading && users?.length === 0 && (
+                    {!isLoading && filteredUsers?.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                               {searchTerm ? `Nenhum usuário encontrado para "${searchTerm}"` : "Nenhum usuário encontrado."}
+                            </TableCell>
                         </TableRow>
                     )}
                 </TableBody>

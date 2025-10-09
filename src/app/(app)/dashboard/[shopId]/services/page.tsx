@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { PlusCircle, MoreVertical, Trash2, Edit, DollarSign, Clock, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, MoreVertical, Trash2, Edit, DollarSign, Clock, Image as ImageIcon, Search } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -48,11 +48,13 @@ import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 export default function ServicesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | undefined>(undefined);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -64,6 +66,15 @@ export default function ServicesPage() {
     [firestore, shopId, user]
   );
   const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+
+  const filteredServices = useMemo(() => {
+    if (!services) return [];
+    if (!searchTerm) return services;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return services.filter(service =>
+      service.name.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [services, searchTerm]);
 
   const handleEdit = (service: Service) => {
     setSelectedService(service);
@@ -103,27 +114,38 @@ export default function ServicesPage() {
             Gerencie os serviços oferecidos pela sua barbearia.
           </p>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedService(undefined); setFormOpen(isOpen); }}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddNew}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Serviço
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>{selectedService ? 'Editar Serviço' : 'Adicionar Novo Serviço'}</DialogTitle>
-              <p className="text-sm text-muted-foreground pt-1">
-                Preencha os detalhes do serviço.
-              </p>
-            </DialogHeader>
-            <AddServiceForm
-              shopId={shopId}
-              initialData={selectedService}
-              onSuccess={handleFormSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+            <div className="relative flex-1 md:grow-0">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar serviço..."
+                className="pl-8 w-full md:w-[200px] lg:w-[320px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setSelectedService(undefined); setFormOpen(isOpen); }}>
+              <DialogTrigger asChild>
+                <Button onClick={handleAddNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Serviço
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>{selectedService ? 'Editar Serviço' : 'Adicionar Novo Serviço'}</DialogTitle>
+                  <p className="text-sm text-muted-foreground pt-1">
+                    Preencha os detalhes do serviço.
+                  </p>
+                </DialogHeader>
+                <AddServiceForm
+                  shopId={shopId}
+                  initialData={selectedService}
+                  onSuccess={handleFormSuccess}
+                />
+              </DialogContent>
+            </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -150,7 +172,7 @@ export default function ServicesPage() {
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
-              {services?.map((service) => (
+              {filteredServices?.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -206,13 +228,13 @@ export default function ServicesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!isLoading && services?.length === 0 && (
+              {!isLoading && filteredServices?.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={5}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    Nenhum serviço encontrado.
+                    {searchTerm ? `Nenhum serviço encontrado para "${searchTerm}"` : "Nenhum serviço encontrado."}
                   </TableCell>
                 </TableRow>
               )}

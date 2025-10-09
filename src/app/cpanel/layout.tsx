@@ -32,6 +32,9 @@ import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/firebase";
 import { Button } from "@/components/ui/button";
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { UserNav } from '@/components/user-nav';
 
 export default function AdminDashboardLayout({
   children,
@@ -96,56 +99,78 @@ export default function AdminDashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex flex-1 min-h-screen">
-        <Sidebar>
-          <SidebarHeader className="p-4 flex items-center justify-between">
-              <Logo />
-              <div className="md:hidden">
-                <SidebarTrigger asChild>
-                    <Button variant="ghost" size="icon"><LogOut /></Button>
-                </SidebarTrigger>
-              </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href}>
-                    <SidebarMenuButton
-                      isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/cpanel')}
-                      tooltip={item.label}
-                      className="justify-start"
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+        <div className="flex items-center gap-4">
+          <div className="md:hidden">
+              <SidebarTrigger />
+          </div>
+          <Link
+            href="/cpanel"
+            className="hidden items-center gap-2 text-lg font-semibold md:flex md:text-base"
+          >
+            <Logo />
+          </Link>
+        </div>
+        
+        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+          <div className="relative ml-auto flex-1 md:grow-0">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar..."
+              className="w-full rounded-lg bg-muted pl-8 md:w-[200px] lg:w-[320px]"
+            />
+          </div>
+          <UserNav />
+        </div>
+      </header>
+        <main className="flex flex-1">
+          <Sidebar>
+            <SidebarHeader className="p-4 flex items-center justify-between">
+                <Logo />
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <Link href={item.href}>
+                      <SidebarMenuButton
+                        isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/cpanel')}
+                        tooltip={item.label}
+                        className="justify-start"
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarContent>
+            <SidebarSeparator />
+            <SidebarFooter>
+              <SidebarMenu>
+                 <SidebarMenuItem>
+                  <Link href="/dashboard/shops">
+                    <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
+                      <LogOut className="rotate-180" />
+                      <span>Voltar para Lojas</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarSeparator />
-          <SidebarFooter>
-            <SidebarMenu>
-               <SidebarMenuItem>
-                <Link href="/dashboard/shops">
-                  <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
-                    <LogOut className="rotate-180" />
-                    <span>Voltar para Lojas</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                  <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
-                    <LogOut />
-                    <span>Sair</span>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
-          {children}
+                <SidebarMenuItem>
+                    <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
+                      <LogOut />
+                      <span>Sair</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarFooter>
+          </Sidebar>
+          <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
+            {children}
+          </main>
         </main>
       </div>
     </SidebarProvider>
