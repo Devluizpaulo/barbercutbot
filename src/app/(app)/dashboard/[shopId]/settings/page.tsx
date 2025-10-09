@@ -21,10 +21,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, CheckCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
@@ -32,6 +32,8 @@ import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createPayment } from '@/ai/flows/create-payment-flow';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -82,6 +84,13 @@ export default function SettingsPage() {
             ]
         }
     });
+    
+    const toDate = (timestamp: Timestamp | Date | string): Date => {
+      if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+      }
+      return new Date(timestamp);
+    }
 
     const { fields, replace } = useFieldArray({
         control: workingHoursForm.control,
@@ -110,7 +119,7 @@ export default function SettingsPage() {
         toast({ title: 'Perfil atualizado!', description: 'As informações da sua barbearia foram salvas.' });
     };
 
-    const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
+    const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>>) => {
         setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
     }
@@ -140,6 +149,10 @@ export default function SettingsPage() {
             setIsBillingLoading(false);
         }
     }
+    
+  const subscriptionStatus = shop?.subscription?.status || 'free';
+  const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Plano Gratuito';
+  const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy') : 'N/A';
 
   return (
     <div className="flex flex-col gap-8">
@@ -382,16 +395,20 @@ export default function SettingsPage() {
                 <CardContent className="space-y-8">
                      <div className="pt-8 border-t">
                         <h3 className="text-lg font-medium">Plano e Assinatura</h3>
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
-                            <div>
-                                <p className="font-semibold">Plano Atual: <span className="text-primary">{shop?.subscription?.plan || 'N/A'}</span></p>
-                                <p className="text-sm text-muted-foreground">Sua próxima cobrança será em 15 de Agosto de 2024.</p>
+                        {isLoading ? <Skeleton className="h-24 w-full" /> : (
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
+                                <div>
+                                    <p className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {subscriptionStatus === 'active' ? `Sua assinatura está ativa. Próxima cobrança em ${nextBillingDate}.` : 'Você está no período de teste ou seu plano não está ativo.'}
+                                    </p>
+                                </div>
+                                 <Button variant={subscriptionStatus === 'active' ? 'destructive' : 'outline'} onClick={handleManageSubscription} disabled={isBillingLoading}>
+                                    {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    {subscriptionStatus === 'active' ? 'Cancelar Assinatura' : 'Fazer Upgrade para Pro'}
+                                </Button>
                             </div>
-                            <Button variant="outline" onClick={handleManageSubscription} disabled={isBillingLoading}>
-                                {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                Gerenciar Assinatura
-                            </Button>
-                        </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
