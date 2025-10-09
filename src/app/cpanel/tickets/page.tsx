@@ -24,9 +24,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, Timestamp } from "firebase/firestore";
-import type { BarberShop, Ticket } from "@/lib/types";
+import type { BarberShop, Ticket as TicketType } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Ticket as TicketIcon } from 'lucide-react';
+import { PlusCircle, Ticket as TicketIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,8 @@ import { MoreVertical } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc } from 'firebase/firestore';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AddTicketForm } from './add-ticket-form';
 
 
 export default function AdminTicketsPage() {
@@ -44,7 +46,7 @@ export default function AdminTicketsPage() {
     const { user } = useUser();
     
     const ticketsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
-    const { data: tickets, isLoading: isLoadingTickets } = useCollection<Ticket>(ticketsQuery);
+    const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
 
     const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
@@ -54,7 +56,7 @@ export default function AdminTicketsPage() {
 
     const { toast } = useToast();
 
-    const handleStatusChange = (ticket: Ticket, status: Ticket['status']) => {
+    const handleStatusChange = (ticket: TicketType, status: TicketType['status']) => {
         const ticketRef = doc(firestore, 'tickets', ticket.id);
         setDocumentNonBlocking(ticketRef, { status, lastUpdatedAt: new Date() }, { merge: true });
         toast({
@@ -120,9 +122,9 @@ export default function AdminTicketsPage() {
 }
 
 
-function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { tickets?: Ticket[], findShopName: (id: string) => string, isLoading: boolean, onStatusChange: (ticket: Ticket, status: Ticket['status']) => void }) {
+function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { tickets?: TicketType[], findShopName: (id: string) => string, isLoading: boolean, onStatusChange: (ticket: TicketType, status: TicketType['status']) => void }) {
     
-    const getStatusVariant = (status: Ticket['status']) => {
+    const getStatusVariant = (status: TicketType['status']) => {
         switch (status) {
             case 'Aberto': return 'destructive';
             case 'Em Andamento': return 'default';
