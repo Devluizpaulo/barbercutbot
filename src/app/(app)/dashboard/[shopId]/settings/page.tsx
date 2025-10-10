@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, CheckCircle } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, CheckCircle, User, Clock } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -166,10 +166,19 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="hours">Horários</TabsTrigger>
-          <TabsTrigger value="billing">Faturamento e Assinatura</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="profile">
+            <User className="mr-2" />
+            Perfil
+          </TabsTrigger>
+          <TabsTrigger value="hours">
+            <Clock className="mr-2" />
+            Horários
+          </TabsTrigger>
+          <TabsTrigger value="billing">
+            <CreditCard className="mr-2" />
+            Faturamento
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">

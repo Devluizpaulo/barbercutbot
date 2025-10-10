@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText, Key, LoaderCircle } from 'lucide-react';
+import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText, Key, LoaderCircle, User, Settings, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -73,11 +73,11 @@ export default function GlobalSettingsPage() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
-          <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="appearance">Aparência</TabsTrigger>
-          <TabsTrigger value="billing">Pagamentos</TabsTrigger>
-          <TabsTrigger value="advanced">Avançado</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
+          <TabsTrigger value="general"><Settings className="mr-2" /> Geral</TabsTrigger>
+          <TabsTrigger value="appearance"><Palette className="mr-2" /> Aparência</TabsTrigger>
+          <TabsTrigger value="billing"><CreditCardIcon className="mr-2" /> Pagamentos</TabsTrigger>
+          <TabsTrigger value="advanced"><Shield className="mr-2" /> Avançado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
