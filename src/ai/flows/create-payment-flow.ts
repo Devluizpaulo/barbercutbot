@@ -47,6 +47,10 @@ const createPaymentFlow = ai.defineFlow(
     
     // In a real scenario, you would have more complex logic here,
     // like validating the planId and fetching its details from your database.
+    if (!MOCK_ACCESS_TOKEN || MOCK_ACCESS_TOKEN === 'YOUR_MERCADO_PAGO_ACCESS_TOKEN') {
+        throw new Error('Mercado Pago Access Token is not configured. Please set the MERCADO_PAGO_ACCESS_TOKEN environment variable.');
+    }
+
 
     const body = {
         items: [
