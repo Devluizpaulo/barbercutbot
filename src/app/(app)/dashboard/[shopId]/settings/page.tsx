@@ -398,7 +398,7 @@ export default function SettingsPage() {
                         {isLoading ? <Skeleton className="h-24 w-full" /> : (
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
                                 <div>
-                                    <p className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></p>
+                                    <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></div>
                                     <p className="text-sm text-muted-foreground">
                                         {subscriptionStatus === 'active' ? `Sua assinatura está ativa. Próxima cobrança em ${nextBillingDate}.` : 'Você está no período de teste ou seu plano não está ativo.'}
                                     </p>
