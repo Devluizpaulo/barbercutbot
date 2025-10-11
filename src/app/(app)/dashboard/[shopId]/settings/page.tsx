@@ -29,7 +29,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -151,7 +151,22 @@ export default function SettingsPage() {
     }, [shop, profileForm, workingHoursForm, replace]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
-        setDocumentNonBlocking(shopRef, values, { merge: true });
+        // Sanitize optional fields to prevent 'undefined' values
+        const sanitizedValues = {
+            ...values,
+            document: values.document || '',
+            cep: values.cep || '',
+            address: values.address || '',
+            number: values.number || '',
+            neighborhood: values.neighborhood || '',
+            city: values.city || '',
+            whatsapp: {
+                ...values.whatsapp,
+                numeroConectado: values.whatsapp?.numeroConectado || ''
+            }
+        };
+
+        setDocumentNonBlocking(shopRef, sanitizedValues, { merge: true });
         toast({ title: 'Perfil atualizado!', description: 'As informações do seu negócio foram salvas.' });
     };
 
@@ -462,7 +477,7 @@ export default function SettingsPage() {
                                                 <Input placeholder="Ex: 5511999998888" {...field} className="pl-10" />
                                             </FormControl>
                                         </div>
-                                        <FormDescription>Este é o número que será conectado e também o ID na Evolution API.</FormDescription>
+                                        <FormDescription>Este é o número de telefone que será usado para a conexão.</FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -593,3 +608,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
