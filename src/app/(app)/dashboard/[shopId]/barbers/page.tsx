@@ -120,7 +120,7 @@ export default function BarbersPage() {
     );
     deleteDocumentNonBlocking(barberRef);
     toast({
-      title: 'Barbeiro Removido',
+      title: 'Profissional Removido',
       description: `O profissional ${barberToDelete.firstName} foi removido com sucesso.`,
     });
     setBarberToDelete(null);
@@ -132,17 +132,17 @@ export default function BarbersPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-              Barbeiros
+              Profissionais
             </h1>
             <p className="text-muted-foreground">
-              Gerencie os profissionais da sua barbearia.
+              Gerencie os profissionais do seu negócio.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1 md:grow-0">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar barbeiro..."
+                placeholder="Buscar profissional..."
                 className="pl-8 w-full md:w-[200px] lg:w-[320px]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -158,15 +158,15 @@ export default function BarbersPage() {
               <DialogTrigger asChild>
                 <Button onClick={handleAddNew}>
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Adicionar Barbeiro
+                  Adicionar Profissional
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                   <DialogTitle>
                     {selectedBarber
-                      ? 'Editar Barbeiro'
-                      : 'Adicionar Novo Barbeiro'}
+                      ? 'Editar Profissional'
+                      : 'Adicionar Novo Profissional'}
                   </DialogTitle>
                   <p className="text-sm text-muted-foreground pt-1">
                     Preencha os detalhes do novo profissional.
@@ -277,7 +277,7 @@ export default function BarbersPage() {
                       colSpan={3}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      {searchTerm ? `Nenhum barbeiro encontrado para "${searchTerm}"` : "Nenhum barbeiro encontrado."}
+                      {searchTerm ? `Nenhum profissional encontrado para "${searchTerm}"` : "Nenhum profissional encontrado."}
                     </TableCell>
                   </TableRow>
                 )}

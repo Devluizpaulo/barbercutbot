@@ -130,7 +130,7 @@ export default function AdminDashboard() {
 
         toast({
             title: 'Loja Desativada',
-            description: `A barbearia "${shop.name}" foi desativada com sucesso.`,
+            description: `O negócio "${shop.name}" foi desativado com sucesso.`,
             variant: 'destructive',
         });
         setShopToDeactivate(null);
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
             <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
           </h1>
           <p className="text-muted-foreground">
-            Gerencie suas barbearias parceiras, finanças e performance geral.
+            Gerencie seus negócios parceiros, finanças e performance geral.
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Barbearias Ativas
+                Negócios Ativos
               </CardTitle>
               <Store className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -213,9 +213,9 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2 space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-headline">Crescimento de Lojas na Plataforma</CardTitle>
+                  <CardTitle className="font-headline">Crescimento de Negócios na Plataforma</CardTitle>
                   <CardDescription>
-                    Novas barbearias que se juntaram nos últimos meses.
+                    Novos negócios que se juntaram nos últimos meses.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
@@ -247,14 +247,14 @@ export default function AdminDashboard() {
 
               <Card>
                   <CardHeader>
-                      <CardTitle className="font-headline">Barbearias Parceiras</CardTitle>
-                      <CardDescription>Uma lista de todas as barbearias na sua plataforma.</CardDescription>
+                      <CardTitle className="font-headline">Negócios Parceiros</CardTitle>
+                      <CardDescription>Uma lista de todos os negócios na sua plataforma.</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <Table>
                           <TableHeader>
                               <TableRow>
-                                  <TableHead className="w-[250px]">Barbearia</TableHead>
+                                  <TableHead className="w-[250px]">Negócio</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead className="hidden lg:table-cell">Plano</TableHead>
                                   <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
@@ -324,7 +324,7 @@ export default function AdminDashboard() {
                               ))}
                               {!isLoading && shops?.length === 0 && (
                                   <TableRow>
-                                      <TableCell colSpan={5} className="h-24 text-center">Nenhuma barbearia encontrada.</TableCell>
+                                      <TableCell colSpan={5} className="h-24 text-center">Nenhum negócio encontrado.</TableCell>
                                   </TableRow>
                               )}
                           </TableBody>
@@ -368,7 +368,7 @@ export default function AdminDashboard() {
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação irá desativar a barbearia "{shopToDeactivate?.name}".
+                Esta ação irá desativar o negócio "{shopToDeactivate?.name}".
                 Isso pode ser revertido, mas bloqueará o acesso do proprietário.
               </AlertDialogDescription>
             </AlertDialogHeader>

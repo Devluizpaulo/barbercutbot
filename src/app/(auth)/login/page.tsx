@@ -60,7 +60,7 @@ export default function LoginPage() {
             </div>
           <CardTitle>Bem-vindo de volta!</CardTitle>
           <CardDescription>
-            Faça login para gerenciar sua barbearia.
+            Faça login para gerenciar seu negócio.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

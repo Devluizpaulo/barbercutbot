@@ -55,12 +55,12 @@ export default function CPanelLayout({
         }
       } 
       // Se há um usuário, mas não é o admin
-      else if (user.email !== 'admin@bbr.com') {
+      else if (user.email !== 'admin@flowcutspro.com') {
         // Redireciona para o dashboard das lojas, que é a área do usuário comum
         router.push('/dashboard/shops');
       }
       // Se é o admin e está na página de login, redireciona para o dashboard do cpanel
-      else if (user.email === 'admin@bbr.com' && pathname === '/cpanel/login') {
+      else if (user.email === 'admin@flowcutspro.com' && pathname === '/cpanel/login') {
         router.push('/cpanel');
       }
     }
@@ -118,7 +118,7 @@ export default function CPanelLayout({
             <Input
               type="search"
               placeholder="Buscar..."
-              className="w-full rounded-lg bg-muted pl-8 md:w-[200px] lg:w-[320px]"
+              className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
             />
           </div>
           <UserNav />

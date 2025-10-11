@@ -20,7 +20,7 @@ import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'O nome da barbearia é obrigatório.'),
+  name: z.string().min(2, 'O nome do negócio é obrigatório.'),
   address: z.string().optional(),
 });
 
@@ -50,7 +50,7 @@ export function NewShopForm({ onSuccess }: NewShopFormProps) {
       toast({
         variant: 'destructive',
         title: 'Erro de autenticação',
-        description: 'Você precisa estar logado para criar uma loja.',
+        description: 'Você precisa estar logado para criar um negócio.',
       });
       return;
     }
@@ -65,8 +65,8 @@ export function NewShopForm({ onSuccess }: NewShopFormProps) {
       });
 
       toast({
-        title: 'Barbearia Criada!',
-        description: `Sua barbearia "${values.name}" foi criada com sucesso.`,
+        title: 'Negócio Criado!',
+        description: `Seu negócio "${values.name}" foi criado com sucesso.`,
       });
       
       if (docRef?.id) {
@@ -77,8 +77,8 @@ export function NewShopForm({ onSuccess }: NewShopFormProps) {
       console.error("Error creating shop: ", error);
       toast({
         variant: 'destructive',
-        title: 'Erro ao criar loja',
-        description: 'Não foi possível criar sua barbearia. Tente novamente.',
+        title: 'Erro ao criar negócio',
+        description: 'Não foi possível criar seu negócio. Tente novamente.',
       });
     }
   };
@@ -91,7 +91,7 @@ export function NewShopForm({ onSuccess }: NewShopFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome da Barbearia</FormLabel>
+              <FormLabel>Nome do Negócio</FormLabel>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <FormControl>
@@ -124,7 +124,7 @@ export function NewShopForm({ onSuccess }: NewShopFormProps) {
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Criar Minha Barbearia
+            Criar Meu Negócio
           </Button>
         </div>
       </form>

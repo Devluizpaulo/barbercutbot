@@ -243,7 +243,7 @@ export default function FinancePage() {
             Finanças
           </h1>
           <p className="text-muted-foreground">
-            Acompanhe a receita e as despesas da sua barbearia.
+            Acompanhe a receita e as despesas do seu negócio.
           </p>
         </div>
         <div className="flex items-center gap-4">

@@ -37,7 +37,7 @@ export default function CPanelSignupPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (email.toLowerCase() !== 'admin@bbr.com') {
+    if (email.toLowerCase() !== 'admin@flowcutspro.com') {
          toast({
             variant: 'destructive',
             title: 'Cadastro não permitido',
@@ -131,7 +131,7 @@ export default function CPanelSignupPage() {
                 <Input
                 id="email"
                 type="email"
-                placeholder="admin@bbr.com"
+                placeholder="admin@flowcutspro.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

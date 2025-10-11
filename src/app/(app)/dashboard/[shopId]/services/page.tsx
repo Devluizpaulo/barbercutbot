@@ -111,7 +111,7 @@ export default function ServicesPage() {
             Serviços
           </h1>
           <p className="text-muted-foreground">
-            Gerencie os serviços oferecidos pela sua barbearia.
+            Gerencie os serviços oferecidos pelo seu negócio.
           </p>
         </div>
         <div className="flex items-center gap-2">

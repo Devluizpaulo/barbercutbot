@@ -93,10 +93,10 @@ export default function LandingPage() {
           <div className="relative z-10 container mx-auto px-4 md:px-6 text-white">
             <div className="max-w-xl">
                 <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-7xl font-headline leading-tight">
-                Eleve sua Barbearia a Outro Nível.
+                Eleve seu Negócio a Outro Nível.
                 </h1>
                 <p className="mt-6 text-lg md:text-xl text-gray-300">
-                Otimize agendamentos, gerencie clientes e controle suas finanças com a ferramenta definitiva para barbeiros modernos.
+                Otimize agendamentos, gerencie clientes e controle suas finanças com a ferramenta definitiva para negócios modernos.
                 </p>
                 <div className="mt-8">
                 <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
@@ -110,7 +110,7 @@ export default function LandingPage() {
         <section id="features" className="py-16 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
-                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Tudo que sua barbearia precisa</h2>
+                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Tudo que seu negócio precisa</h2>
                  <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
                     Ferramentas poderosas para otimizar seu tempo, aumentar seus lucros e fidelizar seus clientes.
                  </p>
@@ -125,7 +125,7 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col items-center text-center">
                 <Users className="h-12 w-12 text-primary mb-4"/>
-                <h3 className="text-2xl font-bold font-headline mb-2">CRM para Barbearias</h3>
+                <h3 className="text-2xl font-bold font-headline mb-2">CRM para Negócios</h3>
                 <p className="text-muted-foreground">
                   Conheça seus clientes como nunca antes. Histórico, preferências e contato em um só lugar para um serviço personalizado.
                 </p>
@@ -145,7 +145,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
              <div className="text-center mb-12">
                  <h2 className="text-3xl md:text-4xl font-bold font-headline">Como Funciona</h2>
-                 <p className="text-muted-foreground mt-2">Em 3 passos simples, sua barbearia em outro nível.</p>
+                 <p className="text-muted-foreground mt-2">Em 3 passos simples, seu negócio em outro nível.</p>
             </div>
             <div className="grid gap-10 md:grid-cols-3 md:gap-16 items-start">
               <div className="flex flex-col items-center text-center">
@@ -156,7 +156,7 @@ export default function LandingPage() {
                <div className="flex flex-col items-center text-center">
                   <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">2</div>
                   <h3 className="text-xl font-bold mb-2">Configure sua Loja</h3>
-                  <p className="text-muted-foreground">Adicione seus serviços, barbeiros e horários de funcionamento.</p>
+                  <p className="text-muted-foreground">Adicione seus serviços, profissionais e horários de funcionamento.</p>
               </div>
                <div className="flex flex-col items-center text-center">
                   <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">3</div>
@@ -170,7 +170,7 @@ export default function LandingPage() {
         <section id="testimonials" className="py-16 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Amado por Barbeiros de Todo o Brasil</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold font-headline">Amado por Empreendedores de Todo o Brasil</h2>
                     <p className="text-muted-foreground mt-2">Veja o que nossos parceiros estão dizendo.</p>
                 </div>
                 <div className="grid gap-8 md:grid-cols-3">
@@ -179,7 +179,7 @@ export default function LandingPage() {
                             <div className="flex mb-4">
                                 {[...Array(5)].map((_, i) => <Star key={i} className="text-yellow-400 fill-current" />)}
                             </div>
-                            <p className="mb-4 italic">"Mudou o jogo para a minha barbearia. A organização dos agendamentos é outra e os clientes adoraram a facilidade."</p>
+                            <p className="mb-4 italic">"Mudou o jogo para o meu negócio. A organização dos agendamentos é outra e os clientes adoraram a facilidade."</p>
                             <div className="flex items-center gap-4">
                                 {avatar1 && <Avatar>
                                     <AvatarImage src={avatar1.imageUrl} alt="Avatar Cliente 1" data-ai-hint={avatar1.imageHint} />
@@ -234,8 +234,8 @@ export default function LandingPage() {
 
         <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-primary text-white">
             <div className="container mx-auto px-4 md:px-6 text-center">
-                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar sua barbearia?</h2>
-                 <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/80">Junte-se a centenas de barbeiros que já estão otimizando sua gestão e lucrando mais.</p>
+                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar seu negócio?</h2>
+                 <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/80">Junte-se a centenas de empreendedores que já estão otimizando sua gestão e lucrando mais.</p>
                  <div className="mt-8">
                     <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform">
                         <Link href="/signup">Começar meu teste grátis de 14 dias</Link>

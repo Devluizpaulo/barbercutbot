@@ -40,7 +40,7 @@ export default function ProfilePage() {
   );
   const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
 
-  const bookingUrl = `https://app.flowcutspro.com/${shop?.name.toLowerCase().replace(/\s/g, '-')}`;
+  const bookingUrl = `https://flowcutspro.firebaseapp.com/book/${shopId}`;
 
   if (isLoading) {
     return (
@@ -69,7 +69,7 @@ export default function ProfilePage() {
   }
 
   if (!shop) {
-    return <div>Barbearia não encontrada.</div>;
+    return <div>Negócio não encontrado.</div>;
   }
   
   const workingHours = shop.workingHours?.filter(wh => wh.enabled).map(wh => `${wh.day}: ${wh.open} - ${wh.close}`).join(' | ') || 'Horário não definido';
@@ -99,8 +99,8 @@ export default function ProfilePage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Agende seu horário na ${shop.name}`,
-          text: `Confira os serviços da ${shop.name} e agende seu horário!`,
+          title: `Agende seu horário em ${shop.name}`,
+          text: `Confira os serviços de ${shop.name} e agende seu horário!`,
           url: bookingUrl,
         });
       } catch (error) {
@@ -127,7 +127,7 @@ export default function ProfilePage() {
           Perfil e Divulgação
         </h1>
         <p className="text-muted-foreground">
-          Compartilhe o cartão de visita digital da sua barbearia para atrair
+          Compartilhe o cartão de visita digital do seu negócio para atrair
           mais clientes.
         </p>
       </div>
@@ -161,7 +161,7 @@ export default function ProfilePage() {
           <Card className="overflow-hidden shadow-lg">
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-8 text-center relative h-32">
                 <h2 className="text-3xl font-bold text-white tracking-tight font-headline">{shop.name}</h2>
-                <p className="text-sm text-gray-300">Barbearia Premium</p>
+                <p className="text-sm text-gray-300">Negócio Premium</p>
             </div>
             
             <CardContent className="p-6 text-center -mt-16">

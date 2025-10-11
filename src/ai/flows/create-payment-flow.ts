@@ -63,9 +63,9 @@ const createPaymentFlow = ai.defineFlow(
             },
         ],
         back_urls: {
-            success: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${input.shopId}/settings?payment=success`,
-            failure: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${input.shopId}/settings?payment=failure`,
-            pending: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${input.shopId}/settings?payment=pending`,
+            success: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=success`,
+            failure: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=failure`,
+            pending: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=pending`,
         },
         auto_return: 'approved' as const,
         external_reference: input.shopId,
@@ -87,4 +87,3 @@ const createPaymentFlow = ai.defineFlow(
     }
   }
 );
-

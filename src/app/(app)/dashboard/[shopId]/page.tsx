@@ -158,7 +158,7 @@ export default function ShopDashboardPage() {
             Visão Geral
           </h1>
           <p className="text-muted-foreground">
-            Aqui está uma visão geral do desempenho da sua barbearia.
+            Aqui está uma visão geral do desempenho do seu negócio.
           </p>
         </div>
         <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="w-full sm:w-auto">

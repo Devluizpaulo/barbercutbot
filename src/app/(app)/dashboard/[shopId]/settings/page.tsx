@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Tabs,
@@ -21,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, CheckCircle, User, Clock } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -116,7 +117,7 @@ export default function SettingsPage() {
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         setDocumentNonBlocking(shopRef, values, { merge: true });
-        toast({ title: 'Perfil atualizado!', description: 'As informações da sua barbearia foram salvas.' });
+        toast({ title: 'Perfil atualizado!', description: 'As informações do seu negócio foram salvas.' });
     };
 
     const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
@@ -130,7 +131,7 @@ export default function SettingsPage() {
             const { checkoutUrl } = await createPayment({
                 shopId: shopId,
                 planId: 'pro', // Simulando a seleção do plano Pro
-                shopName: shop?.name || 'Assinatura Barbearia SaaS',
+                shopName: shop?.name || 'FlowCuts Pro',
                 price: 79.90, // Simulando o preço do plano
             });
 
@@ -158,15 +159,15 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          Configurações da Barbearia
+          Configurações
         </h1>
         <p className="text-muted-foreground">
-          Gerencie as informações e preferências da sua loja.
+          Gerencie as informações e preferências do seu negócio.
         </p>
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="mb-8 grid w-full grid-cols-2 sm:grid-cols-3">
           <TabsTrigger value="profile">
             <User className="mr-2" />
             Perfil
@@ -186,9 +187,9 @@ export default function SettingsPage() {
             <Form {...profileForm}>
                 <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
                     <CardHeader>
-                        <CardTitle>Perfil da Barbearia</CardTitle>
+                        <CardTitle>Perfil do Negócio</CardTitle>
                         <CardDescription>
-                            Atualize as informações públicas da sua barbearia.
+                            Atualize as informações públicas do seu negócio.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -199,7 +200,7 @@ export default function SettingsPage() {
                                     name="name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <Label>Nome da Barbearia</Label>
+                                            <Label>Nome do Negócio</Label>
                                             <FormControl>
                                                 <Input placeholder="Ex: Barbearia Corte Clássico" {...field} />
                                             </FormControl>
@@ -332,7 +333,7 @@ export default function SettingsPage() {
                         <CardHeader>
                         <CardTitle>Horários de Funcionamento</CardTitle>
                         <CardDescription>
-                            Defina os horários em que sua barbearia está aberta.
+                            Defina os horários em que seu negócio está aberto.
                         </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -408,9 +409,9 @@ export default function SettingsPage() {
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
                                 <div>
                                     <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <div className="text-sm text-muted-foreground">
                                         {subscriptionStatus === 'active' ? `Sua assinatura está ativa. Próxima cobrança em ${nextBillingDate}.` : 'Você está no período de teste ou seu plano não está ativo.'}
-                                    </p>
+                                    </div>
                                 </div>
                                  <Button variant={subscriptionStatus === 'active' ? 'destructive' : 'outline'} onClick={handleManageSubscription} disabled={isBillingLoading}>
                                     {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}

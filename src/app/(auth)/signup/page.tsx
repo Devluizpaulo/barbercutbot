@@ -65,7 +65,7 @@ export default function SignupPage() {
         });
 
         // Check if the user is an admin and add to the admins collection
-        if (user.email === 'admin@bbr.com') {
+        if (user.email === 'admin@flowcutspro.com') {
             const adminDocRef = doc(firestore, 'admins', user.uid);
             await setDoc(adminDocRef, {
                 createdAt: serverTimestamp(),
@@ -77,7 +77,7 @@ export default function SignupPage() {
           description: 'Você será redirecionado para o painel.',
         });
         
-        if (user.email === 'admin@bbr.com') {
+        if (user.email === 'admin@flowcutspro.com') {
             router.push('/cpanel');
         } else {
             router.push('/dashboard/shops');
@@ -107,7 +107,7 @@ export default function SignupPage() {
             </div>
           <CardTitle>Crie sua Conta</CardTitle>
           <CardDescription>
-            Comece a gerenciar sua barbearia hoje mesmo.
+            Comece a gerenciar seu negócio hoje mesmo.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>

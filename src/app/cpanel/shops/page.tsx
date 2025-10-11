@@ -76,7 +76,7 @@ export default function AdminShopsPage() {
             Gerenciamento de Lojas
         </h1>
         <p className="text-muted-foreground">
-          Visualize, adicione e gerencie todas as barbearias da plataforma.
+          Visualize, adicione e gerencie todos os negócios da plataforma.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export default function AdminShopsPage() {
             <div className="relative flex-1 md:grow-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Buscar loja..." 
+                    placeholder="Buscar negócio..." 
                     className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -94,12 +94,12 @@ export default function AdminShopsPage() {
               <DialogTrigger asChild>
                 <Button onClick={handleAddNew}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Adicionar Loja
+                    Adicionar Negócio
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                  <DialogTitle>{selectedShop ? 'Editar Loja' : 'Adicionar Nova Loja'}</DialogTitle>
+                  <DialogTitle>{selectedShop ? 'Editar Negócio' : 'Adicionar Novo Negócio'}</DialogTitle>
                 </DialogHeader>
                 <AddShopForm
                   initialData={selectedShop}
@@ -115,7 +115,7 @@ export default function AdminShopsPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Barbearia</TableHead>
+                        <TableHead>Negócio</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="hidden md:table-cell">Proprietário</TableHead>
                         <TableHead><span className="sr-only">Ações</span></TableHead>
@@ -162,7 +162,7 @@ export default function AdminShopsPage() {
                     {!isLoading && filteredShops?.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={4} className="h-24 text-center">
-                                {searchTerm ? `Nenhuma loja encontrada para "${searchTerm}"` : "Nenhuma loja encontrada."}
+                                {searchTerm ? `Nenhum negócio encontrado para "${searchTerm}"` : "Nenhum negócio encontrado."}
                             </TableCell>
                         </TableRow>
                     )}

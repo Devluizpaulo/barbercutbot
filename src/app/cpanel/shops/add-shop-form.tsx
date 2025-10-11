@@ -22,7 +22,7 @@ import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'O nome da loja é obrigatório.'),
+  name: z.string().min(1, 'O nome do negócio é obrigatório.'),
   ownerId: z.string().min(1, 'O ID do proprietário é obrigatório.'),
   address: z.string().optional(),
 });
@@ -64,8 +64,8 @@ export function AddShopForm({ initialData, onSuccess }: AddShopFormProps) {
       }
 
       toast({
-        title: initialData ? 'Loja Atualizada!' : 'Loja Adicionada!',
-        description: `A loja "${values.name}" foi salva com sucesso.`,
+        title: initialData ? 'Negócio Atualizado!' : 'Negócio Adicionado!',
+        description: `O negócio "${values.name}" foi salvo com sucesso.`,
       });
       onSuccess?.();
       if (!initialData) form.reset();
@@ -74,7 +74,7 @@ export function AddShopForm({ initialData, onSuccess }: AddShopFormProps) {
       toast({
         variant: 'destructive',
         title: 'Erro ao salvar',
-        description: 'Não foi possível salvar a loja.',
+        description: 'Não foi possível salvar o negócio.',
       });
     }
   };
@@ -87,7 +87,7 @@ export function AddShopForm({ initialData, onSuccess }: AddShopFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome da Barbearia</FormLabel>
+              <FormLabel>Nome do Negócio</FormLabel>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <FormControl>
@@ -136,7 +136,7 @@ export function AddShopForm({ initialData, onSuccess }: AddShopFormProps) {
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            {initialData ? 'Salvar Alterações' : 'Salvar Loja'}
+            {initialData ? 'Salvar Alterações' : 'Salvar Negócio'}
           </Button>
         </div>
       </form>

@@ -32,7 +32,7 @@ export default function CpanelLoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-        if (user.email === 'admin@bbr.com') {
+        if (user.email === 'admin@flowcutspro.com') {
             router.push('/cpanel');
         }
     }
@@ -61,7 +61,7 @@ export default function CpanelLoginPage() {
     }
   };
 
-  if (isUserLoading || (!isUserLoading && user && user.email === 'admin@bbr.com')) {
+  if (isUserLoading || (!isUserLoading && user && user.email === 'admin@flowcutspro.com')) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-secondary">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -88,7 +88,7 @@ export default function CpanelLoginPage() {
                 <Input
                 id="email"
                 type="email"
-                placeholder="admin@bbr.com"
+                placeholder="admin@flowcutspro.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
