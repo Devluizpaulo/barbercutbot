@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -50,6 +51,7 @@ const profileFormSchema = z.object({
   city: z.string().optional(),
   whatsapp: z.object({
     instanceId: z.string().min(1, "O ID da instância é obrigatório."),
+    numeroConectado: z.string().optional(),
   }),
   bot: z.object({
     provider: z.string().min(1, "O provedor é obrigatório."),
@@ -90,7 +92,7 @@ export default function SettingsPage() {
             number: '',
             neighborhood: '',
             city: '',
-            whatsapp: { instanceId: '' },
+            whatsapp: { instanceId: '', numeroConectado: '' },
             bot: {
                 provider: 'groq',
                 modelo: 'llama-3.1-70b-versatile',
@@ -134,8 +136,8 @@ export default function SettingsPage() {
                 name: shop.name || '',
                 document: shop.document || '',
                 address: shop.address || '',
-                whatsapp: shop.whatsapp || { instanceId: '' },
-                bot: shop.bot || { provider: 'groq', modelo: 'llama-3.1-70b-versatile', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
+                whatsapp: shop.whatsapp || { instanceId: '', numeroConectado: '' },
+                bot: shop.bot || { provider: 'groq', modelo: 'openai/gpt-oss-120b', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
             });
              if (shop.workingHours) {
                 const currentHours = workingHoursForm.getValues('hours').map(daySetting => {
@@ -447,7 +449,7 @@ export default function SettingsPage() {
                                 </FormItem>
                                 )}
                             />
-                             <FormField
+                            <FormField
                                 control={profileForm.control}
                                 name="whatsapp.instanceId"
                                 render={({ field }) => (
@@ -460,6 +462,29 @@ export default function SettingsPage() {
                                     </FormItem>
                                 )}
                             />
+                             <FormField
+                                control={profileForm.control}
+                                name="whatsapp.numeroConectado"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>Número Conectado</Label>
+                                        <div className="relative">
+                                            <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input placeholder="Número aparecerá após conectar" {...field} readOnly className="pl-10 bg-muted" />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Alert variant="destructive">
+                                <Shield className="h-4 w-4" />
+                                <AlertTitle>Aviso Importante</AlertTitle>
+                                <AlertDescription>
+                                    A API utilizada não é oficial do WhatsApp, o que implica em um risco de banimento do número. Para uma solução 100% segura, oferecemos integração com a API oficial mediante consulta. <Link href={`/dashboard/${shopId}/support`} className="font-bold underline">Fale com o suporte</Link>.
+                                </AlertDescription>
+                            </Alert>
                             <FormField
                                 control={profileForm.control}
                                 name="bot.promptPersonalizado"
@@ -501,6 +526,7 @@ export default function SettingsPage() {
                                                     <SelectItem value="llama3-70b-8192">Llama3 70B</SelectItem>
                                                 </SelectContent>
                                             </Select>
+                                            <FormDescription>Modelos fornecidos pela Groq API.</FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -514,7 +540,7 @@ export default function SettingsPage() {
                                             <div className="flex items-center gap-4">
                                                 <FormControl>
                                                     <Slider
-                                                        defaultValue={[field.value]}
+                                                        value={[field.value]}
                                                         max={1}
                                                         step={0.1}
                                                         className="flex-1"
@@ -559,7 +585,7 @@ export default function SettingsPage() {
                         {isLoading ? <Skeleton className="h-24 w-full" /> : (
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
                                 <div>
-                                    <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></div>
+                                    <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={cn(subscriptionStatus === 'active' && 'bg-green-500 hover:bg-green-500/90')}>{planName}</Badge></div>
                                     <div className="text-sm text-muted-foreground">
                                         {subscriptionStatus === 'active' ? `Sua assinatura está ativa. Próxima cobrança em ${nextBillingDate}.` : 'Você está no período de teste ou seu plano não está ativo.'}
                                     </div>
@@ -578,7 +604,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
-
-    
