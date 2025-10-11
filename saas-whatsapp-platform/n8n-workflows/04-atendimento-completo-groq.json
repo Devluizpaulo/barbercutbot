@@ -1,0 +1,256 @@
+{
+  "name": "Atendimento Completo - Groq + Firestore Schema",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nif (data.event !== 'messages.upsert') return [];\n\nconst msg = data.data;\nconst phone = msg.key.remoteJid.replace('@s.whatsapp.net', '');\nconst text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';\n\nreturn [{\n  json: {\n    instanceId: data.instance,\n    phone: phone,\n    messageText: text,\n    messageId: msg.key.id,\n    timestamp: new Date().toISOString(),\n    customerName: msg.pushName || 'Cliente'\n  }\n}];"
+      },
+      "id": "parse",
+      "name": "1. Parse Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents:runQuery",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"structuredQuery\": {\n    \"from\": [{\"collectionId\": \"barberShops\"}],\n    \"where\": {\n      \"fieldFilter\": {\n        \"field\": {\"fieldPath\": \"whatsapp.instanceId\"},\n        \"op\": \"EQUAL\",\n        \"value\": {\"stringValue\": \"{{$json.instanceId}}\"}\n      }\n    },\n    \"limit\": 1\n  }\n}"
+      },
+      "id": "get-barbershop",
+      "name": "2. Buscar BarberShop",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents:runQuery",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"structuredQuery\": {\n    \"from\": [{\"collectionId\": \"customers\", \"allDescendants\": true}],\n    \"where\": {\n      \"compositeFilter\": {\n        \"op\": \"AND\",\n        \"filters\": [\n          {\n            \"fieldFilter\": {\n              \"field\": {\"fieldPath\": \"barberShopId\"},\n              \"op\": \"EQUAL\",\n              \"value\": {\"stringValue\": \"{{$('2. Buscar BarberShop').first().json[0].document.name.split('/').pop()}}\"}\n            }\n          },\n          {\n            \"fieldFilter\": {\n              \"field\": {\"fieldPath\": \"phone\"},\n              \"op\": \"EQUAL\",\n              \"value\": {\"stringValue\": \"{{$('1. Parse Mensagem').first().json.phone}}\"}\n            }\n          }\n        ]\n      }\n    },\n    \"limit\": 1\n  }\n}"
+      },
+      "id": "get-customer",
+      "name": "3. Buscar/Criar Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar dados do Firestore\nconst barberShopDoc = $('2. Buscar BarberShop').first().json[0]?.document;\nconst customerDoc = $('3. Buscar/Criar Customer').first().json[0]?.document;\nconst message = $('1. Parse Mensagem').first().json;\n\nif (!barberShopDoc) {\n  return [{ json: { error: 'Barbearia não encontrada', ...message } }];\n}\n\n// Extrair barberShopId\nconst barberShopId = barberShopDoc.name.split('/').pop();\n\n// Extrair dados da barbearia\nconst barberShop = {\n  id: barberShopId,\n  name: barberShopDoc.fields.name.stringValue,\n  phone: barberShopDoc.fields.phone?.stringValue || '',\n  address: barberShopDoc.fields.address?.stringValue || '',\n  bot: {\n    provider: barberShopDoc.fields.bot?.mapValue?.fields?.provider?.stringValue || 'groq',\n    modelo: barberShopDoc.fields.bot?.mapValue?.fields?.modelo?.stringValue || 'llama-3.1-70b-versatile',\n    prompt: barberShopDoc.fields.bot?.mapValue?.fields?.promptPersonalizado?.stringValue || 'Você é um assistente de barbearia'\n  }\n};\n\n// Extrair ou criar customer\nlet customerId = 'new';\nlet customerName = message.customerName;\n\nif (customerDoc) {\n  customerId = customerDoc.name.split('/').pop();\n  customerName = `${customerDoc.fields.firstName.stringValue} ${customerDoc.fields.lastName?.stringValue || ''}`;\n}\n\nreturn [{\n  json: {\n    ...message,\n    barberShopId: barberShopId,\n    barberShop: barberShop,\n    customerId: customerId,\n    customerName: customerName,\n    isNewCustomer: customerId === 'new'\n  }\n}];"
+      },
+      "id": "process-data",
+      "name": "4. Processar Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "Bearer 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"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{$json.barberShop.bot.modelo}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"{{$json.barberShop.bot.prompt}}\\n\\nINFORMAÇÕES DA BARBEARIA:\\nNome: {{$json.barberShop.name}}\\nEndereço: {{$json.barberShop.address}}\\nTelefone: {{$json.barberShop.phone}}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Cliente: {{$json.customerName}}\\nMensagem: {{$json.messageText}}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}"
+      },
+      "id": "groq-ia",
+      "name": "5. Groq IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const groqResponse = $input.first().json;\nconst data = $('4. Processar Dados').first().json;\n\nconst aiText = groqResponse.choices[0].message.content;\nconst texto = data.messageText.toLowerCase();\n\nlet intent = 'chat';\nlet shouldSaveAppointment = false;\nlet shouldCreateCustomer = data.isNewCustomer;\n\nif (texto.includes('agendar') || texto.includes('marcar')) {\n  intent = 'agendar_iniciado';\n} else if (texto.includes('confirmar') || texto.includes('sim')) {\n  intent = 'agendar_confirmado';\n  shouldSaveAppointment = true;\n} else if (texto.includes('horário') || texto.includes('disponível')) {\n  intent = 'consultar_horarios';\n} else if (texto.includes('preço') || texto.includes('valor')) {\n  intent = 'consultar_precos';\n}\n\nreturn [{\n  json: {\n    ...data,\n    aiResponse: aiText,\n    intent: intent,\n    shouldSaveAppointment: shouldSaveAppointment,\n    shouldCreateCustomer: shouldCreateCustomer,\n    tokensUsed: groqResponse.usage?.total_tokens || 0\n  }\n}];"
+      },
+      "id": "process-intent",
+      "name": "6. Detectar Intenção",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {"value1": "={{$json.shouldCreateCustomer}}", "value2": true}
+          ]
+        }
+      },
+      "id": "check-new-customer",
+      "name": "Novo Cliente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1780, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents/barberShops/{{$json.barberShopId}}/customers",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"id\": {\"stringValue\": \"customer_{{$json.phone}}\"},\n    \"barberShopId\": {\"stringValue\": \"{{$json.barberShopId}}\"},\n    \"firstName\": {\"stringValue\": \"{{$json.customerName.split(' ')[0]}}\"},\n    \"lastName\": {\"stringValue\": \"{{$json.customerName.split(' ').slice(1).join(' ')}}\"},\n    \"phone\": {\"stringValue\": \"{{$json.phone}}\"},\n    \"whatsappPhone\": {\"stringValue\": \"55{{$json.phone}}\"},\n    \"clienteDesde\": {\"timestampValue\": \"{{$json.timestamp}}\"},\n    \"totalAgendamentos\": {\"integerValue\": \"0\"}\n  }\n}"
+      },
+      "id": "create-customer",
+      "name": "7a. Criar Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {"value1": "={{$json.shouldSaveAppointment}}", "value2": true}
+          ]
+        }
+      },
+      "id": "check-save-appt",
+      "name": "Salvar Agendamento?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2000, 700]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents/barberShops/{{$json.barberShopId}}/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"id\": {\"stringValue\": \"appt_{{Date.now()}}\"},\n    \"barberShopId\": {\"stringValue\": \"{{$json.barberShopId}}\"},\n    \"customerId\": {\"stringValue\": \"{{$json.customerId}}\"},\n    \"barberId\": {\"stringValue\": \"barber_default\"},\n    \"startTime\": {\"timestampValue\": \"{{$json.timestamp}}\"},\n    \"endTime\": {\"timestampValue\": \"{{$json.timestamp}}\"},\n    \"serviceIds\": {\"arrayValue\": {\"values\": [{\"stringValue\": \"service_corte\"}]}},\n    \"notes\": {\"stringValue\": \"Agendado via WhatsApp Bot\"},\n    \"status\": {\"stringValue\": \"confirmado\"},\n    \"origem\": {\"stringValue\": \"whatsapp_bot\"},\n    \"confirmacaoEnviada\": {\"booleanValue\": false},\n    \"lembreteEnviado\": {\"booleanValue\": false},\n    \"valorTotal\": {\"doubleValue\": 0},\n    \"criadoPor\": {\"stringValue\": \"bot\"}\n  }\n}"
+      },
+      "id": "save-appointment",
+      "name": "8. Salvar Appointment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2220, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://evolution-api:8080/message/sendText/{{$json.instanceId}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "gcp_free_key_2024"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{$json.phone}}@s.whatsapp.net\",\n  \"text\": \"{{$json.aiResponse}}\"\n}"
+      },
+      "id": "send-whatsapp",
+      "name": "9. Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2440, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"success\", \"intent\": \"{{$json.intent}}\", \"barberShop\": \"{{$json.barberShop.name}}\"}"
+      },
+      "id": "response",
+      "name": "10. Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2660, 600]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [[{"node": "1. Parse Mensagem", "type": "main", "index": 0}]]
+    },
+    "1. Parse Mensagem": {
+      "main": [[{"node": "2. Buscar BarberShop", "type": "main", "index": 0}]]
+    },
+    "2. Buscar BarberShop": {
+      "main": [[{"node": "3. Buscar/Criar Customer", "type": "main", "index": 0}]]
+    },
+    "3. Buscar/Criar Customer": {
+      "main": [[{"node": "4. Processar Dados", "type": "main", "index": 0}]]
+    },
+    "4. Processar Dados": {
+      "main": [[{"node": "5. Groq IA", "type": "main", "index": 0}]]
+    },
+    "5. Groq IA": {
+      "main": [[{"node": "6. Detectar Intenção", "type": "main", "index": 0}]]
+    },
+    "6. Detectar Intenção": {
+      "main": [[{"node": "Novo Cliente?", "type": "main", "index": 0}]]
+    },
+    "Novo Cliente?": {
+      "main": [
+        [{"node": "7a. Criar Customer", "type": "main", "index": 0}],
+        [{"node": "Salvar Agendamento?", "type": "main", "index": 0}]
+      ]
+    },
+    "7a. Criar Customer": {
+      "main": [[{"node": "Salvar Agendamento?", "type": "main", "index": 0}]]
+    },
+    "Salvar Agendamento?": {
+      "main": [
+        [{"node": "8. Salvar Appointment", "type": "main", "index": 0}],
+        [{"node": "9. Enviar WhatsApp", "type": "main", "index": 0}]
+      ]
+    },
+    "8. Salvar Appointment": {
+      "main": [[{"node": "9. Enviar WhatsApp", "type": "main", "index": 0}]]
+    },
+    "9. Enviar WhatsApp": {
+      "main": [[{"node": "10. Response", "type": "main", "index": 0}]]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "tags": ["whatsapp", "groq", "multi-tenant", "completo"]
+}
+
