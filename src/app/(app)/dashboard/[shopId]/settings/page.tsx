@@ -38,6 +38,7 @@ import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -301,36 +302,32 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <FormField
-                                                control={profileForm.control}
-                                                name="neighborhood"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <Label>Bairro</Label>
-                                                        <FormControl>
-                                                            <Input placeholder="Centro" {...field} value={field.value || ''} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div>
-                                            <FormField
-                                                control={profileForm.control}
-                                                name="city"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <Label>Cidade</Label>
-                                                        <FormControl>
-                                                            <Input placeholder="São Paulo" {...field} value={field.value || ''} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="neighborhood"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Label>Bairro</Label>
+                                                    <FormControl>
+                                                        <Input placeholder="Centro" {...field} value={field.value || ''} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="city"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Label>Cidade</Label>
+                                                    <FormControl>
+                                                        <Input placeholder="São Paulo" {...field} value={field.value || ''} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
                                 </div>
                             </>
@@ -511,9 +508,20 @@ export default function SettingsPage() {
                                     render={({ field }) => (
                                         <FormItem>
                                             <Label>Criatividade (Temperatura)</Label>
-                                            <FormControl>
-                                                <Input type="number" step="0.1" min="0" max="1" {...field} />
-                                            </FormControl>
+                                            <div className="flex items-center gap-4">
+                                                <FormControl>
+                                                    <Slider
+                                                        defaultValue={[field.value]}
+                                                        max={1}
+                                                        step={0.1}
+                                                        className="flex-1"
+                                                        onValueChange={(value) => field.onChange(value[0])}
+                                                    />
+                                                </FormControl>
+                                                <span className="w-12 text-center font-mono text-sm rounded-md border py-2">
+                                                    {field.value.toFixed(1)}
+                                                </span>
+                                            </div>
                                             <FormMessage />
                                         </FormItem>
                                     )}
