@@ -68,7 +68,7 @@ export default function GlobalSettingsPage() {
           Configurações da Plataforma
         </h1>
         <p className="text-muted-foreground">
-          Gerencie as configurações globais do SaaS.
+          Gerencie as configurações globais do FlowCuts Pro.
         </p>
       </div>
 
@@ -91,7 +91,7 @@ export default function GlobalSettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="platform-name">Nome da Plataforma</Label>
-                <Input id="platform-name" defaultValue="Barbearia SaaS" />
+                <Input id="platform-name" defaultValue="FlowCuts Pro" />
               </div>
               <div className="flex justify-end pt-4">
                 <Button><Save className="mr-2 h-4 w-4" />Salvar</Button>

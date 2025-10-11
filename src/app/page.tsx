@@ -20,7 +20,7 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
       <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
               <Logo />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
@@ -50,7 +50,7 @@ export default function LandingPage() {
               <SheetContent side="right">
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b">
-                     <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+                     <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
                         <Logo />
                      </Link>
                   </div>
@@ -248,7 +248,7 @@ export default function LandingPage() {
 
       <footer className="py-8 border-t bg-secondary">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
-           <Link href="/" aria-label="Página Inicial da Barbearia SaaS">
+           <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
               <Logo />
            </Link>
           <nav className="flex flex-wrap justify-center gap-4 text-center md:gap-6">
@@ -257,7 +257,7 @@ export default function LandingPage() {
              <Link href="/cpanel/login" className="text-sm text-muted-foreground hover:text-primary">Admin</Link>
           </nav>
           <p className="text-sm text-muted-foreground text-center md:text-right">
-            © {new Date().getFullYear()} Barbearia SaaS. Todos os direitos reservados.
+            © {new Date().getFullYear()} FlowCuts Pro. Todos os direitos reservados.
           </p>
         </div>
       </footer>

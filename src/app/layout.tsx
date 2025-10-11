@@ -14,7 +14,7 @@ const poppins = Poppins({
 
 
 export const metadata: Metadata = {
-  title: "Barbearia SaaS",
+  title: "FlowCuts Pro",
   description: "A solução completa para gerenciar sua barbearia.",
 };
 

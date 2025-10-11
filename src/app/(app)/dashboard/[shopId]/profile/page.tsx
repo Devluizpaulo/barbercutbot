@@ -40,7 +40,7 @@ export default function ProfilePage() {
   );
   const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
 
-  const bookingUrl = `https://bbr.app/${shop?.name.toLowerCase().replace(/\s/g, '-')}`;
+  const bookingUrl = `https://app.flowcutspro.com/${shop?.name.toLowerCase().replace(/\s/g, '-')}`;
 
   if (isLoading) {
     return (
