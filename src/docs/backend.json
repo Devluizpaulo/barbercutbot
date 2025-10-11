@@ -58,6 +58,14 @@
                 "mercadoPagoId": { "type": "string" },
                 "currentPeriodEnd": { "type": "string", "format": "date-time" }
             }
+        },
+        "whatsapp": {
+            "type": "object",
+            "description": "Credentials for the Evolution API WhatsApp agent.",
+            "properties": {
+                "instanceUrl": { "type": "string", "format": "uri" },
+                "apiKey": { "type": "string" }
+            }
         }
       },
       "required": [
@@ -769,4 +777,6 @@
   }
 }
     
+    
+
     
