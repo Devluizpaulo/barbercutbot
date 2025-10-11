@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -337,7 +338,8 @@ export default function SettingsPage() {
                     </CardContent>
                     <CardFooter>
                        <div className="flex justify-end w-full">
-                            <Button type="submit">
+                            <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                                {profileForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                 <Save className="mr-2 h-4 w-4" />
                                 Salvar Perfil
                             </Button>
@@ -405,7 +407,8 @@ export default function SettingsPage() {
                         </CardContent>
                         <CardFooter>
                             <div className="flex justify-end w-full">
-                                <Button type="submit">
+                                <Button type="submit" disabled={workingHoursForm.formState.isSubmitting}>
+                                     {workingHoursForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Horários
                                 </Button>
@@ -428,6 +431,26 @@ export default function SettingsPage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <FormField
+                                control={profileForm.control}
+                                name="bot.ativo"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Robô Ativo</FormLabel>
+                                    <FormDescription>
+                                        Ative para que o assistente de IA responda no WhatsApp.
+                                    </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                             <FormField
                                 control={profileForm.control}
                                 name="whatsapp.instanceId"
                                 render={({ field }) => (
@@ -499,7 +522,8 @@ export default function SettingsPage() {
                         </CardContent>
                         <CardFooter>
                             <div className="flex justify-end w-full">
-                                <Button type="submit">
+                                <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                                     {profileForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Automação
                                 </Button>
@@ -543,5 +567,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
 
     
