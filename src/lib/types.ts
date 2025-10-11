@@ -31,6 +31,12 @@ export type BarberShop = {
     mercadoPagoId?: string;
     currentPeriodEnd?: Timestamp;
   },
+  paymentGateways?: {
+    mercadoPago?: {
+      publicKey?: string;
+      accessToken?: string;
+    }
+  },
   whatsapp?: {
     instanceId: string;
     status?: string;
