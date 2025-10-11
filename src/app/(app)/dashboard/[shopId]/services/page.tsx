@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { PlusCircle, MoreVertical, Trash2, Edit, DollarSign, Clock, Image as ImageIcon, Search } from 'lucide-react';
+import { PlusCircle, MoreVertical, Trash2, Edit, EyeOff, Eye, Search } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -46,9 +47,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { ImageIcon, Clock } from 'lucide-react';
 
 export default function ServicesPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -100,6 +102,16 @@ export default function ServicesPage() {
       description: `O serviço "${serviceToDelete.name}" foi removido.`,
     });
     setServiceToDelete(null);
+  };
+  
+  const handleToggleStatus = (service: Service) => {
+    const newStatus = !(service.ativo === undefined ? true : service.ativo);
+    const serviceRef = doc(firestore, 'barberShops', shopId, 'services', service.id);
+    setDocumentNonBlocking(serviceRef, { ativo: newStatus }, { merge: true });
+    toast({
+      title: `Serviço ${newStatus ? 'Ativado' : 'Inativado'}`,
+      description: `O serviço "${service.name}" agora está ${newStatus ? 'ativo' : 'inativo'}.`,
+    });
   };
 
   return (
@@ -155,8 +167,8 @@ export default function ServicesPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead className="hidden md:table-cell">Preço</TableHead>
-                <TableHead className="hidden lg:table-cell">Custo</TableHead>
                 <TableHead className="hidden sm:table-cell">Duração</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Ações</span>
                 </TableHead>
@@ -167,13 +179,15 @@ export default function ServicesPage() {
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-8 w-full" /></TableCell>
                   <TableCell className="hidden md:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
-                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
                   <TableCell className="hidden sm:table-cell"><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-full" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                 </TableRow>
               ))}
-              {filteredServices?.map((service) => (
-                <TableRow key={service.id}>
+              {filteredServices?.map((service) => {
+                const isAtivo = service.ativo === undefined ? true : service.ativo;
+                return (
+                <TableRow key={service.id} className={!isAtivo ? 'text-muted-foreground' : ''}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <Avatar className="rounded-md">
@@ -195,16 +209,16 @@ export default function ServicesPage() {
                       <span>R${service.price.toFixed(2)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>R${(service.cost || 0).toFixed(2)}</span>
-                    </div>
-                  </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <Clock className="h-4 w-4" />
                         <span>{service.duration} min</span>
                     </div>
+                  </TableCell>
+                   <TableCell>
+                    <Badge variant={isAtivo ? 'default' : 'secondary'} className={isAtivo ? 'bg-green-500 hover:bg-green-500/90' : ''}>
+                      {isAtivo ? 'Ativo' : 'Inativo'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -219,6 +233,10 @@ export default function ServicesPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(service)}>
+                            {isAtivo ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                            <span>{isAtivo ? 'Inativar' : 'Ativar'}</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setServiceToDelete(service)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Remover
@@ -227,7 +245,7 @@ export default function ServicesPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
               {!isLoading && filteredServices?.length === 0 && (
                 <TableRow>
                   <TableCell
