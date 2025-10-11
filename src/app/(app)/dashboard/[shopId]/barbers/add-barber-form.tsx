@@ -293,14 +293,14 @@ export function AddBarberForm({
                         Serviços e Comissões
                     </div>
                 </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
+                <AccordionContent className="pt-4 space-y-2">
                     {availableServices?.map(service => {
                         const fieldIndex = fields.findIndex(f => f.serviceId === service.id);
                         const isSelected = fieldIndex !== -1;
                         const serviceCommissionType = form.watch(`services.${fieldIndex}.commissionType`);
 
                         return (
-                            <div key={service.id} className="p-4 border rounded-lg space-y-4">
+                            <div key={service.id} className="p-3 border rounded-lg space-y-3">
                                <FormItem className="flex flex-row items-center justify-between">
                                   <div className="space-y-0.5">
                                     <FormLabel className="text-base">{service.name}</FormLabel>
@@ -327,13 +327,13 @@ export function AddBarberForm({
                                   </FormControl>
                                 </FormItem>
                                 {isSelected && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-3 border-t">
                                         <FormField
                                             control={form.control}
                                             name={`services.${fieldIndex}.commissionType`}
                                             render={({ field }) => (
-                                                <FormItem className="space-y-3">
-                                                <FormLabel>Tipo de Comissão</FormLabel>
+                                                <FormItem className="space-y-2">
+                                                <FormLabel className="text-sm">Tipo de Comissão</FormLabel>
                                                 <FormControl>
                                                     <RadioGroup
                                                     onValueChange={field.onChange}
@@ -344,13 +344,13 @@ export function AddBarberForm({
                                                         <FormControl>
                                                         <RadioGroupItem value="percentage" />
                                                         </FormControl>
-                                                        <FormLabel className="font-normal">Porcentagem (%)</FormLabel>
+                                                        <FormLabel className="font-normal text-sm">Porcentagem (%)</FormLabel>
                                                     </FormItem>
                                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                                         <FormControl>
                                                         <RadioGroupItem value="fixed" />
                                                         </FormControl>
-                                                        <FormLabel className="font-normal">Valor Fixo (R$)</FormLabel>
+                                                        <FormLabel className="font-normal text-sm">Valor Fixo (R$)</FormLabel>
                                                     </FormItem>
                                                     </RadioGroup>
                                                 </FormControl>
@@ -363,7 +363,7 @@ export function AddBarberForm({
                                             name={`services.${fieldIndex}.commissionValue`}
                                             render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Valor da Comissão</FormLabel>
+                                                <FormLabel className="text-sm">Valor da Comissão</FormLabel>
                                                 <div className="relative">
                                                 {serviceCommissionType === 'fixed' ? (
                                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

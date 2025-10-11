@@ -161,7 +161,7 @@ export default function BarbersPage() {
                   Adicionar Profissional
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-xl">
+              <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
                     {selectedBarber
