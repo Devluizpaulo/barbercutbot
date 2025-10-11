@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -84,6 +83,7 @@ export function AddBarberForm({
           phone: initialData.phone || '',
           bio: initialData.bio || '',
           avatar: initialData.avatar || '',
+          services: initialData.services || [],
         }
       : {
           firstName: '',
@@ -101,7 +101,7 @@ export function AddBarberForm({
     name: 'services'
   });
 
-  const selectedServiceIds = new Set(form.watch('services').map(s => s.serviceId));
+  const selectedServiceIds = new Set((form.watch('services') || []).map(s => s.serviceId));
 
   const { isSubmitting } = form.formState;
   const avatarUrl = form.watch('avatar');
