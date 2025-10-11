@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -11,6 +12,9 @@ import {
   Phone,
   User,
   Image as ImageIcon,
+  DollarSign,
+  Percent,
+  Scissors,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,13 +29,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { Barber } from '@/lib/types';
-import { useFirestore } from '@/firebase';
+import type { Barber, Service } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import {
   setDocumentNonBlocking,
   addDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+const commissionSchema = z.object({
+    serviceId: z.string(),
+    commissionType: z.enum(['fixed', 'percentage']).optional(),
+    commissionValue: z.coerce.number().optional(),
+});
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -40,6 +53,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   avatar: z.string().url('URL inválida.').optional().or(z.literal('')),
+  services: z.array(commissionSchema),
 });
 
 type AddBarberFormValues = z.infer<typeof formSchema>;
@@ -58,6 +72,9 @@ export function AddBarberForm({
   const { toast } = useToast();
   const firestore = useFirestore();
 
+  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
+  const { data: availableServices } = useCollection<Service>(servicesQuery);
+
   const form = useForm<AddBarberFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData
@@ -75,8 +92,16 @@ export function AddBarberForm({
           phone: '',
           bio: '',
           avatar: '',
+          services: [],
         },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'services'
+  });
+
+  const selectedServiceIds = new Set(form.watch('services').map(s => s.serviceId));
 
   const { isSubmitting } = form.formState;
   const avatarUrl = form.watch('avatar');
@@ -259,6 +284,111 @@ export function AddBarberForm({
             </FormItem>
           )}
         />
+        
+        <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="services">
+                <AccordionTrigger>
+                    <div className='flex items-center gap-2'>
+                        <Scissors className="h-4 w-4" />
+                        Serviços e Comissões
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 space-y-4">
+                    {availableServices?.map(service => {
+                        const fieldIndex = fields.findIndex(f => f.serviceId === service.id);
+                        const isSelected = fieldIndex !== -1;
+                        const serviceCommissionType = form.watch(`services.${fieldIndex}.commissionType`);
+
+                        return (
+                            <div key={service.id} className="p-4 border rounded-lg space-y-4">
+                               <FormItem className="flex flex-row items-center justify-between">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base">{service.name}</FormLabel>
+                                    <p className="text-sm text-muted-foreground">
+                                       Preço: R${service.price.toFixed(2)} | Duração: {service.duration} min
+                                    </p>
+                                  </div>
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          append({ 
+                                              serviceId: service.id, 
+                                              commissionType: service.partnership?.commissionType || 'percentage', 
+                                              commissionValue: service.partnership?.commissionValue || 0
+                                          });
+                                        } else {
+                                          const indexToRemove = fields.findIndex(f => f.serviceId === service.id);
+                                          if (indexToRemove > -1) remove(indexToRemove);
+                                        }
+                                      }}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                                {isSelected && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                                        <FormField
+                                            control={form.control}
+                                            name={`services.${fieldIndex}.commissionType`}
+                                            render={({ field }) => (
+                                                <FormItem className="space-y-3">
+                                                <FormLabel>Tipo de Comissão</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                    className="flex flex-col space-y-1"
+                                                    >
+                                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                                        <FormControl>
+                                                        <RadioGroupItem value="percentage" />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">Porcentagem (%)</FormLabel>
+                                                    </FormItem>
+                                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                                        <FormControl>
+                                                        <RadioGroupItem value="fixed" />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">Valor Fixo (R$)</FormLabel>
+                                                    </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                         <FormField
+                                            control={form.control}
+                                            name={`services.${fieldIndex}.commissionValue`}
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Valor da Comissão</FormLabel>
+                                                <div className="relative">
+                                                {serviceCommissionType === 'fixed' ? (
+                                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                ) : (
+                                                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                )}
+                                                <FormControl>
+                                                    <Input type="number" placeholder="50" {...field} className="pl-10" />
+                                                </FormControl>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground pt-1">
+                                                    Padrão do serviço: {service.partnership?.commissionValue || 0}{service.partnership?.commissionType === 'fixed' ? ' R$' : '%'}
+                                                </p>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
 
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
