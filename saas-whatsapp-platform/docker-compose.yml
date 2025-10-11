@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # =============================================
+  # EVOLUTION API - WhatsApp Integration
+  # =============================================
+  evolution-api:
+    image: atendai/evolution-api:v2.2.2
+    container_name: evolution-api
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - AUTHENTICATION_API_KEY=evolution_api_key_2024
+      - CONFIG_SESSION_PHONE_CLIENT=chrome
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      - CONFIG_LOG_LEVEL=error
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution_admin:evolution_secure_2024@evolution-postgres:5432/evolution_db
+      - DATABASE_SYNC_STATE=true
+      - WEBHOOK_GLOBAL_URL=http://n8n-automation:5678/webhook/whatsapp
+      - WEBHOOK_GLOBAL_ENABLED=true
+    volumes:
+      - evolution_data:/evolution/instances
+    networks:
+      - saas-network
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+
+  # =============================================
+  # N8N - Workflow Automation Engine
+  # =============================================
+  n8n-automation:
+    image: n8nio/n8n:latest
+    container_name: n8n-automation
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=n8n_admin_2024
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=n8n-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_db
+      - DB_POSTGRESDB_USER=n8n_admin
+      - DB_POSTGRESDB_PASSWORD=n8n_secure_2024
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_ENCRYPTION_KEY=n8n_encryption_key_2024
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/home/node/.n8n/workflows
+    networks:
+      - saas-network
+    depends_on:
+      n8n-postgres:
+        condition: service_healthy
+
+  # =============================================
+  # POSTGRESQL DATABASES
+  # =============================================
+  
+  # Evolution API Database
+  evolution-postgres:
+    image: postgres:15-alpine
+    container_name: evolution-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution_db
+      POSTGRES_USER: evolution_admin
+      POSTGRES_PASSWORD: evolution_secure_2024
+    volumes:
+      - evolution_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - saas-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution_admin -d evolution_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # N8N Database
+  n8n-postgres:
+    image: postgres:15-alpine
+    container_name: n8n-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: n8n_db
+      POSTGRES_USER: n8n_admin
+      POSTGRES_PASSWORD: n8n_secure_2024
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - saas-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n_admin -d n8n_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================
+  # REDIS (para N8N Queue)
+  # =============================================
+  n8n-redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass n8n_redis_2024
+    volumes:
+      - n8n_redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - saas-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# =============================================
+# VOLUMES
+# =============================================
+volumes:
+  evolution_data:
+    driver: local
+  evolution_postgres_data:
+    driver: local
+  n8n_data:
+    driver: local
+  n8n_postgres_data:
+    driver: local
+  n8n_redis_data:
+    driver: local
+
+# =============================================
+# NETWORKS
+# =============================================
+networks:
+  saas-network:
+    driver: bridge

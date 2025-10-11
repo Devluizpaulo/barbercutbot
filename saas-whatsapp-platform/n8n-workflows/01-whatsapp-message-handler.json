@@ -1,0 +1,157 @@
+{
+  "name": "WhatsApp Message Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode"
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "whatsapp-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados da mensagem Evolution API\nconst data = $input.first().json;\n\n// Verificar se é uma mensagem recebida\nif (data.event !== 'messages.upsert') {\n  return [];\n}\n\nconst message = data.data;\nconst instance = data.instance;\n\n// Extrair informações\nconst phoneNumber = message.key.remoteJid.replace('@s.whatsapp.net', '');\nconst messageText = message.message?.conversation || \n                   message.message?.extendedTextMessage?.text || \n                   message.message?.imageMessage?.caption || '';\n\nconst messageType = message.message?.imageMessage ? 'image' :\n                   message.message?.audioMessage ? 'audio' :\n                   message.message?.videoMessage ? 'video' :\n                   message.message?.documentMessage ? 'document' : 'text';\n\nreturn [{\n  json: {\n    instanceName: instance,\n    phoneNumber: phoneNumber,\n    messageText: messageText,\n    messageType: messageType,\n    messageId: message.key.id,\n    timestamp: message.messageTimestamp,\n    direction: 'received',\n    rawData: data\n  }\n}];"
+      },
+      "id": "parse-message",
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://firestore.googleapis.com/v1/projects/{{$env.FIREBASE_PROJECT_ID}}/databases/(default)/documents/webhooks_log",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "={{ {\n  \"source\": {\"stringValue\": \"evolution\"},\n  \"eventType\": {\"stringValue\": \"messages.upsert\"},\n  \"payload\": {\"mapValue\": {\"fields\": {\"data\": {\"stringValue\": JSON.stringify($json.rawData)}}}},\n  \"processed\": {\"booleanValue\": false},\n  \"receivedAt\": {\"timestampValue\": new Date().toISOString()}\n} }}"
+            }
+          ]
+        }
+      },
+      "id": "log-firestore",
+      "name": "Log to Firestore",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analisar mensagem e definir resposta automática\nconst message = $input.first().json;\nconst text = message.messageText.toLowerCase();\n\nlet response = '';\nlet action = 'unknown';\nlet shouldReply = true;\n\n// Palavras-chave e respostas\nif (text.includes('agendar') || text.includes('horário') || text.includes('horario')) {\n  response = '📅 *Agendamento*\\n\\n' +\n             'Ótimo! Vou te ajudar a agendar.\\n\\n' +\n             'Por favor, me informe:\\n' +\n             '• Dia desejado (ex: segunda, 15/10)\\n' +\n             '• Horário preferido\\n' +\n             '• Serviço (Corte, Barba, Corte + Barba)\\n\\n' +\n             'Ou responda com *HORÁRIOS* para ver disponibilidade.';\n  action = 'schedule_request';\n  \n} else if (text.includes('horários') || text.includes('horarios') || text.includes('disponibilidade')) {\n  response = '🕐 *Horários Disponíveis*\\n\\n' +\n             '📍 Segunda a Sexta: 8h às 18h\\n' +\n             '📍 Sábado: 8h às 12h\\n' +\n             '📍 Domingo: Fechado\\n\\n' +\n             'Para agendar, responda com:\\n' +\n             '*DIA + HORÁRIO*\\n\\n' +\n             'Exemplo: \"Segunda 14h\"';\n  action = 'show_availability';\n  \n} else if (text.includes('preço') || text.includes('preco') || text.includes('valor') || text.includes('quanto')) {\n  response = '💰 *Tabela de Preços*\\n\\n' +\n             '✂️ Corte Masculino: R$ 25\\n' +\n             '✂️ Corte Feminino: R$ 35\\n' +\n             '🧔 Barba: R$ 15\\n' +\n             '✨ Corte + Barba: R$ 35\\n\\n' +\n             '🎉 *PROMOÇÃO*\\n' +\n             'Combo Corte + Barba por apenas R$ 30!\\n\\n' +\n             'Digite *AGENDAR* para marcar seu horário!';\n  action = 'show_prices';\n  \n} else if (text.includes('confirmar') || text.includes('confirmo') || text.includes('sim')) {\n  response = '✅ *Agendamento Confirmado!*\\n\\n' +\n             'Seu horário está reservado! 🎉\\n\\n' +\n             'Vou te enviar um lembrete 1 hora antes.\\n\\n' +\n             'Se precisar cancelar ou reagendar, é só me avisar.\\n\\n' +\n             'Até breve! 👋';\n  action = 'confirm_appointment';\n  \n} else if (text.includes('cancelar') || text.includes('desmarcar')) {\n  response = '❌ *Cancelamento*\\n\\n' +\n             'Seu agendamento foi cancelado.\\n\\n' +\n             'Quando quiser marcar novamente, é só me chamar! 😊';\n  action = 'cancel_appointment';\n  \n} else if (text.includes('localização') || text.includes('localizacao') || text.includes('endereço') || text.includes('endereco') || text.includes('onde')) {\n  response = '📍 *Nossa Localização*\\n\\n' +\n             'Rua Exemplo, 123 - Centro\\n' +\n             'São Paulo - SP\\n\\n' +\n             '🚗 Estacionamento gratuito\\n' +\n             '♿ Acessível\\n\\n' +\n             'Ver no mapa: [link do Google Maps]';\n  action = 'show_location';\n  \n} else if (text.includes('oi') || text.includes('olá') || text.includes('ola') || text.includes('bom dia') || text.includes('boa tarde') || text.includes('boa noite')) {\n  response = '👋 *Olá! Bem-vindo!*\\n\\n' +\n             'Eu sou o assistente virtual da barbearia.\\n\\n' +\n             'Como posso te ajudar hoje?\\n\\n' +\n             '• Digite *AGENDAR* para marcar horário\\n' +\n             '• Digite *PREÇOS* para ver valores\\n' +\n             '• Digite *LOCALIZAÇÃO* para nosso endereço\\n' +\n             '• Digite *HORÁRIOS* para disponibilidade';\n  action = 'welcome';\n  \n} else {\n  response = '🤔 Desculpe, não entendi sua mensagem.\\n\\n' +\n             'Tente:\\n' +\n             '• *AGENDAR* - Para marcar horário\\n' +\n             '• *PREÇOS* - Ver tabela de preços\\n' +\n             '• *HORÁRIOS* - Ver disponibilidade\\n' +\n             '• *LOCALIZAÇÃO* - Nosso endereço\\n\\n' +\n             'Ou fale com um atendente humano! 👨‍💼';\n  action = 'unknown';\n}\n\nreturn [{\n  json: {\n    ...message,\n    response: response,\n    action: action,\n    shouldReply: shouldReply\n  }\n}];"
+      },
+      "id": "analyze-message",
+      "name": "Analyze & Generate Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.shouldReply}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "should-reply",
+      "name": "Should Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://evolution-api:8080/message/sendText/{{$json.instanceName}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "evolution_api_key_2024"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"number\": $json.phoneNumber + \"@s.whatsapp.net\",\n  \"text\": $json.response\n} }}"
+      },
+      "id": "send-reply",
+      "name": "Send WhatsApp Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"status\": \"success\",\n  \"action\": $json.action,\n  \"replied\": $json.shouldReply\n} }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [[{"node": "Parse Message", "type": "main", "index": 0}]]
+    },
+    "Parse Message": {
+      "main": [[{"node": "Log to Firestore", "type": "main", "index": 0}]]
+    },
+    "Log to Firestore": {
+      "main": [[{"node": "Analyze & Generate Response", "type": "main", "index": 0}]]
+    },
+    "Analyze & Generate Response": {
+      "main": [[{"node": "Should Reply?", "type": "main", "index": 0}]]
+    },
+    "Should Reply?": {
+      "main": [
+        [{"node": "Send WhatsApp Reply", "type": "main", "index": 0}],
+        [{"node": "Webhook Response", "type": "main", "index": 0}]
+      ]
+    },
+    "Send WhatsApp Reply": {
+      "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "whatsapp-message-handler",
+  "meta": {
+    "instanceId": "n8n-saas-platform"
+  },
+  "tags": [
+    {"name": "whatsapp"},
+    {"name": "automation"},
+    {"name": "messages"}
+  ]
+}

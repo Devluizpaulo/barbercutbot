@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar autenticação
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função para verificar se é o próprio usuário
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Função para verificar se é admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // =============================================
+    // USUÁRIOS
+    // =============================================
+    match /users/{userId} {
+      // Leitura: apenas o próprio usuário ou admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Criação: apenas durante signup (via Cloud Functions)
+      allow create: if isAuthenticated();
+      
+      // Atualização: apenas o próprio usuário
+      allow update: if isOwner(userId) && 
+                      request.resource.data.plan_type == resource.data.plan_type &&
+                      request.resource.data.messages_limit == resource.data.messages_limit;
+      
+      // Deleção: apenas admin
+      allow delete: if isAdmin();
+      
+      // =============================================
+      // INSTÂNCIAS WHATSAPP DO USUÁRIO
+      // =============================================
+      match /whatsapp_instances/{instanceId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+      
+      // =============================================
+      // AGENDAMENTOS DO USUÁRIO
+      // =============================================
+      match /appointments/{appointmentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+      
+      // =============================================
+      // MENSAGENS DO USUÁRIO
+      // =============================================
+      match /messages/{messageId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        // Não permite atualização ou deleção de mensagens (log imutável)
+        allow update: if false;
+        allow delete: if false;
+      }
+      
+      // =============================================
+      // ESTATÍSTICAS DO USUÁRIO
+      // =============================================
+      match /statistics/{statId} {
+        allow read: if isOwner(userId);
+        // Estatísticas são atualizadas apenas por Cloud Functions
+        allow write: if false;
+      }
+    }
+    
+    // =============================================
+    // CONFIGURAÇÕES DO SISTEMA (ADMIN ONLY)
+    // =============================================
+    match /system_settings/{settingId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // =============================================
+    // PLANOS E PREÇOS (PUBLIC READ)
+    // =============================================
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // =============================================
+    // WEBHOOKS LOGS (SYSTEM ONLY)
+    // =============================================
+    match /webhooks_log/{logId} {
+      // Apenas leitura pelo sistema (Cloud Functions)
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

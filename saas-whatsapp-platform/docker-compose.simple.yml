@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  # =============================================
+  # EVOLUTION API - WhatsApp (Versão Simples)
+  # =============================================
+  evolution-api:
+    container_name: evolution_api
+    image: atendai/evolution-api:v2.1.1
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - saas-network
+
+  # =============================================
+  # N8N - Automação (Opcional mas Recomendado)
+  # =============================================
+  n8n:
+    container_name: n8n
+    image: n8nio/n8n:latest
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - saas-network
+
+volumes:
+  evolution_instances:
+  n8n_data:
+
+networks:
+  saas-network:
+    driver: bridge
