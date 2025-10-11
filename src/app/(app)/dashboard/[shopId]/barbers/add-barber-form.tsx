@@ -14,6 +14,7 @@ import {
   DollarSign,
   Percent,
   Scissors,
+  Save,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +39,7 @@ import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { DialogFooter } from '@/components/ui/dialog';
 
 const commissionSchema = z.object({
     serviceId: z.string(),
@@ -130,7 +132,7 @@ export function AddBarberForm({
       }
 
       toast({
-        title: initialData ? 'Barbeiro Atualizado!' : 'Barbeiro Adicionado!',
+        title: initialData ? 'Profissional Atualizado!' : 'Profissional Adicionado!',
         description: `O profissional ${values.firstName} foi salvo com sucesso.`,
       });
       onSuccess?.();
@@ -142,14 +144,14 @@ export function AddBarberForm({
       toast({
         variant: 'destructive',
         title: 'Erro ao salvar',
-        description: 'Ocorreu um problema ao salvar o barbeiro.',
+        description: 'Ocorreu um problema ao salvar o profissional.',
       });
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src={avatarUrl} alt={firstName} />
@@ -327,7 +329,7 @@ export function AddBarberForm({
                                   </FormControl>
                                 </FormItem>
                                 {isSelected && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-3 border-t">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t">
                                         <FormField
                                             control={form.control}
                                             name={`services.${fieldIndex}.commissionType`}
@@ -389,15 +391,16 @@ export function AddBarberForm({
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
-
-        <div className="flex justify-end pt-4">
+        
+        <DialogFooter>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            {initialData ? 'Salvar Alterações' : 'Salvar Barbeiro'}
+            <Save className="mr-2 h-4 w-4" />
+            {initialData ? 'Salvar Alterações' : 'Salvar Profissional'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Form>
   );

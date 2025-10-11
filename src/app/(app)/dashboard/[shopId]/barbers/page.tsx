@@ -25,13 +25,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -62,6 +63,9 @@ import { collection, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { LoaderCircle, Save } from 'lucide-react';
 
 export default function BarbersPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -161,22 +165,26 @@ export default function BarbersPage() {
                   Adicionar Profissional
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedBarber
-                      ? 'Editar Profissional'
-                      : 'Adicionar Novo Profissional'}
-                  </DialogTitle>
-                  <p className="text-sm text-muted-foreground pt-1">
-                    Preencha os detalhes do novo profissional.
-                  </p>
-                </DialogHeader>
-                <AddBarberForm
-                  shopId={shopId}
-                  initialData={selectedBarber}
-                  onSuccess={handleFormSuccess}
-                />
+              <DialogContent className="sm:max-w-2xl p-0">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedBarber
+                        ? 'Editar Profissional'
+                        : 'Adicionar Novo Profissional'}
+                    </DialogTitle>
+                    <p className="text-sm text-muted-foreground pt-1">
+                      Preencha os detalhes do novo profissional.
+                    </p>
+                  </DialogHeader>
+                   <ScrollArea className="max-h-[70vh]">
+                     <div className="p-6">
+                        <AddBarberForm
+                            shopId={shopId}
+                            initialData={selectedBarber}
+                            onSuccess={handleFormSuccess}
+                        />
+                     </div>
+                   </ScrollArea>
               </DialogContent>
             </Dialog>
           </div>
