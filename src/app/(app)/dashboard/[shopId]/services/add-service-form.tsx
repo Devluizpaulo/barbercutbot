@@ -35,6 +35,7 @@ const formSchema = z.object({
   isCommissionEnabled: z.boolean().default(false),
   commissionType: z.enum(['fixed', 'percentage']).optional(),
   commissionValue: z.coerce.number().optional(),
+  ativo: z.boolean().default(true),
 });
 
 type AddServiceFormValues = z.infer<typeof formSchema>;
@@ -59,6 +60,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       isCommissionEnabled: initialData.partnership?.isCommissionEnabled || false,
       commissionType: initialData.partnership?.commissionType,
       commissionValue: initialData.partnership?.commissionValue,
+      ativo: initialData.ativo === undefined ? true : initialData.ativo,
     } : {
       name: '',
       description: '',
@@ -69,6 +71,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       isCommissionEnabled: false,
       commissionType: 'percentage',
       commissionValue: 0,
+      ativo: true,
     },
   });
 
@@ -85,6 +88,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
             duration: values.duration,
             imageUrl: values.imageUrl,
             barberShopId: shopId,
+            ativo: values.ativo,
             partnership: {
                 isCommissionEnabled: values.isCommissionEnabled,
                 commissionType: values.commissionType,
@@ -330,6 +334,30 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                             </div>
                         )}
                     </div>
+                     <div className="space-y-4 rounded-lg border p-4">
+                        <FormField
+                            control={form.control}
+                            name="ativo"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">
+                                        Serviço Ativo
+                                    </FormLabel>
+                                    <p className="text-sm text-muted-foreground">
+                                        Desative para ocultar este serviço da lista de agendamentos.
+                                    </p>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
@@ -347,3 +375,5 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
     </Form>
   );
 }
+
+    

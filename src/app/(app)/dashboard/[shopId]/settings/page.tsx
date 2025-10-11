@@ -22,19 +22,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createPayment } from '@/ai/flows/create-payment-flow';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -44,6 +46,16 @@ const profileFormSchema = z.object({
   number: z.string().optional(),
   neighborhood: z.string().optional(),
   city: z.string().optional(),
+  whatsapp: z.object({
+    instanceId: z.string().min(1, "O ID da instância é obrigatório."),
+  }),
+  bot: z.object({
+    provider: z.string().min(1, "O provedor é obrigatório."),
+    modelo: z.string().min(1, "O modelo é obrigatório."),
+    temperatura: z.coerce.number().min(0).max(1),
+    ativo: z.boolean(),
+    promptPersonalizado: z.string().min(10, "O prompt deve ter pelo menos 10 caracteres."),
+  }),
 });
 
 const workingHoursFormSchema = z.object({
@@ -68,7 +80,23 @@ export default function SettingsPage() {
     
     const profileForm = useForm<z.infer<typeof profileFormSchema>>({
         resolver: zodResolver(profileFormSchema),
-        defaultValues: { name: '' },
+        defaultValues: {
+            name: '',
+            document: '',
+            cep: '',
+            address: '',
+            number: '',
+            neighborhood: '',
+            city: '',
+            whatsapp: { instanceId: '' },
+            bot: {
+                provider: 'groq',
+                modelo: 'llama-3.1-70b-versatile',
+                temperatura: 0.7,
+                ativo: true,
+                promptPersonalizado: '',
+            }
+        },
     });
 
     const workingHoursForm = useForm<z.infer<typeof workingHoursFormSchema>>({
@@ -101,9 +129,11 @@ export default function SettingsPage() {
     useEffect(() => {
         if (shop) {
             profileForm.reset({
-                name: shop.name,
+                name: shop.name || '',
                 document: shop.document || '',
                 address: shop.address || '',
+                whatsapp: shop.whatsapp || { instanceId: '' },
+                bot: shop.bot || { provider: 'groq', modelo: 'llama-3.1-70b-versatile', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
             });
              if (shop.workingHours) {
                 const currentHours = workingHoursForm.getValues('hours').map(daySetting => {
@@ -130,9 +160,9 @@ export default function SettingsPage() {
         try {
             const { checkoutUrl } = await createPayment({
                 shopId: shopId,
-                planId: 'pro', // Simulando a seleção do plano Pro
+                planId: 'pro',
                 shopName: shop?.name || 'FlowCuts Pro',
-                price: 79.90, // Simulando o preço do plano
+                price: 79.90,
             });
 
             if (checkoutUrl) {
@@ -167,19 +197,11 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-8 grid w-full grid-cols-2 sm:grid-cols-3">
-          <TabsTrigger value="profile">
-            <User className="mr-2" />
-            Perfil
-          </TabsTrigger>
-          <TabsTrigger value="hours">
-            <Clock className="mr-2" />
-            Horários
-          </TabsTrigger>
-          <TabsTrigger value="billing">
-            <CreditCard className="mr-2" />
-            Faturamento
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
+            <TabsTrigger value="profile"><User className="mr-2" /> Perfil</TabsTrigger>
+            <TabsTrigger value="hours"><Clock className="mr-2" /> Horários</TabsTrigger>
+            <TabsTrigger value="integrations"><Bot className="mr-2" /> Automação</TabsTrigger>
+            <TabsTrigger value="billing"><CreditCard className="mr-2" /> Faturamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -313,14 +335,14 @@ export default function SettingsPage() {
                             </>
                         )}
                     </CardContent>
-                    <CardContent>
-                       <div className="flex justify-end pt-4">
+                    <CardFooter>
+                       <div className="flex justify-end w-full">
                             <Button type="submit">
                                 <Save className="mr-2 h-4 w-4" />
-                                Salvar Alterações
+                                Salvar Perfil
                             </Button>
                         </div>
-                    </CardContent>
+                    </CardFooter>
                 </form>
             </Form>
           </Card>
@@ -381,14 +403,108 @@ export default function SettingsPage() {
                                 </div>
                             ))}
                         </CardContent>
-                        <CardContent>
-                            <div className="flex justify-end pt-4">
+                        <CardFooter>
+                            <div className="flex justify-end w-full">
                                 <Button type="submit">
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Horários
                                 </Button>
                             </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
+        </TabsContent>
+        
+        <TabsContent value="integrations">
+            <Form {...profileForm}>
+                 <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                    <Card>
+                         <CardHeader>
+                            <CardTitle>Automação e IA</CardTitle>
+                            <CardDescription>
+                                Configure a instância do WhatsApp e o comportamento do assistente de IA.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={profileForm.control}
+                                name="whatsapp.instanceId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>ID da Instância (Evolution API)</Label>
+                                        <FormControl>
+                                            <Input placeholder="ID da sua instância no Evolution" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={profileForm.control}
+                                name="bot.promptPersonalizado"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>Prompt do Assistente (IA)</Label>
+                                         <div className="relative">
+                                            <MessageCircle className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Você é um assistente de barbearia..."
+                                                    {...field}
+                                                    className="pl-10 min-h-[150px]"
+                                                />
+                                            </FormControl>
+                                         </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                    control={profileForm.control}
+                                    name="bot.modelo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Modelo de IA</Label>
+                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione um modelo" />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="llama-3.1-70b-versatile">Llama 3.1 70B</SelectItem>
+                                                    <SelectItem value="llama3-70b-8192">Llama3 70B</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="bot.temperatura"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Criatividade (Temperatura)</Label>
+                                            <FormControl>
+                                                <Input type="number" step="0.1" min="0" max="1" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         </CardContent>
+                        <CardFooter>
+                            <div className="flex justify-end w-full">
+                                <Button type="submit">
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Automação
+                                </Button>
+                            </div>
+                        </CardFooter>
                     </Card>
                 </form>
             </Form>
@@ -427,3 +543,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

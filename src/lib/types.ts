@@ -24,6 +24,18 @@ export type BarberShop = {
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
     mercadoPagoId?: string;
     currentPeriodEnd?: Timestamp;
+  },
+  whatsapp?: {
+    instanceId: string;
+    status?: string;
+    numeroConectado?: string;
+  },
+  bot?: {
+    provider: string;
+    modelo: string;
+    temperatura: number;
+    ativo: boolean;
+    promptPersonalizado: string;
   }
 };
 
@@ -82,6 +94,7 @@ export type Service = {
   cost?: number;
   duration: number; // in minutes
   imageUrl?: string;
+  ativo?: boolean;
   partnership?: {
     isCommissionEnabled?: boolean;
     commissionType?: 'fixed' | 'percentage';
@@ -142,3 +155,5 @@ export type Document = {
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
 };
+
+    
