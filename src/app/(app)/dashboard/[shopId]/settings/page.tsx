@@ -455,26 +455,14 @@ export default function SettingsPage() {
                                 name="whatsapp.instanceId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <Label>ID da Instância (Evolution API)</Label>
-                                        <FormControl>
-                                            <Input placeholder="ID da sua instância no Evolution" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={profileForm.control}
-                                name="whatsapp.numeroConectado"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Label>Número Conectado</Label>
+                                        <Label>Número do WhatsApp (ID da Instância)</Label>
                                         <div className="relative">
                                             <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                             <FormControl>
-                                                <Input placeholder="Número aparecerá após conectar" {...field} readOnly className="pl-10 bg-muted" />
+                                                <Input placeholder="Ex: 5511999998888" {...field} className="pl-10" />
                                             </FormControl>
                                         </div>
+                                        <FormDescription>Este é o número que será conectado e também o ID na Evolution API.</FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
