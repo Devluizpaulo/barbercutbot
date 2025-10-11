@@ -486,7 +486,7 @@ export default function SettingsPage() {
                                     name="bot.modelo"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <Label>Modelo de IA</Label>
+                                            <Label>Modelo de IA (Groq API)</Label>
                                              <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                 <SelectTrigger>
@@ -494,7 +494,10 @@ export default function SettingsPage() {
                                                 </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
+                                                    <SelectItem value="openai/gpt-oss-120b">GPT-o (Recomendado)</SelectItem>
                                                     <SelectItem value="llama-3.1-70b-versatile">Llama 3.1 70B</SelectItem>
+                                                    <SelectItem value="gemma2-9b-it">Gemma2 9B</SelectItem>
+                                                    <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
                                                     <SelectItem value="llama3-70b-8192">Llama3 70B</SelectItem>
                                                 </SelectContent>
                                             </Select>
