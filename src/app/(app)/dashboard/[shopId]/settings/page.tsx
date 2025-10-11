@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -48,6 +48,7 @@ const profileFormSchema = z.object({
   cep: z.string().optional(),
   address: z.string().optional(),
   number: z.string().optional(),
+  complement: z.string().optional(),
   neighborhood: z.string().optional(),
   city: z.string().optional(),
   whatsapp: z.object({
@@ -79,6 +80,7 @@ export default function SettingsPage() {
     const shopId = params.shopId as string;
     const firestore = useFirestore();
     const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [isCepLoading, setIsCepLoading] = useState(false);
 
     const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
     const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
@@ -91,6 +93,7 @@ export default function SettingsPage() {
             cep: '',
             address: '',
             number: '',
+            complement: '',
             neighborhood: '',
             city: '',
             whatsapp: { instanceId: '', numeroConectado: '' },
@@ -158,6 +161,7 @@ export default function SettingsPage() {
             cep: values.cep || '',
             address: values.address || '',
             number: values.number || '',
+            complement: values.complement || '',
             neighborhood: values.neighborhood || '',
             city: values.city || '',
             whatsapp: {
@@ -169,6 +173,49 @@ export default function SettingsPage() {
         setDocumentNonBlocking(shopRef, sanitizedValues, { merge: true });
         toast({ title: 'Perfil atualizado!', description: 'As informações do seu negócio foram salvas.' });
     };
+    
+    const handleCepLookup = async () => {
+        const cep = profileForm.getValues('cep')?.replace(/\D/g, '');
+        if (!cep || cep.length !== 8) {
+          toast({
+            variant: 'destructive',
+            title: 'CEP inválido',
+            description: 'Por favor, insira um CEP com 8 dígitos.',
+          });
+          return;
+        }
+
+        setIsCepLoading(true);
+        try {
+          const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          const data = await response.json();
+          if (data.erro) {
+            toast({
+              variant: 'destructive',
+              title: 'CEP não encontrado',
+            });
+            profileForm.setValue('address', '');
+            profileForm.setValue('neighborhood', '');
+            profileForm.setValue('city', '');
+          } else {
+            profileForm.setValue('address', data.logradouro);
+            profileForm.setValue('neighborhood', data.bairro);
+            profileForm.setValue('city', data.localidade);
+            toast({
+              title: 'Endereço encontrado!',
+            });
+          }
+        } catch (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Erro na busca',
+            description: 'Houve um problema ao buscar o CEP.',
+          });
+        } finally {
+          setIsCepLoading(false);
+        }
+    };
+
 
     const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
         setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
@@ -271,6 +318,7 @@ export default function SettingsPage() {
                                         name="cep"
                                         render={({ field }) => (
                                             <FormItem>
+                                                <Label>CEP</Label>
                                                  <div className="flex items-center gap-2">
                                                     <div className="relative flex-grow">
                                                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -278,8 +326,8 @@ export default function SettingsPage() {
                                                             <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
                                                         </FormControl>
                                                     </div>
-                                                    <Button type="button" variant="secondary">
-                                                        <Search className="h-4 w-4" />
+                                                    <Button type="button" variant="secondary" onClick={handleCepLookup} disabled={isCepLoading}>
+                                                        {isCepLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                                                         <span className="ml-2 hidden sm:inline">Buscar CEP</span>
                                                     </Button>
                                                 </div>
@@ -319,6 +367,19 @@ export default function SettingsPage() {
                                             />
                                         </div>
                                     </div>
+                                    <FormField
+                                        control={profileForm.control}
+                                        name="complement"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label>Complemento</Label>
+                                                <FormControl>
+                                                    <Input placeholder="Apto 123, Bloco A" {...field} value={field.value || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={profileForm.control}
@@ -608,7 +669,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
-
-    
