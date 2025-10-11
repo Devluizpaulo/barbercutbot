@@ -9,6 +9,9 @@ import { ptBR } from 'date-fns/locale';
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -160,8 +163,7 @@ export default function DocumentsPage() {
                 {!isLoading && documents?.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">
-                      <div>{doc.title}</div>
-                      <div className="text-sm text-muted-foreground max-w-xs truncate">{doc.content}</div>
+                        {doc.title}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <Badge variant={getStatusVariant(doc.status)}>{doc.status}</Badge>
