@@ -29,7 +29,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -608,5 +608,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
 
     
