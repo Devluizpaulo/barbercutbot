@@ -73,7 +73,7 @@ export default function CPanelLayout({
   const usersQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'users') : null, [firestore, user]);
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
-  const ticketsQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'tickets') : null, [firestore, user]);
+  const ticketsQuery = useMemoFirebase(() => user?.role === 'admin' ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
   
   const isLoadingData = isLoadingShops || isLoadingUsers || isLoadingTickets;
@@ -83,15 +83,19 @@ export default function CPanelLayout({
     if (isUserLoading) return;
 
     if (!user) {
-      if (pathname !== '/cpanel/login') {
+      // Allow access to login and signup pages for unauthenticated users.
+      if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
         router.push('/cpanel/login');
       }
       return;
     }
 
+    // If user is logged in, check their role.
     if (user.role !== 'admin') {
+      // If not an admin, redirect them away from cpanel.
       router.push('/dashboard/shops');
-    } else if (pathname === '/cpanel/login') {
+    } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
+      // If an admin is on login/signup, redirect to cpanel dashboard.
       router.push('/cpanel');
     }
   }, [user, isUserLoading, router, pathname]);
@@ -104,7 +108,8 @@ export default function CPanelLayout({
     router.push('/cpanel/login');
   };
   
-  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') || (user && user.role !== 'admin' && pathname !== '/dashboard/shops')) {
+  // Shows a loading screen for auth check or if user is being redirected.
+  if (isUserLoading || (!user && (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) || (user && user.role !== 'admin' && !pathname.startsWith('/dashboard'))) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -112,10 +117,12 @@ export default function CPanelLayout({
       )
   }
   
+  // Render login/signup pages without the main layout.
   if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
     return <>{children}</>;
   }
   
+  // Fallback loading state for admin users while data is fetched.
   if (user?.role !== 'admin') {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
