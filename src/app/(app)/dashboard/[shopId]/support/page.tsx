@@ -34,6 +34,7 @@ import type { Ticket as TicketType } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export default function SupportPage() {
   const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);

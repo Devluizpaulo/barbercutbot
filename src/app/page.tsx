@@ -99,9 +99,9 @@ export default function LandingPage() {
                 Otimize agendamentos, gerencie clientes e controle suas finanças com a ferramenta definitiva para negócios modernos.
                 </p>
                 <div className="mt-8">
-                <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
-                    <Link href="/signup">Descubra como</Link>
-                </Button>
+                    <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                        <Link href="/signup">Descubra como</Link>
+                    </Button>
                 </div>
             </div>
           </div>
