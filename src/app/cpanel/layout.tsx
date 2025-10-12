@@ -79,8 +79,6 @@ export default function CPanelDashboardLayout({
   useEffect(() => {
     if (isUserLoading) return; 
 
-    // This is a protected layout. If the user is not logged in or is not an admin,
-    // redirect them to the admin login page.
     if (!user || user.role !== 'admin') {
       router.push('/cpanel/login');
     }
@@ -94,7 +92,6 @@ export default function CPanelDashboardLayout({
     router.push('/cpanel/login');
   };
   
-  // While checking auth or if the user is not an admin, show a loading state.
   if (isUserLoading || !user || user.role !== 'admin') {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">

@@ -47,7 +47,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { getMonth, format } from 'date-fns';
 import { Timestamp, doc } from 'firebase/firestore';
-import { useCPanel } from '../layout'; // Import the new context hook
+import { useCPanel } from './layout'; 
 
 const initialChartData = Array.from({ length: 12 }, (_, i) => ({
   month: format(new Date(2024, i, 1), 'MMM'),
@@ -58,7 +58,7 @@ const initialChartData = Array.from({ length: 12 }, (_, i) => ({
 export default function AdminDashboard() {
     const { toast } = useToast();
     const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
-    const { shops, users, isLoading } = useCPanel(); // Use data from context
+    const { shops, users, isLoading } = useCPanel(); 
     const firestore = useFirestore();
 
     const toDate = (timestamp: Timestamp | Date | string): Date => {

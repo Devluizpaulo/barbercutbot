@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useUser, useFirestore } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 
@@ -26,9 +25,18 @@ export default function CpanelLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      if (user.role === 'admin') {
+        router.push('/cpanel');
+      }
+    }
+  }, [user, isUserLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +46,6 @@ export default function CpanelLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const loggedInUser = userCredential.user;
 
-        // Force a token refresh to get the latest custom claims.
         const idTokenResult = await loggedInUser.getIdTokenResult(true);
         const isAdmin = !!idTokenResult.claims.admin;
         
@@ -47,7 +54,7 @@ export default function CpanelLoginPage() {
               title: 'Login de Admin bem-sucedido!',
               description: 'Redirecionando para o painel de controle.',
             });
-            // Let the auth layout handle the redirection
+            // The useEffect will handle the redirect.
         } else {
             await signOut(auth);
             toast({
@@ -56,7 +63,6 @@ export default function CpanelLoginPage() {
               description: 'Você não tem permissões de administrador.',
             });
         }
-
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao tentar fazer login.';
@@ -72,6 +78,23 @@ export default function CpanelLoginPage() {
         setIsLoading(false);
     }
   };
+
+  if (isUserLoading) {
+      return (
+          <div className="flex min-h-screen items-center justify-center bg-background">
+              <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
+  
+  if (user && user.role === 'admin') {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
