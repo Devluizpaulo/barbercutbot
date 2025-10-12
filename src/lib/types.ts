@@ -112,12 +112,20 @@ export type Barber = {
   firstName: string;
   lastName: string;
   phone?: string;
+  whatsapp?: string;
   email?: string;
   bio?: string;
   avatar?: string;
   color?: string;
   services?: BarberServiceCommission[];
   createdAt: Timestamp;
+  cep?: string;
+  address?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 };
 
 export type Service = {
@@ -202,3 +210,6 @@ export type Document = {
 
 
 
+
+
+    

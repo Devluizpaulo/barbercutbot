@@ -10,13 +10,18 @@ import {
   PenSquare,
   Phone,
   User,
-  Image as ImageIcon,
+  ImageIcon,
   DollarSign,
   Percent,
   Scissors,
   Save,
   Palette,
   Smartphone,
+  MapPin,
+  Search,
+  Building2,
+  Hash,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +49,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
 
 const availableColors = [
     '#e11d48', // rose
@@ -80,6 +86,13 @@ const formSchema = z.object({
   avatar: z.string().url('URL inválida.').optional().or(z.literal('')),
   color: z.string().optional(),
   services: z.array(commissionSchema),
+  cep: z.string().optional(),
+  address: z.string().optional(),
+  number: z.string().optional(),
+  complement: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 
 type AddBarberFormValues = z.infer<typeof formSchema>;
@@ -97,6 +110,7 @@ export function AddBarberForm({
 }: AddBarberFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [isCepLoading, setIsCepLoading] = useState(false);
 
   const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
   const { data: availableServices } = useCollection<Service>(servicesQuery);
@@ -112,6 +126,13 @@ export function AddBarberForm({
           avatar: initialData.avatar || '',
           color: initialData.color || '',
           services: initialData.services || [],
+          cep: initialData.cep || '',
+          address: initialData.address || '',
+          number: initialData.number || '',
+          complement: initialData.complement || '',
+          neighborhood: initialData.neighborhood || '',
+          city: initialData.city || '',
+          state: initialData.state || '',
         }
       : {
           firstName: '',
@@ -123,6 +144,13 @@ export function AddBarberForm({
           avatar: '',
           color: availableColors[0],
           services: [],
+          cep: '',
+          address: '',
+          number: '',
+          complement: '',
+          neighborhood: '',
+          city: '',
+          state: '',
         },
   });
 
@@ -135,6 +163,52 @@ export function AddBarberForm({
   const avatarUrl = form.watch('avatar');
   const firstName = form.watch('firstName');
   const barberColor = form.watch('color');
+
+  const handleCepLookup = async () => {
+    const cep = form.getValues('cep')?.replace(/\D/g, '');
+    if (!cep || cep.length !== 8) {
+      toast({
+        variant: 'destructive',
+        title: 'CEP inválido',
+        description: 'Por favor, insira um CEP com 8 dígitos.',
+      });
+      return;
+    }
+
+    setIsCepLoading(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if (data.erro) {
+        toast({
+          variant: 'destructive',
+          title: 'CEP não encontrado',
+          description: 'Não foi possível encontrar o endereço para o CEP informado.',
+        });
+        form.setValue('address', '');
+        form.setValue('neighborhood', '');
+        form.setValue('city', '');
+        form.setValue('state', '');
+      } else {
+        form.setValue('address', data.logradouro);
+        form.setValue('neighborhood', data.bairro);
+        form.setValue('city', data.localidade);
+        form.setValue('state', data.uf);
+        toast({
+          title: 'Endereço encontrado!',
+          description: 'Os campos de endereço foram preenchidos.',
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na busca',
+        description: 'Houve um problema ao buscar o CEP. Tente novamente.',
+      });
+    } finally {
+      setIsCepLoading(false);
+    }
+  };
 
   const onSubmit = async (values: AddBarberFormValues) => {
     try {
@@ -179,217 +253,332 @@ export function AddBarberForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={avatarUrl} alt={firstName} />
-            <AvatarFallback>
-              {firstName ? (
-                firstName.charAt(0)
-              ) : (
-                <User className="h-8 w-8" />
-              )}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-4">
-            <FormField
-                control={form.control}
-                name="avatar"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>URL da Foto</FormLabel>
-                    <div className="relative">
-                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                        <Input
-                        placeholder="https://exemplo.com/foto.jpg"
-                        {...field}
-                        className="pl-10"
-                        value={field.value || ''}
-                        />
-                    </FormControl>
-                    </div>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-             <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Cor de destaque na agenda</FormLabel>
-                     <Popover>
-                        <PopoverTrigger asChild>
+        <Tabs defaultValue="profile">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="profile">Perfil</TabsTrigger>
+                <TabsTrigger value="address">Endereço</TabsTrigger>
+                <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
+            </TabsList>
+             <TabsContent value="profile" className="mt-6 space-y-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={avatarUrl} alt={firstName} />
+                    <AvatarFallback>
+                      {firstName ? (
+                        firstName.charAt(0)
+                      ) : (
+                        <User className="h-8 w-8" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="avatar"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>URL da Foto</FormLabel>
+                            <div className="relative">
+                            <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <FormControl>
-                                <Button
-                                variant="outline"
-                                className={cn("w-full justify-start text-left font-normal")}
-                                >
-                                <div className="flex w-full items-center gap-2">
-                                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: barberColor }}/>
-                                    <span>{barberColor}</span>
-                                </div>
-                                <Palette className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
+                                <Input
+                                placeholder="https://exemplo.com/foto.jpg"
+                                {...field}
+                                className="pl-10"
+                                value={field.value || ''}
+                                />
                             </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2">
-                            <div className="grid grid-cols-5 gap-2">
-                                {availableColors.map(color => (
-                                    <Button
-                                        key={color}
-                                        type="button"
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => form.setValue('color', color)}
-                                    >
-                                        <div className={cn("h-5 w-5 rounded-full", form.getValues('color') === color && "ring-2 ring-ring ring-offset-2 ring-offset-background")} style={{ backgroundColor: color }} />
-                                    </Button>
-                                ))}
                             </div>
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome</FormLabel>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <FormControl>
-                    <Input placeholder="João" {...field} className="pl-10" />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sobrenome</FormLabel>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <FormControl>
-                    <Input placeholder="Silva" {...field} className="pl-10" />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Input
-                    placeholder="joao.silva@email.com"
-                    {...field}
-                    className="pl-10"
-                    value={field.value || ''}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Telefone</FormLabel>
-                <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                    <Input
-                        placeholder="(11) 99999-9999"
-                        {...field}
-                        className="pl-10"
-                        value={field.value || ''}
+                            <FormMessage />
+                        </FormItem>
+                        )}
                     />
-                    </FormControl>
-                </div>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <FormField
-            control={form.control}
-            name="whatsapp"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>WhatsApp</FormLabel>
-                <div className="relative">
-                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                    <Input
-                        placeholder="(11) 98888-8888"
-                        {...field}
-                        className="pl-10"
-                        value={field.value || ''}
+                    <FormField
+                        control={form.control}
+                        name="color"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Cor de destaque na agenda</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                        variant="outline"
+                                        className={cn("w-full justify-start text-left font-normal")}
+                                        >
+                                        <div className="flex w-full items-center gap-2">
+                                            <div className="h-4 w-4 rounded-full" style={{ backgroundColor: barberColor }}/>
+                                            <span>{barberColor}</span>
+                                        </div>
+                                        <Palette className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2">
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {availableColors.map(color => (
+                                            <Button
+                                                key={color}
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8"
+                                                onClick={() => form.setValue('color', color)}
+                                            >
+                                                <div className={cn("h-5 w-5 rounded-full", form.getValues('color') === color && "ring-2 ring-ring ring-offset-2 ring-offset-background")} style={{ backgroundColor: color }} />
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                        )}
                     />
-                    </FormControl>
+                  </div>
                 </div>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
 
-        <FormField
-          control={form.control}
-          name="bio"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Bio (Opcional)</FormLabel>
-              <div className="relative">
-                <PenSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Textarea
-                    placeholder="Especialista em cortes clássicos e modernos..."
-                    {...field}
-                    className="pl-10"
-                    value={field.value || ''}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <FormControl>
+                            <Input placeholder="João" {...field} className="pl-10" />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="services">
-                <AccordionTrigger>
-                    <div className='flex items-center gap-2'>
-                        <Scissors className="h-4 w-4" />
-                        Serviços e Comissões
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-2">
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sobrenome</FormLabel>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <FormControl>
+                            <Input placeholder="Silva" {...field} className="pl-10" />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input
+                            placeholder="joao.silva@email.com"
+                            {...field}
+                            className="pl-10"
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                            <Input
+                                placeholder="(11) 99999-9999"
+                                {...field}
+                                className="pl-10"
+                                value={field.value || ''}
+                            />
+                            </FormControl>
+                        </div>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="whatsapp"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>WhatsApp</FormLabel>
+                        <div className="relative">
+                            <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                            <Input
+                                placeholder="(11) 98888-8888"
+                                {...field}
+                                className="pl-10"
+                                value={field.value || ''}
+                            />
+                            </FormControl>
+                        </div>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio (Opcional)</FormLabel>
+                      <div className="relative">
+                        <PenSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Textarea
+                            placeholder="Especialista em cortes clássicos e modernos..."
+                            {...field}
+                            className="pl-10"
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </TabsContent>
+            <TabsContent value="address" className="mt-6 space-y-6">
+                 <FormField
+                    control={form.control}
+                    name="cep"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-grow">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <FormControl>
+                                    <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
+                                </FormControl>
+                            </div>
+                            <Button type="button" variant="secondary" onClick={handleCepLookup} disabled={isCepLoading}>
+                                {isCepLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                <span className="ml-2 hidden sm:inline">Buscar CEP</span>
+                            </Button>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Logradouro</FormLabel>
+                        <div className="relative">
+                            <Map className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                            <Input placeholder="Rua das Flores" {...field} value={field.value || ''} className="pl-10" />
+                            </FormControl>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="number"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <div className="relative">
+                                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <FormControl>
+                                <Input placeholder="123" {...field} value={field.value || ''} className="pl-10" />
+                                </FormControl>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="complement"
+                        render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                            <FormLabel>Complemento</FormLabel>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <FormControl>
+                                <Input placeholder="Apto 4B" {...field} value={field.value || ''} className="pl-10" />
+                                </FormControl>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="neighborhood"
+                        render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                            <FormLabel>Bairro</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Centro" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                            <Input placeholder="São Paulo" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Estado</FormLabel>
+                            <FormControl>
+                            <Input placeholder="SP" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+            </TabsContent>
+            <TabsContent value="services" className="mt-6">
+                 <div className="space-y-2">
                     {availableServices?.map(service => {
                         const fieldIndex = fields.findIndex(f => f.serviceId === service.id);
                         const isSelected = fieldIndex !== -1;
@@ -482,9 +671,9 @@ export function AddBarberForm({
                             </div>
                         )
                     })}
-                </AccordionContent>
-            </AccordionItem>
-        </Accordion>
+                </div>
+            </TabsContent>
+        </Tabs>
         
         <DialogFooter className="pt-4">
           <Button type="submit" disabled={isSubmitting}>
@@ -499,3 +688,5 @@ export function AddBarberForm({
     </Form>
   );
 }
+
+    
