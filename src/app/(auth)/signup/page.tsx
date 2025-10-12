@@ -36,7 +36,36 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    // Validações básicas
+    if (!firstName.trim() || !lastName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Campos obrigatórios',
+        description: 'Por favor, preencha seu nome completo.',
+      });
+      return;
+    }
+
+    if (!email.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Email obrigatório',
+        description: 'Por favor, informe seu endereço de e-mail.',
+      });
+      return;
+    }
+
+    // Validação de email básica
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        variant: 'destructive',
+        title: 'Email inválido',
+        description: 'Por favor, informe um endereço de e-mail válido.',
+      });
+      return;
+    }
 
     if (password.length < 6) {
         toast({
@@ -44,7 +73,6 @@ export default function SignupPage() {
             title: 'Senha muito curta',
             description: 'A senha deve ter pelo menos 6 caracteres.',
         });
-        setIsLoading(false);
         return;
     }
     
@@ -54,9 +82,10 @@ export default function SignupPage() {
           title: 'Cadastro não permitido',
           description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
       });
-      setIsLoading(false);
       return;
     }
+
+    setIsLoading(true);
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -69,8 +98,8 @@ export default function SignupPage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, {
             id: user.uid,
-            firstName,
-            lastName,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
             email: user.email,
             role: 'owner', // Assign the owner role
             createdAt: serverTimestamp(),
@@ -84,13 +113,26 @@ export default function SignupPage() {
         router.push('/dashboard/shops');
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
+        let title = 'Falha no cadastro';
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
+        
         if (error.code === 'auth/email-already-in-use') {
-            description = 'Este endereço de e-mail já está em uso.';
+            description = 'Este endereço de e-mail já está em uso. Tente fazer login ou use outro e-mail.';
+        } else if (error.code === 'auth/invalid-email') {
+            description = 'O endereço de e-mail não é válido.';
+        } else if (error.code === 'auth/operation-not-allowed') {
+            title = 'Cadastro desabilitado';
+            description = 'O cadastro de novos usuários está temporariamente desabilitado. Entre em contato com o suporte.';
+        } else if (error.code === 'auth/weak-password') {
+            description = 'A senha é muito fraca. Use uma combinação de letras, números e caracteres especiais.';
+        } else if (error.code === 'auth/network-request-failed') {
+            title = 'Erro de conexão';
+            description = 'Verifique sua conexão com a internet e tente novamente.';
         }
+        
         toast({
           variant: 'destructive',
-          title: 'Falha no cadastro',
+          title,
           description,
         });
     } finally {

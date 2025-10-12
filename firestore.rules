@@ -238,5 +238,21 @@ service cloud.firestore {
       allow get, list: if true;
       allow create, update, delete: if false;
     }
+
+    /**
+     * @description Rules for administrative access logs.
+     * @path /adminLogs/{logId}
+     * @allow (create) - Any authenticated user can create logs (needed for login tracking).
+     * @allow (get) - Only users with admin role can read logs.
+     * @allow (list) - Only users with admin role can list logs.
+     * @allow (update) - No updates allowed (logs are immutable for audit purposes).
+     * @allow (delete) - No deletions allowed (logs are permanent for audit purposes).
+     * @principle Logs are created during authentication, read only by admins, and immutable.
+     */
+    match /adminLogs/{logId} {
+      allow create: if isSignedIn();
+      allow get, list: if isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow update, delete: if false;
+    }
   }
 }

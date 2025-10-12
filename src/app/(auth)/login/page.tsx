@@ -32,6 +32,17 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação básica
+    if (!email || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Campos obrigatórios',
+        description: 'Por favor, preencha todos os campos.',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -39,17 +50,33 @@ export default function LoginPage() {
         // The AuthLayout will handle redirection after the user state is updated.
         toast({
           title: 'Login bem-sucedido!',
-          description: 'Redirecionando...',
+          description: 'Redirecionando para seu dashboard...',
         });
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
+        let title = 'Falha no login';
         let description = 'Ocorreu um erro ao tentar fazer login.';
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        
+        if (error.code === 'auth/user-not-found' || 
+            error.code === 'auth/invalid-credential' || 
+            error.code === 'auth/wrong-password') {
             description = 'E-mail ou senha inválidos. Por favor, verifique suas credenciais.';
+        } else if (error.code === 'auth/too-many-requests') {
+            title = 'Conta temporariamente bloqueada';
+            description = 'Muitas tentativas de login falhadas. Tente novamente em alguns minutos ou redefina sua senha.';
+        } else if (error.code === 'auth/user-disabled') {
+            title = 'Conta desativada';
+            description = 'Esta conta foi desativada. Entre em contato com o suporte.';
+        } else if (error.code === 'auth/invalid-email') {
+            description = 'O endereço de e-mail não é válido.';
+        } else if (error.code === 'auth/network-request-failed') {
+            title = 'Erro de conexão';
+            description = 'Verifique sua conexão com a internet e tente novamente.';
         }
+        
         toast({
           variant: 'destructive',
-          title: 'Falha no login',
+          title,
           description,
         });
     } finally {
@@ -166,7 +193,7 @@ export default function LoginPage() {
                 <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
                 <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href="/login">
+                    <Link href="/admin">
                         <Shield className="mr-2 h-4 w-4"/>
                         Admin
                     </Link>
