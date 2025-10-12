@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,6 +23,7 @@ export default function AppLayout({
       return;
     }
     
+    // Redirect admin away from the main app dashboard
     if (user.role === 'admin') {
       router.push('/cpanel');
     }

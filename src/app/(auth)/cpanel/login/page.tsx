@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -31,14 +30,6 @@ export default function CpanelLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // This effect handles redirection if an admin is already logged in.
-    if (!isUserLoading && user && user.role === 'admin') {
-      router.push('/cpanel');
-    }
-  }, [user, isUserLoading, router]);
-
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -56,7 +47,7 @@ export default function CpanelLoginPage() {
               title: 'Login de Admin bem-sucedido!',
               description: 'Redirecionando para o painel de controle.',
             });
-            // The useEffect hook will now handle the redirection.
+            router.push('/cpanel');
         } else {
             await signOut(auth);
             toast({
@@ -82,14 +73,14 @@ export default function CpanelLoginPage() {
     }
   };
   
-  // Show a loading screen while checking for an existing session or if redirecting.
-  if (isUserLoading || (user && user.role === 'admin')) {
+  if (isUserLoading) {
       return (
           <div className="flex min-h-screen items-center justify-center bg-background">
               <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
           </div>
       );
   }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">

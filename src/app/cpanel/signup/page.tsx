@@ -1,231 +1,350 @@
+"use client";
 
-'use client';
-
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from "@/components/ui/button";
+import { useState, useMemo, useRef } from 'react';
+import type { BarberShop, UserProfile } from "@/lib/types";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { DollarSign, Users, ExternalLink, Shield, Ticket, CreditCard, Store, Activity, MoreVertical } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { setDocumentNonBlocking, useFirestore } from '@/firebase';
+import { getMonth, format } from 'date-fns';
+import { Timestamp, doc } from 'firebase/firestore';
+import { useCPanel } from './layout'; 
 
-export default function CPanelSignupPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const initialChartData = Array.from({ length: 12 }, (_, i) => ({
+  month: format(new Date(2024, i, 1), 'MMM'),
+  shops: 0
+}));
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
 
-    if (password.length < 6) {
-        toast({
-            variant: 'destructive',
-            title: 'Senha muito curta',
-            description: 'A senha deve ter pelo menos 6 caracteres.',
-        });
-        setIsLoading(false);
-        return;
+export default function AdminDashboard() {
+    const { toast } = useToast();
+    const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
+    const { shops, users, isLoading } = useCPanel(); 
+    const firestore = useFirestore();
+
+    const toDate = (timestamp: Timestamp | Date | string): Date => {
+      if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+      }
+      return new Date(timestamp);
     }
     
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const newUser = userCredential.user;
-        
-        await updateProfile(newUser, {
-            displayName: `${firstName} ${lastName}`
-        });
+    const newShopsChartData = useMemo(() => {
+        if (isLoading || !shops) return initialChartData;
+        const data = JSON.parse(JSON.stringify(initialChartData));
+        shops.forEach(shop => {
+            if (shop.createdAt) {
+                const monthIndex = getMonth(toDate(shop.createdAt));
+                if(data[monthIndex]) data[monthIndex].shops++;
+            }
+        })
+        return data;
+    }, [shops, isLoading])
 
-        // This document is crucial for the backend function to pick up the new user
-        // and assign the custom claim.
-        const userDocRef = doc(firestore, 'users', newUser.uid);
-        await setDoc(userDocRef, {
-            id: newUser.uid,
-            firstName,
-            lastName,
-            email: newUser.email,
-            role: 'admin',
-            createdAt: serverTimestamp(),
-        });
-        
-        toast({
-          title: 'Conta de Administrador Criada!',
-          description: 'Você será redirecionado para a tela de login para entrar com suas novas credenciais.',
-        });
-        
-        // Sign out the user immediately after signup, forcing them to log in.
-        // This ensures the custom claim (set by a backend trigger) is present in their next session.
-        await signOut(auth);
-        router.push('/cpanel/login');
 
-    } catch (error: any) {
-        console.error("Firebase Auth Error:", error);
-        let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
-        if (error.code === 'auth/email-already-in-use') {
-            description = 'Este endereço de e-mail já está em uso.';
-        }
+    const handleManageBilling = (shopId: string) => {
         toast({
-          variant: 'destructive',
-          title: 'Falha no cadastro',
-          description,
+            title: 'Em breve!',
+            description: `A funcionalidade de gerenciar faturas para a loja ${shopId} está em desenvolvimento.`,
         });
-    } finally {
-        setIsLoading(false);
-    }
-  };
+    };
+    
+    const handleDeactivateShop = (shop: BarberShop | null) => {
+        if (!shop) return;
+        const shopRef = doc(firestore, 'barberShops', shop.id);
+        setDocumentNonBlocking(shopRef, { status: 'inactive' }, { merge: true });
+
+        toast({
+            title: 'Loja Desativada',
+            description: `O negócio "${shop.name}" foi desativado com sucesso.`,
+            variant: 'destructive',
+        });
+        setShopToDeactivate(null);
+    };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
-       <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
-            <Logo />
-          </Link>
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/cpanel/login">
-                  <Lock className="mr-2 h-4 w-4" />
-                  Login de Admin
-              </Link>
-            </Button>
-          </div>
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Abrir Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <div className="flex flex-col h-full">
-                  <div className="p-4 border-b">
-                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
-                      <Logo />
-                    </Link>
-                  </div>
-                  <div className="p-4 border-t mt-auto">
-                    <Button variant="ghost" asChild className="w-full">
-                      <Link href="/cpanel/login">
-                          <Lock className="mr-2 h-4 w-4" />
-                          Login de Admin
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1 flex items-center justify-center pt-20">
-        <Card className="w-full max-w-md">
-            <CardHeader className="text-center space-y-4">
-                <div className="mx-auto">
-                    <Logo />
-                </div>
-            <CardTitle className="text-2xl font-headline">Cadastro de Administrador</CardTitle>
-            <CardDescription>
-                Crie uma conta para gerenciar a plataforma.
-            </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSignup}>
-                <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="firstName">Nome</Label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="lastName">Sobrenome</Label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
-                        </div>
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email de Admin</Label>
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                        id="email"
-                        type="email"
-                        placeholder="admin@email.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        />
-                    </div>
-                </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full" type="submit" disabled={isLoading}>
-                        {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                        Criar Conta de Admin
-                    </Button>
-                    <p className="text-sm text-center text-muted-foreground">
-                        Já tem uma conta?{' '}
-                        <Link href="/cpanel/login" className="underline hover:text-primary">
-                            Faça login
-                        </Link>
-                    </p>
-                </CardFooter>
-            </form>
-        </Card>
-      </main>
-      <footer className="py-8 border-t bg-secondary">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
-              <Logo />
-          </Link>
-          <nav className="flex flex-wrap justify-center items-center gap-4 text-center md:gap-6">
-              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
-          </nav>
-          <p className="text-sm text-muted-foreground text-center md:text-right">
-              © {new Date().getFullYear()} FlowCuts Pro. Todos os direitos reservados.
+    <>
+      <div className="flex flex-1 flex-col gap-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+            <Shield className="h-7 w-7 md:h-8 md:w-8"/> Painel do Administrador
+          </h1>
+          <p className="text-muted-foreground">
+            Gerencie seus negócios parceiros, finanças e performance geral.
           </p>
         </div>
-      </footer>
-    </div>
-  );
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Receita Total (MRR)
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R$ --</div>}
+              <p className="text-xs text-muted-foreground">
+                (Em desenvolvimento)
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Negócios Ativos
+              </CardTitle>
+              <Store className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{shops?.filter(s => s.status === 'active').length || 0}</div>}
+              <p className="text-xs text-muted-foreground">
+                {shops?.length || 0} no total
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total de Usuários
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{users?.length || 0}</div>}
+              <p className="text-xs text-muted-foreground">
+                em toda a plataforma
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Tickets de Suporte
+              </CardTitle>
+              <Ticket className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">
+                Abertos no momento (simulado)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-headline">Crescimento de Negócios na Plataforma</CardTitle>
+                  <CardDescription>
+                    Novos negócios que se juntaram nos últimos meses.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <ChartContainer config={{ shops: { label: "Lojas" } }} className="w-full h-[300px]">
+                    <BarChart accessibilityLayer data={newShopsChartData}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="month"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        dataKey="shops"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={10}
+                        allowDecimals={false}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dot" />}
+                      />
+                      <Bar dataKey="shops" fill="var(--color-primary)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="font-headline">Negócios Parceiros</CardTitle>
+                      <CardDescription>Uma lista de todos os negócios na sua plataforma.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead className="w-[250px]">Negócio</TableHead>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="hidden lg:table-cell">Plano</TableHead>
+                                  <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
+                                  <TableHead className="text-right">Ações</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {isLoading && Array.from({length: 3}).map((_, i) => (
+                                  <TableRow key={i}>
+                                      <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
+                                  </TableRow>
+                              ))}
+                              {shops?.map(shop => (
+                                  <TableRow key={shop.id}>
+                                      <TableCell>
+                                          <div className="font-medium">{shop.name}</div>
+                                          <div className="text-sm text-muted-foreground">{shop.address}</div>
+                                      </TableCell>
+                                      <TableCell>
+                                          <Badge 
+                                              variant={shop.status === 'active' ? 'default' : 'destructive'}
+                                              className={cn(shop.status === 'active' && 'bg-green-500 hover:bg-green-500/80')}
+                                          >
+                                              {shop.status === 'active' ? 'Ativo' : 'Inativo'}
+                                          </Badge>
+                                      </TableCell>
+                                      <TableCell className="hidden lg:table-cell">{shop.subscription?.plan === 'pro' ? 'Pro' : 'Gratuito'}</TableCell>
+                                      <TableCell className="hidden md:table-cell">
+                                          <Badge 
+                                              variant={'secondary'}
+                                              className={cn(
+                                                  shop.subscription?.status === 'active' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+                                                  shop.subscription?.status === 'past_due' && 'bg-yellow-100 text-yellow-800'
+                                              )}
+                                          >
+                                              {shop.subscription?.status === 'active' ? 'Pago' : 'Pendente'}
+                                          </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                          <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                  <Button variant="ghost" size="icon">
+                                                      <MoreVertical className="h-4 w-4" />
+                                                  </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem asChild>
+                                                      <Link href={`/dashboard/${shop.id}`}>
+                                                          <ExternalLink className="mr-2 h-4 w-4" />
+                                                          Ver Dashboard
+                                                      </Link>
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => handleManageBilling(shop.id)}>
+                                                      <CreditCard className="mr-2 h-4 w-4" />
+                                                      Gerenciar Fatura
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                    className="text-red-500"
+                                                    onClick={() => setShopToDeactivate(shop)}
+                                                  >
+                                                    Desativar
+                                                  </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                          </DropdownMenu>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                              {!isLoading && shops?.length === 0 && (
+                                  <TableRow>
+                                      <TableCell colSpan={5} className="h-24 text-center">Nenhum negócio encontrado.</TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  </CardContent>
+              </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-8">
+            <Card>
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Atividades Recentes</CardTitle>
+                  <CardDescription>Últimas ações importantes na plataforma.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  {isLoading && <Skeleton className="h-24 w-full" />}
+                  {users?.slice(0, 4).map((user, index) => (
+                      <div className="flex items-start gap-4" key={user.id}>
+                          <Avatar className="h-9 w-9">
+                              <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                              <p className="text-sm font-medium leading-none">
+                                  Novo usuário cadastrado!
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                  Bem-vindo(a), {user.firstName}.
+                              </p>
+                          </div>
+                      </div>
+                  ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+      <AlertDialog
+          open={!!shopToDeactivate}
+          onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação irá desativar o negócio "{shopToDeactivate?.name}".
+                Isso pode ser revertido, mas bloqueará o acesso do proprietário.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleDeactivateShop(shopToDeactivate)}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Sim, desativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+    </>
+  )
 }
