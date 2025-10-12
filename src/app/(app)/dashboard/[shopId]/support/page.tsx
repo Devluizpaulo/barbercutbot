@@ -42,7 +42,7 @@ export default function SupportPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const ticketsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tickets'), where('shopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const ticketsQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'tickets'), where('shopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: tickets, isLoading } = useCollection<TicketType>(ticketsQuery);
 
   const faqItems = [

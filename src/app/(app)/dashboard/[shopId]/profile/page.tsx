@@ -35,7 +35,7 @@ export default function ProfilePage() {
   const { user } = useUser();
 
   const shopRef = useMemoFirebase(
-    () => user ? doc(firestore, 'barberShops', shopId) : null,
+    () => (user && shopId) ? doc(firestore, "barberShops", shopId) : null,
     [firestore, shopId, user]
   );
   const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);

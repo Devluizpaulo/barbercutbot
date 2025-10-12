@@ -65,7 +65,7 @@ export default function ServicesPage() {
   const { user } = useUser();
 
   const servicesQuery = useMemoFirebase(
-    () => user ? collection(firestore, 'barberShops', shopId, 'services') : null,
+    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null,
     [firestore, shopId, user]
   );
   const { data: services, isLoading } = useCollection<Service>(servicesQuery);

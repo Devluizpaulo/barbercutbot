@@ -35,16 +35,16 @@ export default function AppointmentDetailsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const appointmentRef = useMemoFirebase(() => user ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null, [firestore, shopId, appointmentId, user]);
+  const appointmentRef = useMemoFirebase(() => (user && shopId && appointmentId) ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null, [firestore, shopId, appointmentId, user]);
   const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
 
-  const customerRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
+  const customerRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
 
-  const barberRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
+  const barberRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
   const { data: barber } = useDoc<Barber>(barberRef);
 
-  const serviceRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
+  const serviceRef = useMemoFirebase(() => (user && shopId && appointment && appointment.serviceIds.length > 0) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
   const { data: service } = useDoc<Service>(serviceRef);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -154,16 +155,31 @@ export const useFirebaseApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-type MemoFirebase <T> = T & {__memo?: boolean};
+type MemoFirebase<T> = T & { __memo?: boolean };
 
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
+export function useMemoFirebase<T>(factory: () => T | null, deps: DependencyList): (T & { __memo?: boolean }) | null {
+    // Check if any dependency is null or undefined
+    const isReady = deps.every(dep => dep !== null && dep !== undefined);
+
+    const memoized = useMemo(() => {
+        if (!isReady) {
+            return null;
+        }
+        return factory();
+    }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    // Add a non-enumerable property to mark the object as memoized
+    if (memoized && typeof memoized === 'object') {
+        Object.defineProperty(memoized, '__memo', {
+            value: true,
+            writable: false,
+            enumerable: false,
+        });
+    }
+
+    return memoized as (T & { __memo?: boolean }) | null;
 }
+
 
 /**
  * Hook specifically for accessing the authenticated user's state.

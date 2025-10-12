@@ -83,11 +83,11 @@ export default function CPanelLayout({
   ];
 
   if (isUserLoading || (!user && pathname !== '/cpanel/login')) {
-    return (
+      return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
         </div>
-    )
+      )
   }
   
   // Do not render the layout on the login page

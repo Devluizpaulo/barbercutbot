@@ -35,16 +35,16 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
   const firestore = useFirestore();
   const { user } = useUser();
   
-  const shopRef = useMemoFirebase(() => user ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
+  const shopRef = useMemoFirebase(() => (user && shopId) ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
-  const serviceRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
+  const serviceRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
   const { data: service } = useDoc<Service>(serviceRef);
   
-  const barberRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
+  const barberRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
   const { data: barber } = useDoc<Barber>(barberRef);
   
-  const customerRef = useMemoFirebase(() => (user && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
+  const customerRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
 
   const receiptRef = useRef<HTMLDivElement>(null);

@@ -101,7 +101,7 @@ export default function AdminUsersPage() {
                     ))}
                     {filteredUsers?.map(user => {
                          const associatedShop = getShopByOwnerId(user.id);
-                         const userRole = user.email === 'admin@bbr.com' ? 'admin' : 'owner';
+                         const userRole = user.email === 'admin@flowcutspro.com' ? 'admin' : 'owner';
                          return (
                             <TableRow key={user.id}>
                                 <TableCell>

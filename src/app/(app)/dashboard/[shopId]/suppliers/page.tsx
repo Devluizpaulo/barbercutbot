@@ -62,7 +62,7 @@ export default function SuppliersPage() {
   const { user } = useUser();
 
   const suppliersQuery = useMemoFirebase(
-    () => user ? collection(firestore, 'barberShops', shopId, 'suppliers') : null,
+    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'suppliers') : null,
     [firestore, shopId, user]
   );
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);

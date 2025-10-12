@@ -46,7 +46,7 @@ export default function ClientsPage() {
   const { user } = useUser();
 
   const customersQuery = useMemoFirebase(
-    () => user ? collection(firestore, 'barberShops', shopId, 'customers') : null,
+    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'customers') : null,
     [firestore, shopId, user]
   );
   const { data: clients, isLoading } = useCollection<Customer>(customersQuery);
