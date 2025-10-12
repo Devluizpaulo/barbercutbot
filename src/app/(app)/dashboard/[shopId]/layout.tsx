@@ -72,7 +72,7 @@ export default function ShopLayout({
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
                     <SidebarMenuButton
-                      isActive={pathname.startsWith(item.href) && (item.href.length === pathname.length || pathname[item.href.length] === '/')}
+                      isActive={item.href === pathname}
                       tooltip={item.label}
                       className="justify-start"
                     >
