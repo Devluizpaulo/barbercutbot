@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
+  Store,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
@@ -42,9 +43,11 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebas
 import { collection, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
+import { CashierDialog } from '../cashier-dialog';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
+  const [isCashierOpen, setCashierOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
@@ -89,7 +92,7 @@ export default function AppointmentsPage() {
   return (
     <>
       <div className="flex h-full flex-col gap-8">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
               Agenda
@@ -98,39 +101,45 @@ export default function AppointmentsPage() {
               Visualize e gerencie os agendamentos do seu time.
             </p>
           </div>
-          <Dialog
-            open={isFormOpen}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) setSelectedAppointment(undefined);
-              setFormOpen(isOpen);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Novo Agendamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedAppointment
-                    ? 'Editar Agendamento'
-                    : 'Novo Agendamento'}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedAppointment
-                    ? 'Atualize os detalhes do agendamento.'
-                    : 'Preencha os detalhes abaixo para criar um novo agendamento.'}
-                </DialogDescription>
-              </DialogHeader>
-              <AddAppointmentForm
-                shopId={shopId}
-                initialData={selectedAppointment}
-                onSuccess={handleFormSuccess}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+             <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCashierOpen(true)}>
+                <Store className="mr-2 h-4 w-4" />
+                Abrir Caixa
+            </Button>
+            <Dialog
+              open={isFormOpen}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) setSelectedAppointment(undefined);
+                setFormOpen(isOpen);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button onClick={handleAddNew} className="w-full sm:w-auto">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Novo Agendamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedAppointment
+                      ? 'Editar Agendamento'
+                      : 'Novo Agendamento'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedAppointment
+                      ? 'Atualize os detalhes do agendamento.'
+                      : 'Preencha os detalhes abaixo para criar um novo agendamento.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <AddAppointmentForm
+                  shopId={shopId}
+                  initialData={selectedAppointment}
+                  onSuccess={handleFormSuccess}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         
         <header className="flex flex-none flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
@@ -187,6 +196,7 @@ export default function AppointmentsPage() {
             />
         </div>
       </div>
+      <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
     </>
   );
 }
