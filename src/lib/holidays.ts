@@ -1,0 +1,15 @@
+export const nationalHolidays2024 = [
+  { date: '2024-01-01', description: 'Confraternização Universal' },
+  { date: '2024-02-12', description: 'Carnaval (Ponto Facultativo)' },
+  { date: '2024-02-13', description: 'Carnaval' },
+  { date: '2024-03-29', description: 'Paixão de Cristo' },
+  { date: '2024-04-21', description: 'Tiradentes' },
+  { date: '2024-05-01', description: 'Dia do Trabalho' },
+  { date: '2024-05-30', description: 'Corpus Christi' },
+  { date: '2024-09-07', description: 'Independência do Brasil' },
+  { date: '2024-10-12', description: 'Nossa Senhora Aparecida' },
+  { date: '2024-11-02', description: 'Finados' },
+  { date: '2024-11-15', description: 'Proclamação da República' },
+  { date: '2024-11-20', description: 'Dia da Consciência Negra' },
+  { date: '2024-12-25', description: 'Natal' },
+];

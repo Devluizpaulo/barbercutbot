@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -26,7 +27,7 @@ import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bo
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { BarberShop } from '@/lib/types';
+import type { BarberShop, Holiday } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
@@ -34,7 +35,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createPayment } from '@/ai/flows/create-payment-flow';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,6 +44,7 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { nationalHolidays2024 } from '@/lib/holidays';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -86,6 +88,9 @@ const holidaysFormSchema = z.object({
     holidays: z.array(z.object({
         date: z.date(),
         description: z.string().min(1, "A descrição é obrigatória."),
+        isClosed: z.boolean(),
+        openingTime: z.string().optional(),
+        closingTime: z.string().optional(),
     }))
 });
 
@@ -147,7 +152,7 @@ export default function SettingsPage() {
                 { day: 'Terça-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Quarta-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Quinta-feira', open: '09:00', close: '19:00', enabled: true },
-                { day: 'Sexta-feira', open: '09:00', close: '19:00', enabled: true },
+                { day: 'Festa-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Sábado', open: '09:00', close: '17:00', enabled: true },
                 { day: 'Domingo', open: '09:00', close: '19:00', enabled: false },
             ]
@@ -186,7 +191,7 @@ export default function SettingsPage() {
         name: "hours",
     });
 
-    const { fields: holidayFields, append: appendHoliday, remove: removeHoliday } = useFieldArray({
+    const { fields: holidayFields, append: appendHoliday, remove: removeHoliday, replace: replaceHolidays } = useFieldArray({
         control: holidaysForm.control,
         name: "holidays",
     });
@@ -224,8 +229,17 @@ export default function SettingsPage() {
                 });
                 replace(currentHours);
             }
-            if (shop.holidays) {
-                holidaysForm.reset({ holidays: shop.holidays.map(h => ({ ...h, date: toDate(h.date) })) });
+             if (shop.holidays) {
+                replaceHolidays(shop.holidays.map(h => ({...h, date: toDate(h.date)})));
+            } else {
+                const defaultHolidays = nationalHolidays2024.map(h => ({
+                    date: parse(h.date, 'yyyy-MM-dd', new Date()),
+                    description: h.description,
+                    isClosed: true,
+                    openingTime: '09:00',
+                    closingTime: '17:00'
+                }));
+                replaceHolidays(defaultHolidays);
             }
              if (shop.paymentSettings) {
                 const currentMethods = paymentSettingsForm.getValues('paymentMethods').map(pm => {
@@ -235,7 +249,7 @@ export default function SettingsPage() {
                 replacePaymentMethods(currentMethods);
             }
         }
-    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, replace, replacePaymentMethods, shopId]);
+    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, replace, replacePaymentMethods, shopId, replaceHolidays]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -315,7 +329,11 @@ export default function SettingsPage() {
     }
 
     const onHolidaysSubmit = (values: z.infer<typeof holidaysFormSchema>) => {
-        setDocumentNonBlocking(shopRef, { holidays: values.holidays.map(h => ({...h, date: Timestamp.fromDate(h.date)})) }, { merge: true });
+        const holidaysToSave = values.holidays.map(h => ({
+            ...h,
+            date: Timestamp.fromDate(h.date)
+        }));
+        setDocumentNonBlocking(shopRef, { holidays: holidaysToSave }, { merge: true });
         toast({ title: 'Feriados atualizados!', description: 'As datas foram salvas com sucesso.' });
     }
 
@@ -353,7 +371,7 @@ export default function SettingsPage() {
     
   const subscriptionStatus = shop?.subscription?.status || 'free';
   const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Gratuito';
-  const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy') : 'N/A';
+  const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy', { locale: ptBR }) : 'N/A';
 
   const paymentMethodLabels: { [key in z.infer<typeof paymentSettingsFormSchema>['paymentMethods'][number]['method']]: string } = {
     money: 'Dinheiro',
@@ -377,9 +395,9 @@ export default function SettingsPage() {
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
             <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 text-primary data-[state=active]:text-inherit" /> Perfil</TabsTrigger>
-            <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><MapPin className="mr-2 text-primary data-[state=active]:text-inherit" /> Endereço</TabsTrigger>
-            <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Clock className="mr-2 text-primary data-[state=active]:text-inherit" /> Horários</TabsTrigger>
-            <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Bot className="mr-2 text-primary data-[state=active]:text-inherit" /> Automação</TabsTrigger>
+            <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><MapPin className="mr-2 text-primary data-[state=active]:text-inherit" /> Endereço</TabsTrigger>
+            <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Clock className="mr-2 text-primary data-[state=active]:text-inherit" /> Horários</TabsTrigger>
+            <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Bot className="mr-2 text-primary data-[state=active]:text-inherit" /> Automação</TabsTrigger>
             <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 text-primary data-[state=active]:text-inherit" /> Recebimentos</TabsTrigger>
             <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 text-primary data-[state=active]:text-inherit" /> Conta</TabsTrigger>
         </TabsList>
@@ -754,63 +772,70 @@ export default function SettingsPage() {
                 <form onSubmit={holidaysForm.handleSubmit(onHolidaysSubmit)}>
                     <Card className="mt-8">
                         <CardHeader>
-                            <CardTitle>Feriados e Pontos Facultativos</CardTitle>
-                            <CardDescription>Adicione datas em que o negócio não abrirá.</CardDescription>
+                            <CardTitle>Feriados e Datas Especiais</CardTitle>
+                            <CardDescription>Gerencie dias com horários especiais ou em que o estabelecimento estará fechado.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {holidayFields.map((field, index) => (
-                                <div key={field.id} className="flex items-center gap-2">
-                                    <FormField
-                                        control={holidaysForm.control}
-                                        name={`holidays.${index}.date`}
-                                        render={({ field }) => (
-                                            <FormItem className="flex-1">
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <FormControl>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={"w-full pl-3 text-left font-normal"}
-                                                        >
-                                                            {field.value ? format(field.value, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                        </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={field.onChange}
-                                                            initialFocus
-                                                            locale={ptBR}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                            </FormItem>
+                            {holidayFields.map((field, index) => {
+                                const isClosed = holidaysForm.watch(`holidays.${index}.isClosed`);
+                                return (
+                                <div key={field.id} className="p-4 border rounded-lg space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <FormField
+                                                control={holidaysForm.control}
+                                                name={`holidays.${index}.description`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormControl><Input placeholder="Descrição (ex: Natal)" {...field} className="text-base font-medium border-0 shadow-none p-0 focus-visible:ring-0" /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={holidaysForm.control}
+                                                name={`holidays.${index}.date`}
+                                                render={({ field: dateField }) => (
+                                                     <p className="text-sm text-muted-foreground">{format(dateField.value, "PPP", { locale: ptBR })}</p>
+                                                )}
+                                            />
+                                        </div>
+                                         <Button type="button" variant="ghost" size="icon" onClick={() => removeHoliday(index)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t">
+                                        <FormField
+                                            control={holidaysForm.control}
+                                            name={`holidays.${index}.isClosed`}
+                                            render={({ field: switchField }) => (
+                                                <FormItem className="flex items-center gap-2 space-y-0">
+                                                    <FormControl><Switch checked={switchField.value} onCheckedChange={switchField.onChange} /></FormControl>
+                                                    <FormLabel>{isClosed ? 'Fechado' : 'Aberto'}</FormLabel>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        {!isClosed && (
+                                            <div className="flex items-center gap-4">
+                                                <FormField
+                                                    control={holidaysForm.control}
+                                                    name={`holidays.${index}.openingTime`}
+                                                    render={({ field: inputField }) => <FormItem><FormControl><Input type="time" {...inputField} /></FormControl></FormItem>}
+                                                />
+                                                <span className="text-muted-foreground">às</span>
+                                                <FormField
+                                                    control={holidaysForm.control}
+                                                    name={`holidays.${index}.closingTime`}
+                                                    render={({ field: inputField }) => <FormItem><FormControl><Input type="time" {...inputField} /></FormControl></FormItem>}
+                                                />
+                                            </div>
                                         )}
-                                    />
-                                    <FormField
-                                        control={holidaysForm.control}
-                                        name={`holidays.${index}.description`}
-                                        render={({ field }) => (
-                                            <FormItem className="flex-1">
-                                                <FormControl>
-                                                    <Input placeholder="Descrição (ex: Natal)" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeHoliday(index)}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                    </div>
                                 </div>
-                            ))}
-                            <Button type="button" variant="outline" size="sm" onClick={() => appendHoliday({ date: new Date(), description: '' })}>
+                            )})}
+                            <Button type="button" variant="outline" size="sm" onClick={() => appendHoliday({ date: new Date(), description: 'Novo Ponto Facultativo', isClosed: true, openingTime: '09:00', closingTime: '17:00' })}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
-                                Adicionar Feriado
+                                Adicionar Data
                             </Button>
                         </CardContent>
                         <CardFooter>
@@ -818,7 +843,7 @@ export default function SettingsPage() {
                                 <Button type="submit" disabled={holidaysForm.formState.isSubmitting}>
                                      {holidaysForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
-                                    Salvar Feriados
+                                    Salvar Datas
                                 </Button>
                             </div>
                         </CardFooter>

@@ -12,6 +12,9 @@ export type WorkingHour = {
 export type Holiday = {
     date: Timestamp | Date | string;
     description: string;
+    isClosed: boolean;
+    openingTime?: string;
+    closingTime?: string;
 }
 
 export type PaymentMethod = {
@@ -189,6 +192,7 @@ export type Document = {
 };
 
     
+
 
 
 
