@@ -35,33 +35,9 @@ export default function CPanelSignupPage() {
   const [adminCode, setAdminCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // No ambiente de desenvolvimento, usamos um código fixo. 
-  // Em produção, isso viria de uma variável de ambiente segura.
-  const ADMIN_SECRET_CODE = process.env.NEXT_PUBLIC_ADMIN_SECRET_CODE || 'superadmin2024';
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    if (email.toLowerCase() !== 'admin@flowcutspro.com') {
-         toast({
-            variant: 'destructive',
-            title: 'Cadastro não permitido',
-            description: 'Apenas o e-mail de administrador pode se cadastrar aqui.',
-        });
-        setIsLoading(false);
-        return;
-    }
-
-    if (adminCode !== ADMIN_SECRET_CODE) {
-        toast({
-            variant: 'destructive',
-            title: 'Código Inválido',
-            description: 'O código de administrador secreto está incorreto.',
-        });
-        setIsLoading(false);
-        return;
-    }
 
     if (password.length < 6) {
         toast({
@@ -169,7 +145,7 @@ export default function CPanelSignupPage() {
                 </div>
             <CardTitle className="text-2xl font-headline">Cadastro de Administrador</CardTitle>
             <CardDescription>
-                Crie a conta principal para gerenciar a plataforma.
+                Crie uma conta para gerenciar a plataforma.
             </CardDescription>
             </CardHeader>
             <form onSubmit={handleSignup}>
@@ -197,7 +173,7 @@ export default function CPanelSignupPage() {
                         <Input
                         id="email"
                         type="email"
-                        placeholder="admin@flowcutspro.com"
+                        placeholder="admin@email.com"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -215,21 +191,6 @@ export default function CPanelSignupPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="adminCode">Código de Administrador</Label>
-                    <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                        id="adminCode"
-                        type="password"
-                        placeholder="Código secreto"
-                        required
-                        value={adminCode}
-                        onChange={(e) => setAdminCode(e.target.value)}
                         className="pl-10"
                         />
                     </div>
