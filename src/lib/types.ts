@@ -147,6 +147,17 @@ export type Customer = {
   createdAt: Timestamp;
 };
 
+export type TeamMember = {
+  id: string;
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  createdAt: Timestamp;
+};
+
 export type BarberServiceCommission = {
     serviceId: string;
     commissionType?: 'fixed' | 'percentage';
@@ -173,17 +184,6 @@ export type Barber = {
   neighborhood?: string;
   city?: string;
   state?: string;
-  createdAt: Timestamp;
-};
-
-export type TeamMember = {
-  id: string;
-  barberShopId: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  role: string;
   createdAt: Timestamp;
 };
 

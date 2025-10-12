@@ -20,8 +20,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, Share2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, Timestamp } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection } from '@/firebase';
+import { doc, Timestamp, collection } from 'firebase/firestore';
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -38,11 +38,11 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
   const shopRef = useMemoFirebase(() => (user && shopId) ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
-  const serviceRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
-  const { data: service } = useDoc<Service>(serviceRef);
-  
-  const barberRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
-  const { data: barber } = useDoc<Barber>(barberRef);
+  const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
+  const { data: allServices } = useCollection<Service>(servicesQuery);
+
+  const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
+  const { data: allBarbers } = useCollection<Barber>(barbersQuery);
   
   const customerRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
@@ -69,21 +69,28 @@ export function ReceiptDialog({ open, onOpenChange, appointment }: ReceiptDialog
   };
 
   const handleShareWhatsApp = () => {
-    if(!customer || !service || !barber || !shop) return;
+    if(!customer || !shop) return;
+    
+    const itemsText = appointment.items.map(item => {
+        const service = allServices?.find(s => s.id === item.serviceId);
+        const barber = allBarbers?.find(b => b.id === item.barberId);
+        return `*Serviço:* ${service?.name || 'N/A'}\n*Profissional:* ${barber?.firstName || 'N/A'}\n*Valor:* R$${item.price.toFixed(2)}`;
+    }).join('\n\n');
+
     const receiptText = `
 *Recibo de Pagamento - ${shop?.name}*
 
 Olá, ${customer.firstName}!
 Obrigado por sua preferência.
 
-*Serviço:* ${service.name}
-*Barbeiro:* ${barber.firstName}
 *Data:* ${format(toDate(appointment.startTime), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-
-*Valor Pago:* R$${service?.price.toFixed(2)}
+---
+${itemsText}
+---
+*VALOR TOTAL PAGO:* R$${(appointment.totalPrice || 0).toFixed(2)}
 
 Volte sempre!
-    `.trim();
+    `.trim().replace(/^\s+/gm, '');
 
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(receiptText)}`;
     window.open(whatsappUrl, '_blank');
@@ -134,13 +141,19 @@ Volte sempre!
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td className="py-2">
-                           <p>{service?.name}</p>
-                           <p className="text-xs text-muted-foreground">com {barber?.firstName}</p>
-                        </td>
-                        <td className="text-right py-2">R${service?.price.toFixed(2)}</td>
-                    </tr>
+                    {appointment.items.map((item, index) => {
+                        const service = allServices?.find(s => s.id === item.serviceId);
+                        const barber = allBarbers?.find(b => b.id === item.barberId);
+                        return (
+                            <tr key={index}>
+                                <td className="py-2">
+                                   <p>{service?.name}</p>
+                                   <p className="text-xs text-muted-foreground">com {barber?.firstName}</p>
+                                </td>
+                                <td className="text-right py-2">R${item.price.toFixed(2)}</td>
+                            </tr>
+                        )
+                    })}
                 </tbody>
             </table>
 
@@ -149,7 +162,7 @@ Volte sempre!
              <div className="flex justify-end items-center">
                  <div className="text-right">
                     <p className="text-muted-foreground">TOTAL PAGO</p>
-                    <p className="text-2xl font-bold">R${service?.price.toFixed(2)}</p>
+                    <p className="text-2xl font-bold">R${(appointment.totalPrice || 0).toFixed(2)}</p>
                  </div>
              </div>
         </div>
