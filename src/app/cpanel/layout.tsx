@@ -26,13 +26,14 @@ import {
   Store,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { useUser, useAuth } from "@/firebase";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 import { Button } from "@/components/ui/button";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function CPanelLayout({
   children,
@@ -43,29 +44,39 @@ export default function CPanelLayout({
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
 
 
   useEffect(() => {
-    // Se o carregamento do usuário terminou
-    if (!isUserLoading) {
-      // Se não há usuário, redireciona para a página de login do cpanel,
-      // a menos que ele já esteja na página de login ou de cadastro.
-      if (!user) {
-        if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
-            router.push('/cpanel/login');
+    const checkAdminStatus = async () => {
+      // Se o carregamento do usuário terminou
+      if (!isUserLoading) {
+        // Se não há usuário, redireciona para a página de login do cpanel,
+        // a menos que ele já esteja na página de login ou de cadastro.
+        if (!user) {
+          if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
+              router.push('/cpanel/login');
+          }
+          return;
         }
-      } 
-      // Se há um usuário, mas não é o admin
-      else if (user.email !== 'admin@flowcutspro.com') {
-        // Redireciona para o dashboard das lojas, que é a área do usuário comum
-        router.push('/dashboard/shops');
+
+        // Se há um usuário, verificar se ele é admin
+        const adminDocRef = doc(firestore, 'admins', user.uid);
+        const adminDoc = await getDoc(adminDocRef);
+
+        if (!adminDoc.exists()) {
+           // Se não é admin, redireciona para o dashboard das lojas
+           router.push('/dashboard/shops');
+        } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
+           // Se é admin e está na página de login/signup, redireciona para o cpanel
+           router.push('/cpanel');
+        }
       }
-      // Se é o admin e está na página de login, redireciona para o dashboard do cpanel
-      else if (user.email === 'admin@flowcutspro.com' && (pathname === '/cpanel/login' || pathname === '/cpanel/signup')) {
-        router.push('/cpanel');
-      }
-    }
-  }, [user, isUserLoading, router, pathname]);
+    };
+    
+    checkAdminStatus();
+
+  }, [user, isUserLoading, router, pathname, firestore]);
 
   const handleLogout = async () => {
     if (auth) {
