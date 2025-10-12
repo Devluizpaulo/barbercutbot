@@ -39,7 +39,7 @@ export type RolePermissions = {
     viewDashboard: boolean;
     manageAppointments: boolean;
     manageClients: boolean;
-    manageBarbers: boolean;
+    manageTeam: boolean;
     manageServices: boolean;
     viewFinancial: boolean;
     manageSettings: boolean;
@@ -134,6 +134,22 @@ export type Customer = {
   neighborhood?: string;
   city?: string;
   state?: string;
+  createdAt: Timestamp;
+};
+
+export type TeamMember = {
+  id: string;
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  role: 'barber' | 'manager' | 'cashier'; // Perfis de acesso
+  // Campos de Barber
+  bio?: string;
+  avatar?: string;
+  color?: string;
+  // Adicionar aqui qualquer outra informação específica de membro da equipe
   createdAt: Timestamp;
 };
 

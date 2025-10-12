@@ -1742,8 +1742,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-```
-- src/app/(app)/dashboard/[shopId]/settings/add-team-member-form.tsx
-- src/app/(app)/dashboard/[shopId]/settings/team-table.tsx
-- src/lib/types.ts
