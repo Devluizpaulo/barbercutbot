@@ -23,15 +23,18 @@ export function CPanelProvider({ children }: { children: React.ReactNode }) {
         if (user?.role === 'admin') {
             return collection(firestore, 'barberShops');
         }
-        return null;
+        // For non-admins, return null to prevent a forbidden query.
+        return null; 
     }, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
     // Query for all owner users, but only if the user is an admin.
     const usersQuery = useMemoFirebase(() => {
         if (user?.role === 'admin') {
-            return query(collection(firestore, 'users'), where('role', '==', 'owner'));
+            // Correctly query the 'users' collection for all owners
+             return query(collection(firestore, 'users'), where('role', '==', 'owner'));
         }
+         // For non-admins, return null.
         return null;
     }, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
