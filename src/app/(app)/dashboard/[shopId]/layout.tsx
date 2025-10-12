@@ -104,16 +104,20 @@ export default function ShopLayout({
                     <SidebarMenuSubItem>
                         <Link href={`${financePath}/income`}>
                             <SidebarMenuSubButton asChild isActive={pathname === `${financePath}/income`}>
-                                <TrendingUp />
-                                Receitas
+                                <span>
+                                    <TrendingUp />
+                                    Receitas
+                                </span>
                             </SidebarMenuSubButton>
                         </Link>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                         <Link href={`${financePath}/expenses`}>
                             <SidebarMenuSubButton asChild isActive={pathname === `${financePath}/expenses`}>
-                                <TrendingDown />
-                                Despesas
+                                <span>
+                                    <TrendingDown />
+                                    Despesas
+                                </span>
                             </SidebarMenuSubButton>
                         </Link>
                     </SidebarMenuSubItem>
