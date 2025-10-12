@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,11 +13,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, PlusCircle, Search } from "lucide-react";
+import { MoreVertical, PlusCircle, Search, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -126,7 +126,7 @@ export default function AdminUsersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="hidden lg:table-cell">
-                                            {associatedShop ? associatedShop.name : 'Nenhum'}
+                                            {isAdmin ? 'Plataforma' : (associatedShop ? associatedShop.name : 'Nenhum')}
                                         </TableCell>
                                          <TableCell className="hidden sm:table-cell">
                                             {user.createdAt ? format(toDate(user.createdAt), 'dd/MM/yyyy') : 'N/A'}
@@ -165,5 +165,3 @@ export default function AdminUsersPage() {
         </div>
     )
 }
-
-    
