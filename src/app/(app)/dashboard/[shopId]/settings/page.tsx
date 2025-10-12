@@ -161,7 +161,12 @@ export default function SettingsPage() {
                 name: shop.name || '',
                 logo: shop.logo || '',
                 document: shop.document || '',
+                cep: shop.cep || '',
                 address: shop.address || '',
+                number: shop.number || '',
+                complement: shop.complement || '',
+                neighborhood: shop.neighborhood || '',
+                city: shop.city || '',
                 whatsapp: shop.whatsapp || { instanceId: '', numeroConectado: '' },
                 bot: shop.bot || { provider: 'groq', modelo: 'openai/gpt-oss-120b', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
             });
@@ -342,13 +347,16 @@ export default function SettingsPage() {
                                     name="logo"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <Label>URL da Logo</Label>
+                                            <Label>Logo</Label>
                                             <div className="relative">
                                                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <FormControl>
                                                     <Input placeholder="https://exemplo.com/logo.png" {...field} value={field.value || ''} className="pl-10"/>
                                                 </FormControl>
                                             </div>
+                                            <FormDescription>
+                                                Insira a URL de uma imagem. Em breve, você poderá fazer o upload do seu computador.
+                                            </FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -568,7 +576,7 @@ export default function SettingsPage() {
                                 render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                    <Label className="text-base">Robô Ativo</Label>
+                                    <FormLabel className="text-base">Robô Ativo</FormLabel>
                                     <FormDescription>
                                         Ative para que o assistente de IA responda no WhatsApp.
                                     </FormDescription>
@@ -738,7 +746,7 @@ export default function SettingsPage() {
                                             <div className="relative">
                                                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <FormControl>
-                                                    <Input type="password" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} className="pl-10" />
+                                                    <Input type="password" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} value={field.value || ''} className="pl-10" />
                                                 </FormControl>
                                             </div>
                                             <FormMessage />
@@ -754,7 +762,7 @@ export default function SettingsPage() {
                                             <div className="relative">
                                                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <FormControl>
-                                                    <Input type="password" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {...field} className="pl-10" />
+                                                    <Input type="password" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {...field} value={field.value || ''} className="pl-10" />
                                                 </FormControl>
                                             </div>
                                             <FormMessage />
