@@ -41,8 +41,6 @@ import {
   Instagram,
   Facebook,
   Globe,
-  AtSign,
-  Phone,
   Wallet,
   Calendar as CalendarIcon,
   Trash2,
@@ -77,7 +75,6 @@ import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { createPayment } from '@/ai/flows/create-payment-flow';
-import { Badge } from '@/components/ui/badge';
 import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
@@ -705,6 +702,16 @@ export default function SettingsPage() {
     manageSettings: 'Gerenciar Configurações',
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -717,7 +724,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-8 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
           <TabsTrigger
             value="profile"
             className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
@@ -725,9 +732,6 @@ export default function SettingsPage() {
             <User className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Perfil
           </TabsTrigger>
-           <TabsTrigger value="team" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground">
-                <UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" /> Equipe e Acessos
-            </TabsTrigger>
           <TabsTrigger
             value="address"
             className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
@@ -766,16 +770,12 @@ export default function SettingsPage() {
             Caixa
           </TabsTrigger>
           <TabsTrigger
-            value="billing"
+            value="team"
             className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
           >
-            <CreditCard
-              className="mr-2 text-primary data-[state=active]:text-inherit"
-            />{' '}
-            Conta
+            <UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" /> Equipe e Acessos
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="profile">
           <Card>
             <Form {...profileForm}>
@@ -783,30 +783,24 @@ export default function SettingsPage() {
                 <CardHeader>
                   <CardTitle>Perfil do Negócio</CardTitle>
                   <CardDescription>
-                    Atualize as informações públicas do seu negócio.
+                    Informações que seus clientes verão sobre sua barbearia.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {isLoading ? (
-                    <Skeleton className="h-40 w-full" />
-                  ) : (
-                    <>
-                      <FormField
-                        control={profileForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Label>Nome do Negócio</Label>
-                            <FormControl>
-                              <Input
-                                placeholder="Ex: Barbearia Corte Clássico"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="space-y-2">
+                      <Label>Logo</Label>
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage
+                          src={profileForm.watch('logo')}
+                          alt={profileForm.watch('name')}
+                        />
+                        <AvatarFallback>
+                          <Building2 />
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-1 space-y-4">
                       <FormField
                         control={profileForm.control}
                         name="logo"
@@ -824,23 +818,19 @@ export default function SettingsPage() {
                                 />
                               </FormControl>
                             </div>
-                            <FormDescription>
-                              No futuro, você poderá fazer o upload de uma imagem
-                              diretamente.
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={profileForm.control}
-                        name="document"
+                        name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <Label>Documento (CNPJ/CPF)</Label>
+                            <Label>Nome do Negócio</Label>
                             <FormControl>
                               <Input
-                                placeholder="00.000.000/0001-00"
+                                placeholder="Barbearia do Zé"
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -849,121 +839,96 @@ export default function SettingsPage() {
                           </FormItem>
                         )}
                       />
-
-                      <div className="space-y-4 pt-4 border-t">
-                        <h3 className="text-lg font-medium">
-                          Contato e Redes Sociais
-                        </h3>
-                        <FormField
-                          control={profileForm.control}
-                          name="contactPerson"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Label>Nome do Responsável</Label>
-                              <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <FormControl>
-                                  <Input
-                                    placeholder="Ex: João da Silva"
-                                    {...field}
-                                    value={field.value || ''}
-                                    className="pl-10"
-                                  />
-                                </FormControl>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={profileForm.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <Label>Telefone Comercial</Label>
-                              <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <FormControl>
-                                  <Input
-                                    placeholder="(11) 99999-8888"
-                                    {...field}
-                                    value={field.value || ''}
-                                    className="pl-10"
-                                  />
-                                </FormControl>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <FormField
-                            control={profileForm.control}
-                            name="instagram"
-                            render={({ field }) => (
-                              <FormItem>
-                                <Label>Instagram</Label>
-                                <div className="relative">
-                                  <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  <FormControl>
-                                    <Input
-                                      placeholder="@seu-negocio"
-                                      {...field}
-                                      value={field.value || ''}
-                                      className="pl-10"
-                                    />
-                                  </FormControl>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={profileForm.control}
-                            name="facebook"
-                            render={({ field }) => (
-                              <FormItem>
-                                <Label>Facebook</Label>
-                                <div className="relative">
-                                  <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  <FormControl>
-                                    <Input
-                                      placeholder="/seu-negocio"
-                                      {...field}
-                                      value={field.value || ''}
-                                      className="pl-10"
-                                    />
-                                  </FormControl>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={profileForm.control}
-                            name="website"
-                            render={({ field }) => (
-                              <FormItem>
-                                <Label>Website</Label>
-                                <div className="relative">
-                                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                  <FormControl>
-                                    <Input
-                                      placeholder="www.seunegocio.com.br"
-                                      {...field}
-                                      value={field.value || ''}
-                                      className="pl-10"
-                                    />
-                                  </FormControl>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={profileForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Telefone para Contato</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                placeholder="(11) 99999-9999"
+                                {...field}
+                                value={field.value || ''}
+                                className="pl-10"
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={profileForm.control}
+                      name="document"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>CNPJ / CPF</Label>
+                          <div className="relative">
+                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                placeholder="00.000.000/0000-00"
+                                {...field}
+                                value={field.value || ''}
+                                className="pl-10"
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField
+                      control={profileForm.control}
+                      name="instagram"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Instagram</Label>
+                          <div className="relative">
+                            <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                placeholder="https://instagram.com/seu_negocio"
+                                {...field}
+                                value={field.value || ''}
+                                className="pl-10"
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={profileForm.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <Label>Website</Label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                placeholder="https://seunegocio.com.br"
+                                {...field}
+                                value={field.value || ''}
+                                className="pl-10"
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </CardContent>
                 <CardFooter>
                   <div className="flex justify-end w-full">
@@ -983,115 +948,113 @@ export default function SettingsPage() {
             </Form>
           </Card>
         </TabsContent>
-        
-         <TabsContent value="team">
-           <Tabs defaultValue="team-members" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="team-members">Membros da Equipe</TabsTrigger>
-                    <TabsTrigger value="permissions">Perfis de Acesso</TabsTrigger>
-                </TabsList>
-                <TabsContent value="team-members">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Membros da Equipe</CardTitle>
-                            <CardDescription>
-                                Adicione e gerencie os membros da sua equipe.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <TeamTable shopId={shopId} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="permissions">
-                    <Form {...permissionsForm}>
-                        <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Perfis de Acesso</CardTitle>
-                                    <CardDescription>
-                                        Defina o que cada tipo de usuário pode fazer na plataforma.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                     {roleFields.map((role, index) => (
-                                        <div key={role.id} className="space-y-4 rounded-lg border p-4">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-semibold capitalize text-lg">{role.name}</h4>
-                                                {!role.isBuiltIn && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => removeRole(index)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                {(Object.keys(permissionLabels) as Array<keyof RolePermissions>).map((permission) => (
-                                                    <FormField
-                                                        key={permission}
-                                                        control={permissionsForm.control}
-                                                        name={`roles.${index}.permissions.${permission}`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                                                <FormControl>
-                                                                    <Checkbox
-                                                                        checked={field.value}
-                                                                        onCheckedChange={field.onChange}
-                                                                        disabled={role.isBuiltIn}
-                                                                    />
-                                                                </FormControl>
-                                                                <FormLabel className={cn("font-normal text-sm", role.isBuiltIn && "text-muted-foreground")}>{permissionLabels[permission]}</FormLabel>
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {isAddingRole ? (
-                                        <div className="flex items-center gap-2 p-4 border border-dashed rounded-lg">
-                                            <Input 
-                                                placeholder="Nome do novo perfil" 
-                                                value={newRoleName}
-                                                onChange={(e) => setNewRoleName(e.target.value)}
-                                                className="flex-1"
-                                            />
-                                            <Button type="button" onClick={handleAddNewRole}>Salvar Perfil</Button>
-                                            <Button type="button" variant="ghost" onClick={() => setIsAddingRole(false)}>Cancelar</Button>
-                                        </div>
-                                    ) : (
-                                        <Button type="button" variant="outline" className="w-full" onClick={() => setIsAddingRole(true)}>
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Adicionar Novo Perfil
-                                        </Button>
-                                    )}
-                                </CardContent>
-                                <CardFooter>
-                                <div className="flex justify-end w-full">
-                                    <Button
-                                    type="submit"
-                                    disabled={permissionsForm.formState.isSubmitting}
-                                    >
-                                    {permissionsForm.formState.isSubmitting && (
-                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                                    )}
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Salvar Perfis de Acesso
-                                    </Button>
+        <TabsContent value="team">
+          <Tabs defaultValue="members" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="members">Membros da Equipe</TabsTrigger>
+              <TabsTrigger value="roles">Perfis de Acesso</TabsTrigger>
+            </TabsList>
+            <TabsContent value="members" className="mt-6">
+               <Card>
+                  <CardHeader>
+                      <CardTitle>Equipe</CardTitle>
+                      <CardDescription>
+                          Gerencie os membros da sua equipe que terão acesso ao sistema.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <TeamTable shopId={shopId} />
+                  </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="roles" className="mt-6">
+              <Form {...permissionsForm}>
+                <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
+                   <Card>
+                      <CardHeader>
+                          <CardTitle>Perfis de Acesso</CardTitle>
+                          <CardDescription>
+                              Defina o que cada perfil pode fazer no sistema.
+                          </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {roleFields.map((role, roleIndex) => (
+                           <Card key={role.id}>
+                              <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                  <CardTitle>{role.name}</CardTitle>
+                                  <CardDescription>{role.isBuiltIn ? "Perfil padrão do sistema." : "Perfil personalizado."}</CardDescription>
                                 </div>
-                                </CardFooter>
-                            </Card>
-                        </form>
-                    </Form>
-                </TabsContent>
-           </Tabs>
+                                {!role.isBuiltIn && (
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRole(roleIndex)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                  </Button>
+                                )}
+                              </CardHeader>
+                              <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {Object.keys(permissionLabels).map(permissionKey => (
+                                    <FormField
+                                        key={permissionKey}
+                                        control={permissionsForm.control}
+                                        name={`roles.${roleIndex}.permissions.${permissionKey as keyof RolePermissions}`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                                                <FormControl>
+                                                    <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                        disabled={role.isBuiltIn}
+                                                    />
+                                                </FormControl>
+                                                <div className="space-y-1 leading-none">
+                                                    <FormLabel className={cn(role.isBuiltIn && "text-muted-foreground")}>
+                                                        {permissionLabels[permissionKey as keyof RolePermissions]}
+                                                    </FormLabel>
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
+                              </CardContent>
+                           </Card>
+                        ))}
+                        {isAddingRole ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={newRoleName}
+                              onChange={(e) => setNewRoleName(e.target.value)}
+                              placeholder="Nome do novo perfil"
+                            />
+                            <Button type="button" onClick={handleAddNewRole}>Salvar</Button>
+                            <Button type="button" variant="ghost" onClick={() => setIsAddingRole(false)}>Cancelar</Button>
+                          </div>
+                        ) : (
+                          <Button type="button" variant="outline" onClick={() => setIsAddingRole(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Adicionar Novo Perfil
+                          </Button>
+                        )}
+                      </CardContent>
+                      <CardFooter>
+                        <div className="flex justify-end w-full">
+                           <Button
+                            type="submit"
+                            disabled={permissionsForm.formState.isSubmitting}
+                          >
+                            {permissionsForm.formState.isSubmitting && (
+                              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar Perfis de Acesso
+                          </Button>
+                        </div>
+                      </CardFooter>
+                   </Card>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
-        
-
         <TabsContent value="address">
           <Card>
             <Form {...profileForm}>
@@ -1897,3 +1860,4 @@ export default function SettingsPage() {
   );
 }
 
+    

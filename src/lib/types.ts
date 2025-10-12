@@ -147,29 +147,45 @@ export type Customer = {
   createdAt: Timestamp;
 };
 
-export type TeamMember = {
-  id: string;
-  barberShopId: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  email?: string;
-  role: string; // ID of the role
-  // Campos de Barber
-  bio?: string;
-  avatar?: string;
-  color?: string;
-  // Adicionar aqui qualquer outra informação específica de membro da equipe
-  createdAt: Timestamp;
-};
-
-export type Barber = TeamMember;
-
 export type BarberServiceCommission = {
     serviceId: string;
     commissionType?: 'fixed' | 'percentage';
     commissionValue?: number;
 }
+
+export type Barber = {
+  id: string;
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  bio?: string;
+  avatar?: string;
+  color?: string;
+  services: BarberServiceCommission[];
+  // Address fields
+  cep?: string;
+  address?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  createdAt: Timestamp;
+};
+
+export type TeamMember = {
+  id: string;
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  createdAt: Timestamp;
+};
 
 
 export type Service = {

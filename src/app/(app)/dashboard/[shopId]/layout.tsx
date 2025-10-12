@@ -66,10 +66,9 @@ export default function ShopLayout({
     },
     { href: `/dashboard/${shopId}/clients`, label: 'Clientes', icon: Users },
     {
-      href: `/dashboard/${shopId}/settings`,
-      query: 'tab=team',
+      href: `/dashboard/${shopId}/barbers`,
       label: 'Profissionais',
-      icon: Users,
+      icon: User,
     },
     {
       href: `/dashboard/${shopId}/services`,
@@ -103,7 +102,7 @@ export default function ShopLayout({
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.label}>
-                <Link href={`${item.href}${item.query ? `?${item.query}`: ''}`}>
+                <Link href={`${item.href}`}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
