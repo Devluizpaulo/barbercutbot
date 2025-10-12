@@ -22,17 +22,18 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { Appointment, Service, Barber, Customer, BarberShop, ChecklistItem } from '@/lib/types';
+import type { Appointment, Service, Barber, Customer, BarberShop, ChecklistItem, FinancialRecord } from '@/lib/types';
 import { format, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddTransactionForm } from './finance/add-transaction-form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { DollarSign, CheckSquare, Square, XSquare } from 'lucide-react';
+import { DollarSign, CheckSquare, Square } from 'lucide-react';
 import { ReceiptDialog } from './receipt-dialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, Timestamp, doc } from 'firebase/firestore';
+import { collection, query, Timestamp, doc, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface CashierDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   const [openingBalance, setOpeningBalance] = useState('');
   const [closingBalance, setClosingBalance] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [receiptAppointment, setReceiptAppointment] = useState<Appointment | null>(null);
   const [isReceiptOpen, setReceiptOpen] = useState(false);
   const [view, setView] = useState<'closed' | 'open' | 'closing'>('closed');
   
@@ -57,7 +59,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
 
   const shopRef = useMemoFirebase(() => (user && shopId) ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
-
+  
   const savedOpeningChecklist = shop?.cashierSettings?.openingChecklist || [];
   const savedClosingChecklist = shop?.cashierSettings?.closingChecklist || [];
 
@@ -91,7 +93,6 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   };
 
   const handleCloseCashier = () => {
-    // Here you would typically summarize the session and save it
     if (!allClosingChecked) {
       toast({ variant: 'destructive', title: "Ação Bloqueada", description: "Complete o checklist para fechar o caixa." });
       return;
@@ -107,6 +108,29 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   const handleFinalizeAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setReceiptOpen(true);
+  };
+
+  const onPaymentSuccess = (appointment: Appointment, paymentMethod: string) => {
+    const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
+    const customer = allCustomers?.find(c => c.id === appointment.customerId);
+    addDocumentNonBlocking(recordsRef, {
+      barberShopId: shopId,
+      date: Timestamp.fromDate(new Date()),
+      type: 'income',
+      description: `Serviço - ${customer?.firstName || 'Cliente'}`,
+      amount: appointment.totalPrice || 0,
+      category: 'Venda de Serviço',
+      paymentMethod: paymentMethod,
+      appointmentId: appointment.id,
+      createdAt: serverTimestamp(),
+    });
+
+    const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+    setDocumentNonBlocking(appointmentRef, { status: 'completed' }, { merge: true });
+
+    setReceiptAppointment(appointment);
+    setReceiptOpen(true);
+    setSelectedAppointment(null);
   };
 
   const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
@@ -218,9 +242,10 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                       {todayAppointments && todayAppointments.length > 0 ? todayAppointments.map(appt => {
                         const { barber, customer } = getAssociatedData(appt);
                         const servicesNames = appt.items.map(item => allServices?.find(s => s.id === item.serviceId)?.name).join(', ');
+                        const isCompleted = appt.status === 'completed';
 
                         return (
-                          <Card key={appt.id}>
+                          <Card key={appt.id} className={isCompleted ? 'bg-muted/50' : ''}>
                               <CardContent className="p-4 flex items-center justify-between">
                                   <div>
                                       <p className="font-semibold">{customer?.firstName || 'Cliente'}</p>
@@ -228,12 +253,12 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                                       <p className="text-sm font-mono">{format(toDate(appt.startTime), 'HH:mm', {locale: ptBR})}</p>
                                   </div>
                                   <div className="flex items-center gap-4">
-                                      <Badge variant={appt.status === 'cancelled' ? 'destructive' : (appt.status === 'completed' ? 'secondary' : 'default')}>
+                                      <Badge variant={appt.status === 'cancelled' ? 'destructive' : (isCompleted ? 'secondary' : 'default')}>
                                           {appt.status}
                                       </Badge>
                                       {appt.totalPrice && <p className="font-bold text-lg">R${appt.totalPrice.toFixed(2)}</p>}
-                                      <Button size="sm" onClick={() => handleFinalizeAppointment(appt)} disabled={appt.status === 'completed'}>
-                                        Finalizar
+                                      <Button size="sm" onClick={() => setSelectedAppointment(appt)} disabled={isCompleted}>
+                                        {isCompleted ? 'Finalizado' : 'Finalizar'}
                                       </Button>
                                   </div>
                               </CardContent>
@@ -253,7 +278,9 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                           <CardDescription>Use para serviços ou produtos vendidos sem agendamento prévio.</CardDescription>
                       </CardHeader>
                       <CardContent>
-                          <AddTransactionForm shopId={shopId} onSuccess={() => console.log("Venda avulsa registrada!")} />
+                          <AddTransactionForm shopId={shopId} onSuccess={() => {
+                              toast({ title: 'Venda Avulsa Registrada!'});
+                          }} />
                       </CardContent>
                   </Card>
                 </TabsContent>
@@ -277,7 +304,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
               <Card className="w-full max-w-sm">
                   <CardHeader>
                       <CardTitle>Fechar Caixa</CardTitle>
-                      <CardDescription>Confirme o valor final em caixa e complete o checklist.</CardDescription>
+                      <CardDescription>Confira os valores e finalize a sessão.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                       {/* Resumo financeiro aqui - A ser implementado */}
@@ -323,12 +350,49 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
         </DialogContent>
       </Dialog>
       {selectedAppointment && (
+        <PaymentMethodDialog
+            appointment={selectedAppointment}
+            onClose={() => setSelectedAppointment(null)}
+            onSuccess={onPaymentSuccess}
+        />
+      )}
+      {receiptAppointment && (
         <ReceiptDialog
           open={isReceiptOpen}
           onOpenChange={setReceiptOpen}
-          appointment={selectedAppointment}
+          appointment={receiptAppointment}
         />
       )}
     </>
   );
+}
+
+
+function PaymentMethodDialog({ appointment, onClose, onSuccess }: { appointment: Appointment, onClose: () => void, onSuccess: (appointment: Appointment, paymentMethod: string) => void }) {
+    const paymentMethods = ['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito'];
+    
+    return (
+        <Dialog open={true} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Finalizar Pagamento</DialogTitle>
+                    <DialogDescription>
+                        Selecione a forma de pagamento para o valor de R${(appointment.totalPrice || 0).toFixed(2)}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-4">
+                    {paymentMethods.map(method => (
+                        <Button
+                            key={method}
+                            variant="outline"
+                            className="h-16 text-lg"
+                            onClick={() => onSuccess(appointment, method)}
+                        >
+                            {method}
+                        </Button>
+                    ))}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 }

@@ -21,7 +21,7 @@ import { ptBR } from 'date-fns/locale';
 import { Download, Share2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection } from '@/firebase';
-import { doc, Timestamp, collection } from 'firebase/firestore';
+import { doc, Timestamp, collection, setDoc } from 'firebase/firestore';
 
 interface ReceiptDialogProps {
   open: boolean;
@@ -186,5 +186,3 @@ Volte sempre!
     </Dialog>
   );
 }
-
-    
