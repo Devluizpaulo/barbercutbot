@@ -117,6 +117,8 @@ export type Appointment = {
   id: string;
   barberShopId: string;
   customerId: string;
+  barberId: string;
+  serviceIds: string[];
   items: AppointmentItem[];
   startTime: Timestamp | Date | string;
   endTime: Timestamp | Date | string;
@@ -284,3 +286,5 @@ export type Document = {
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
 };
+
+    

@@ -23,20 +23,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, Timestamp } from "firebase/firestore";
+import { collection, query, Timestamp, doc } from "firebase/firestore";
 import type { BarberShop, Ticket as TicketType } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Ticket as TicketIcon } from 'lucide-react';
+import { PlusCircle, Ticket as TicketIcon, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreVertical } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AddTicketForm } from './add-ticket-form';
 
@@ -223,3 +221,5 @@ function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { ti
         </Table>
     )
 }
+
+    
