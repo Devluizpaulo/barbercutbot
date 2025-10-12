@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -5,7 +6,7 @@ import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
-import { CPanelNav } from '../cpanel-nav';
+import { CPanelNav } from '@/components/cpanel-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
