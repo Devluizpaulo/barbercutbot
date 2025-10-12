@@ -31,7 +31,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isUserLoading) {
+      return;
+    }
+
+    if (user) {
         // If a user is already logged in, redirect them.
         if (user.role === 'admin') {
             router.push('/cpanel');
