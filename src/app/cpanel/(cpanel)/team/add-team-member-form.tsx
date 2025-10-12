@@ -23,9 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { useFirestore } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -43,8 +42,8 @@ interface AddTeamMemberFormProps {
 
 export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const auth = getAuth(); // We need a temporary auth instance for user creation.
+  const firestore = useFirestore(); // Just to initialize Firebase context
+  const functions = getFunctions();
 
   const form = useForm<AddTeamMemberFormValues>({
     resolver: zodResolver(formSchema),
@@ -61,22 +60,8 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
 
   const onSubmit = async (values: AddTeamMemberFormValues) => {
     try {
-      // NOTE: This creates the user in Firebase Auth.
-      // The Cloud Function will listen for the corresponding Firestore document creation
-      // to assign the custom claim.
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const newUser = userCredential.user;
-
-      // Create the user document in Firestore, which will trigger the Cloud Function.
-      const userDocRef = doc(firestore, 'users', newUser.uid);
-      await setDoc(userDocRef, {
-        id: newUser.uid,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        role: values.role, // FIX: Use the role from the form values
-        createdAt: serverTimestamp(),
-      });
+      const createAdminUser = httpsCallable(functions, 'createAdminUser');
+      const result = await createAdminUser(values);
 
       toast({
         title: 'Membro Adicionado!',
@@ -85,11 +70,8 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
       onSuccess?.();
       form.reset();
     } catch (error: any) {
-      console.error("Error creating team member:", error);
-      let description = 'Ocorreu um erro ao criar o membro da equipe.';
-      if (error.code === 'auth/email-already-in-use') {
-        description = 'Este endereço de e-mail já está em uso.';
-      }
+      console.error("Error calling createAdminUser function:", error);
+      let description = error.message || 'Ocorreu um erro ao criar o membro da equipe.';
       toast({
         variant: 'destructive',
         title: 'Erro ao adicionar membro',
