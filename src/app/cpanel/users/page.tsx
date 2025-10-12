@@ -26,6 +26,7 @@ import type { BarberShop, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 export default function AdminUsersPage() {
     const firestore = useFirestore();
