@@ -26,7 +26,7 @@ import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bo
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Holiday, WorkingHour, CashierSettings } from '@/lib/types';
+import type { BarberShop, Holiday, WorkingHour, CashierSettings, CashierOperator } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
@@ -44,6 +44,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogClose, DialogDescription, DialogTitle, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { PinInput, PinInputField } from '@/components/ui/pin-input';
+
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -103,6 +106,12 @@ const paymentSettingsFormSchema = z.object({
 
 const cashierFormSchema = z.object({
   requirePassword: z.boolean().default(false),
+  operators: z.array(z.object({
+      id: z.string(),
+      name: z.string().min(1, "O nome é obrigatório."),
+      role: z.enum(['caixa', 'gerente']),
+      pin: z.string().optional(),
+  })).optional(),
 });
 
 
@@ -114,6 +123,8 @@ export default function SettingsPage() {
     const firestore = useFirestore();
     const [isBillingLoading, setIsBillingLoading] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
+    const [pinOperator, setPinOperator] = useState<CashierOperator | null>(null);
+    const [currentPin, setCurrentPin] = useState("");
 
     const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
     const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
@@ -185,6 +196,7 @@ export default function SettingsPage() {
       resolver: zodResolver(cashierFormSchema),
       defaultValues: {
         requirePassword: false,
+        operators: [],
       }
     });
 
@@ -210,6 +222,12 @@ export default function SettingsPage() {
         control: paymentSettingsForm.control,
         name: "paymentMethods",
     });
+
+    const { fields: operatorFields, append: appendOperator, remove: removeOperator, update: updateOperator } = useFieldArray({
+        control: cashierForm.control,
+        name: "operators",
+    });
+
 
     useEffect(() => {
         const fetchAndSetHolidays = async () => {
@@ -389,6 +407,27 @@ export default function SettingsPage() {
     const onCashierSubmit = (values: z.infer<typeof cashierFormSchema>) => {
         setDocumentNonBlocking(shopRef, { cashierSettings: values }, { merge: true });
         toast({ title: 'Configurações do Caixa atualizadas!', description: 'As preferências do caixa foram salvas.' });
+    };
+
+    const handleSavePin = () => {
+        if (pinOperator && currentPin.length === 4) {
+            const index = operatorFields.findIndex(op => op.id === pinOperator.id);
+            if (index !== -1) {
+                updateOperator(index, { ...pinOperator, pin: currentPin });
+                toast({
+                    title: 'PIN Salvo!',
+                    description: `O PIN para ${pinOperator.name} foi definido. Salve as alterações para confirmar.`,
+                });
+            }
+            setPinOperator(null);
+            setCurrentPin("");
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'PIN Inválido',
+                description: 'O PIN deve conter 4 dígitos.',
+            });
+        }
     };
 
 
@@ -1123,7 +1162,7 @@ export default function SettingsPage() {
                                     <div className="space-y-0.5">
                                     <FormLabel className="text-base">Exigir Senha</FormLabel>
                                     <FormDescription>
-                                        Requer senha para abrir ou fechar o caixa. (Funcionalidade em breve)
+                                        Requer PIN de 4 dígitos para abrir ou fechar o caixa.
                                     </FormDescription>
                                     </div>
                                     <FormControl>
@@ -1135,13 +1174,60 @@ export default function SettingsPage() {
                                 </FormItem>
                                 )}
                             />
-                             <div className="space-y-4 pt-4 border-t">
+                            <div className="space-y-4 pt-4 border-t">
                                 <h3 className="text-lg font-medium">Operadores de Caixa</h3>
-                                <p className="text-sm text-muted-foreground">Adicione e gerencie quem pode operar o caixa. (Em desenvolvimento)</p>
-                                <div className="border rounded-lg p-4 text-center text-muted-foreground">
-                                    <p>Funcionalidade de gerenciamento de operadores em breve.</p>
+                                <p className="text-sm text-muted-foreground">Adicione e gerencie quem pode operar o caixa.</p>
+                                <div className="space-y-2">
+                                    {operatorFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center justify-between p-3 border rounded-lg gap-2">
+                                            <div className="flex-1">
+                                                <FormField
+                                                    control={cashierForm.control}
+                                                    name={`operators.${index}.name`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormControl><Input placeholder="Nome do operador" {...field} className="h-8" /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <div className="w-32">
+                                                 <FormField
+                                                    control={cashierForm.control}
+                                                    name={`operators.${index}.role`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                <SelectTrigger className="h-8">
+                                                                    <SelectValue placeholder="Função" />
+                                                                </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="caixa">Caixa</SelectItem>
+                                                                    <SelectItem value="gerente">Gerente</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setPinOperator(field as unknown as CashierOperator)}>
+                                                <Key className="mr-2 h-4 w-4" />
+                                                {field.pin ? "Redefinir PIN" : "Definir PIN"}
+                                            </Button>
+                                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeOperator(index)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    ))}
                                 </div>
-                             </div>
+                                <Button type="button" variant="outline" size="sm" onClick={() => appendOperator({id: `op_${Date.now()}`, name: '', role: 'caixa'})}>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Adicionar Operador
+                                </Button>
+                            </div>
                         </CardContent>
                          <CardFooter>
                             <div className="flex justify-end w-full">
@@ -1187,6 +1273,28 @@ export default function SettingsPage() {
             </Card>
         </TabsContent>
       </Tabs>
+      <Dialog open={!!pinOperator} onOpenChange={(isOpen) => {if (!isOpen) { setPinOperator(null); setCurrentPin(""); }}}>
+        <DialogContent className="sm:max-w-xs">
+            <DialogHeader>
+                <DialogTitle>Definir PIN para {pinOperator?.name}</DialogTitle>
+                <DialogDescription>
+                    O PIN de 4 dígitos será usado para acessar o caixa.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center py-4">
+                <PinInput onComplete={(pin) => setCurrentPin(pin)}>
+                    <PinInputField />
+                    <PinInputField />
+                    <PinInputField />
+                    <PinInputField />
+                </PinInput>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setPinOperator(null)}>Cancelar</Button>
+                <Button type="button" onClick={handleSavePin}>Salvar PIN</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

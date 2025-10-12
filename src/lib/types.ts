@@ -22,10 +22,17 @@ export type PaymentMethod = {
   rate?: number; // Taxa em porcentagem
 };
 
+export type CashierOperator = {
+  id: string;
+  name: string;
+  role: 'caixa' | 'gerente';
+  pin?: string; // 4-digit PIN stored securely
+};
+
+
 export type CashierSettings = {
   requirePassword?: boolean;
-  // Futuramente, pode ter uma lista de operadores IDs
-  // operatorIds?: string[];
+  operators?: CashierOperator[];
 };
 
 export type BarberShop = {
@@ -184,6 +191,7 @@ export type FinancialRecord = {
   category: string;
   paymentMethod?: string;
   isRecurring?: boolean;
+  operatorId?: string; // ID of the CashierOperator
   createdAt: Timestamp;
 };
 
