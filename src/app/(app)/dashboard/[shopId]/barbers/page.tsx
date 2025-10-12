@@ -32,7 +32,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
 import {
@@ -166,8 +165,8 @@ export default function BarbersPage() {
                   Adicionar Profissional
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-3xl p-0">
-                  <DialogHeader className="p-6 pb-0">
+              <DialogContent className="sm:max-w-3xl">
+                  <DialogHeader>
                     <DialogTitle>
                       {selectedBarber
                         ? 'Editar Profissional'
@@ -177,15 +176,11 @@ export default function BarbersPage() {
                       Preencha os detalhes do novo profissional.
                     </DialogDescription>
                   </DialogHeader>
-                   <ScrollArea className="max-h-[80vh]">
-                     <div className="p-6 pt-0">
-                        <AddBarberForm
-                            shopId={shopId}
-                            initialData={selectedBarber}
-                            onSuccess={handleFormSuccess}
-                        />
-                     </div>
-                   </ScrollArea>
+                    <AddBarberForm
+                        shopId={shopId}
+                        initialData={selectedBarber}
+                        onSuccess={handleFormSuccess}
+                    />
               </DialogContent>
             </Dialog>
           </div>
@@ -321,5 +316,3 @@ export default function BarbersPage() {
     </>
   );
 }
-
-    

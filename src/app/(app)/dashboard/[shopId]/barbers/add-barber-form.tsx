@@ -122,6 +122,7 @@ export function AddBarberForm({
           ...initialData,
           email: initialData.email || '',
           phone: initialData.phone || '',
+          whatsapp: initialData.whatsapp || '',
           bio: initialData.bio || '',
           avatar: initialData.avatar || '',
           color: initialData.color || '',
