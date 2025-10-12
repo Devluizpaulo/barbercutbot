@@ -26,13 +26,13 @@ import {
   Store,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { useUser } from "@/firebase";
+import { useUser, useAuth } from "@/firebase";
 import { useEffect } from "react";
 import { signOut } from "firebase/auth";
-import { useAuth } from "@/firebase";
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
+import { Button } from "@/components/ui/button";
 
 export default function CPanelLayout({
   children,

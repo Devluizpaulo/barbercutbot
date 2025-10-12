@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -19,18 +20,24 @@ import {
 import { LogOut, Settings, User as UserIcon } from "lucide-react"
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function UserNav() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
     }
-    router.push('/login');
+    // Redirect to the correct login page based on the current path
+    if (pathname.startsWith('/cpanel')) {
+      router.push('/cpanel/login');
+    } else {
+      router.push('/login');
+    }
   }
   
   if (isUserLoading) {

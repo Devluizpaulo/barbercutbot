@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -13,7 +13,6 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import {
@@ -33,8 +32,8 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, signOut } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 
 export default function ShopLayout({
@@ -46,12 +45,22 @@ export default function ShopLayout({
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
+  const auth = useAuth();
+  const router = useRouter();
+
 
   const shopRef = useMemoFirebase(
     () => (shopId ? doc(firestore, 'barberShops', shopId) : null),
     [firestore, shopId]
   );
   const { data: shop } = useDoc<BarberShop>(shopRef);
+
+  const handleLogout = async () => {
+    if (auth) {
+        await signOut(auth);
+    }
+    router.push('/login');
+  };
 
   const navItems = [
     {
@@ -197,12 +206,10 @@ export default function ShopLayout({
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/">
-                <SidebarMenuButton tooltip="Sair" className="justify-start">
-                  <LogOut />
-                  <span>Sair</span>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
+                <LogOut />
+                <span>Sair</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
