@@ -25,6 +25,7 @@ export type BarberShop = {
   complement?: string;
   neighborhood?: string;
   city?: string;
+  state?: string;
   cep?: string;
   phone?: string;
   email?: string;
@@ -182,6 +183,7 @@ export type Document = {
 };
 
     
+
 
 
 

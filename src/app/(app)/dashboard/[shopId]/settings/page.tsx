@@ -56,6 +56,7 @@ const profileFormSchema = z.object({
   complement: z.string().optional(),
   neighborhood: z.string().optional(),
   city: z.string().optional(),
+  state: z.string().optional(),
   whatsapp: z.object({
     instanceId: z.string().min(1, "O ID da instância é obrigatório."),
     numeroConectado: z.string().optional(),
@@ -116,6 +117,7 @@ export default function SettingsPage() {
             complement: '',
             neighborhood: '',
             city: '',
+            state: '',
             whatsapp: { instanceId: '', numeroConectado: '' },
             bot: {
                 provider: 'groq',
@@ -189,6 +191,7 @@ export default function SettingsPage() {
                 complement: shop.complement || '',
                 neighborhood: shop.neighborhood || '',
                 city: shop.city || '',
+                state: shop.state || '',
                 whatsapp: shop.whatsapp || { instanceId: shopId, numeroConectado: '' },
                 bot: shop.bot || { provider: 'groq', modelo: 'llama-3.1-70b-versatile', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
             });
@@ -225,6 +228,7 @@ export default function SettingsPage() {
             complement: values.complement || '',
             neighborhood: values.neighborhood || '',
             city: values.city || '',
+            state: values.state || '',
             whatsapp: {
                 ...values.whatsapp,
                 numeroConectado: values.whatsapp?.numeroConectado || ''
@@ -258,10 +262,12 @@ export default function SettingsPage() {
             profileForm.setValue('address', '');
             profileForm.setValue('neighborhood', '');
             profileForm.setValue('city', '');
+            profileForm.setValue('state', '');
           } else {
             profileForm.setValue('address', data.logradouro);
             profileForm.setValue('neighborhood', data.bairro);
             profileForm.setValue('city', data.localidade);
+            profileForm.setValue('state', data.uf);
             toast({
               title: 'Endereço encontrado!',
             });
@@ -339,8 +345,9 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
             <TabsTrigger value="profile"><User className="mr-2" /> Perfil</TabsTrigger>
+            <TabsTrigger value="address"><MapPin className="mr-2" /> Endereço</TabsTrigger>
             <TabsTrigger value="hours"><Clock className="mr-2" /> Horários</TabsTrigger>
             <TabsTrigger value="integrations"><Bot className="mr-2" /> Automação</TabsTrigger>
             <TabsTrigger value="payments"><Wallet className="mr-2" /> Recebimentos</TabsTrigger>
@@ -491,108 +498,6 @@ export default function SettingsPage() {
                                         />
                                      </div>
                                 </div>
-                                
-                                <div className="space-y-4 pt-4 border-t">
-                                    <h3 className="text-lg font-medium">Endereço</h3>
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="cep"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Label>CEP</Label>
-                                                 <div className="flex items-center gap-2">
-                                                    <div className="relative flex-grow">
-                                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                        <FormControl>
-                                                            <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
-                                                        </FormControl>
-                                                    </div>
-                                                    <Button type="button" variant="secondary" onClick={handleCepLookup} disabled={isCepLoading}>
-                                                        {isCepLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                                        <span className="ml-2 hidden sm:inline">Buscar CEP</span>
-                                                    </Button>
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="md:col-span-2">
-                                            <FormField
-                                                control={profileForm.control}
-                                                name="address"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <Label>Logradouro</Label>
-                                                        <FormControl>
-                                                            <Input placeholder="Rua das Flores" {...field} value={field.value || ''} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div>
-                                             <FormField
-                                                control={profileForm.control}
-                                                name="number"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <Label>Número</Label>
-                                                        <FormControl>
-                                                            <Input placeholder="123" {...field} value={field.value || ''} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-                                    <FormField
-                                        control={profileForm.control}
-                                        name="complement"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Label>Complemento</Label>
-                                                <div className="relative">
-                                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                    <FormControl>
-                                                        <Input placeholder="Apto 123, Bloco A" {...field} value={field.value || ''} className="pl-10" />
-                                                    </FormControl>
-                                                </div>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="neighborhood"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <Label>Bairro</Label>
-                                                    <FormControl>
-                                                        <Input placeholder="Centro" {...field} value={field.value || ''} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="city"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <Label>Cidade</Label>
-                                                    <FormControl>
-                                                        <Input placeholder="São Paulo" {...field} value={field.value || ''} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
                             </>
                         )}
                     </CardContent>
@@ -608,6 +513,143 @@ export default function SettingsPage() {
                 </form>
             </Form>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="address">
+            <Card>
+                <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                        <CardHeader>
+                            <CardTitle>Endereço</CardTitle>
+                            <CardDescription>
+                                Endereço principal do seu estabelecimento.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={profileForm.control}
+                                name="cep"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>CEP</Label>
+                                            <div className="flex items-center gap-2">
+                                            <div className="relative flex-grow">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <FormControl>
+                                                    <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
+                                                </FormControl>
+                                            </div>
+                                            <Button type="button" variant="secondary" onClick={handleCepLookup} disabled={isCepLoading}>
+                                                {isCepLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                                                <span className="ml-2 hidden sm:inline">Buscar CEP</span>
+                                            </Button>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="md:col-span-2">
+                                    <FormField
+                                        control={profileForm.control}
+                                        name="address"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label>Logradouro</Label>
+                                                <FormControl>
+                                                    <Input placeholder="Rua das Flores" {...field} value={field.value || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <div>
+                                        <FormField
+                                        control={profileForm.control}
+                                        name="number"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label>Número</Label>
+                                                <FormControl>
+                                                    <Input placeholder="123" {...field} value={field.value || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+                            <FormField
+                                control={profileForm.control}
+                                name="complement"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Label>Complemento</Label>
+                                        <div className="relative">
+                                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <FormControl>
+                                                <Input placeholder="Apto 123, Bloco A" {...field} value={field.value || ''} className="pl-10" />
+                                            </FormControl>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                    control={profileForm.control}
+                                    name="neighborhood"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Bairro</Label>
+                                            <FormControl>
+                                                <Input placeholder="Centro" {...field} value={field.value || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="city"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Cidade</Label>
+                                            <FormControl>
+                                                <Input placeholder="São Paulo" {...field} value={field.value || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="state"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>Estado</Label>
+                                            <FormControl>
+                                                <Input placeholder="SP" {...field} value={field.value || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <div className="flex justify-end w-full">
+                                <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                                    {profileForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Endereço
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </form>
+                </Form>
+            </Card>
         </TabsContent>
 
         <TabsContent value="hours">
@@ -914,5 +956,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
