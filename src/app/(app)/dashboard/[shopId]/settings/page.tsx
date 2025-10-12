@@ -29,7 +29,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -79,13 +79,6 @@ const workingHoursFormSchema = z.object({
     }))
 });
 
-const paymentFormSchema = z.object({
-  mercadoPago: z.object({
-    publicKey: z.string().optional(),
-    accessToken: z.string().optional(),
-  }),
-});
-
 
 export default function SettingsPage() {
     const params = useParams();
@@ -95,7 +88,6 @@ export default function SettingsPage() {
     const firestore = useFirestore();
     const [isBillingLoading, setIsBillingLoading] = useState(false);
     const [isCepLoading, setIsCepLoading] = useState(false);
-    const [isSavingPayment, setIsSavingPayment] = useState(false);
 
     const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
     const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
@@ -143,15 +135,6 @@ export default function SettingsPage() {
         }
     });
 
-    const paymentForm = useForm<z.infer<typeof paymentFormSchema>>({
-        resolver: zodResolver(paymentFormSchema),
-        defaultValues: {
-            mercadoPago: {
-                publicKey: '',
-                accessToken: '',
-            }
-        },
-    });
     
     const toDate = (timestamp: Timestamp | Date | string): Date => {
       if (timestamp instanceof Timestamp) {
@@ -192,13 +175,8 @@ export default function SettingsPage() {
                 });
                 replace(currentHours);
             }
-            if (shop.paymentGateways) {
-                paymentForm.reset({
-                    mercadoPago: shop.paymentGateways.mercadoPago || { publicKey: '', accessToken: '' },
-                });
-            }
         }
-    }, [shop, profileForm, workingHoursForm, paymentForm, replace, shopId]);
+    }, [shop, profileForm, workingHoursForm, replace, shopId]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -273,18 +251,6 @@ export default function SettingsPage() {
         setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
     }
-
-    const onPaymentSubmit = (values: z.infer<typeof paymentFormSchema>) => {
-        setIsSavingPayment(true);
-        setDocumentNonBlocking(shopRef, { paymentGateways: values }, { merge: true });
-        setTimeout(() => {
-            toast({
-                title: "Credenciais Salvas!",
-                description: "Suas credenciais do Mercado Pago foram atualizadas com sucesso.",
-            });
-            setIsSavingPayment(false);
-        }, 1000);
-    };
 
     const handleManageSubscription = async () => {
         setIsBillingLoading(true);
@@ -366,7 +332,7 @@ export default function SettingsPage() {
                                     name="logo"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <Label>Logo</Label>
+                                            <Label>URL da Logo</Label>
                                             <div className="relative">
                                                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <FormControl>
@@ -542,9 +508,12 @@ export default function SettingsPage() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <Label>Complemento</Label>
-                                                <FormControl>
-                                                    <Input placeholder="Apto 123, Bloco A" {...field} value={field.value || ''} />
-                                                </FormControl>
+                                                <div className="relative">
+                                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <FormControl>
+                                                        <Input placeholder="Apto 123, Bloco A" {...field} value={field.value || ''} className="pl-10" />
+                                                    </FormControl>
+                                                </div>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -830,59 +799,6 @@ export default function SettingsPage() {
                                  </Button>
                             </div>
                         )}
-                    </div>
-                     <div className="pt-8 border-t">
-                        <h3 className="text-lg font-medium">Meios de Recebimento</h3>
-                        <Form {...paymentForm}>
-                            <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4 mt-4">
-                                <div className="flex items-start gap-4 p-4 border rounded-lg bg-muted/30">
-                                    <img src="https://logopng.com.br/logos/mercado-pago-24.svg" alt="Mercado Pago Logo" className="h-10 w-10 mt-1" />
-                                    <div>
-                                        <h4 className="font-semibold">Integração com Mercado Pago</h4>
-                                        <p className="text-sm text-muted-foreground">Insira suas credenciais de produção para começar a aceitar pagamentos.</p>
-                                    </div>
-                                </div>
-                                <FormField
-                                    control={paymentForm.control}
-                                    name="mercadoPago.publicKey"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <Label>Public Key</Label>
-                                            <div className="relative">
-                                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <FormControl>
-                                                    <Input type="password" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} value={field.value || ''} className="pl-10" />
-                                                </FormControl>
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={paymentForm.control}
-                                    name="mercadoPago.accessToken"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <Label>Access Token</Label>
-                                            <div className="relative">
-                                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <FormControl>
-                                                    <Input type="password" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {...field} value={field.value || ''} className="pl-10" />
-                                                </FormControl>
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                 <div className="flex justify-end">
-                                    <Button type="submit" disabled={isSavingPayment}>
-                                        {isSavingPayment && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                        <Save className="mr-2 h-4 w-4" />
-                                        Salvar Credenciais
-                                    </Button>
-                                </div>
-                            </form>
-                        </Form>
                     </div>
                 </CardContent>
             </Card>
