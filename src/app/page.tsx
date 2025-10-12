@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function LandingPage() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-new');
   const avatar1 = PlaceHolderImages.find(p => p.id === 'avatar-1');
   const avatar2 = PlaceHolderImages.find(p => p.id === 'avatar-2');
   const avatar3 = PlaceHolderImages.find(p => p.id === 'avatar-3');
@@ -79,16 +78,14 @@ export default function LandingPage() {
 
       <main className="flex-1 pt-20">
         <section className="relative w-full h-[90vh] flex items-center">
-          {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover object-right"
-              data-ai-hint={heroImage.imageHint}
-              priority
-            />
-          )}
+          <Image
+            src="/image/hero.png"
+            alt="Hero image of a barber shop"
+            fill
+            className="object-cover object-right"
+            priority
+            quality={100}
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
           <div className="relative z-10 container mx-auto px-4 md:px-6 text-white">
             <div className="max-w-xl">
