@@ -46,7 +46,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { getMonth, format } from 'date-fns';
 import { Timestamp, doc } from 'firebase/firestore';
-import { useCPanel } from './layout'; 
+import { useCPanel } from './context'; 
 
 const initialChartData = Array.from({ length: 12 }, (_, i) => ({
   month: format(new Date(2024, i, 1), 'MMM'),
