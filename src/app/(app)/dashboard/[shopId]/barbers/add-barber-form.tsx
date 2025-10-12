@@ -16,6 +16,7 @@ import {
   Scissors,
   Save,
   Palette,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -74,6 +75,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, 'O sobrenome é obrigatório.'),
   email: z.string().email('Email inválido.').optional().or(z.literal('')),
   phone: z.string().optional(),
+  whatsapp: z.string().optional(),
   bio: z.string().optional(),
   avatar: z.string().url('URL inválida.').optional().or(z.literal('')),
   color: z.string().optional(),
@@ -116,6 +118,7 @@ export function AddBarberForm({
           lastName: '',
           email: '',
           phone: '',
+          whatsapp: '',
           bio: '',
           avatar: '',
           color: availableColors[0],
@@ -311,27 +314,50 @@ export function AddBarberForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone</FormLabel>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Input
-                    placeholder="(11) 99999-9999"
-                    {...field}
-                    className="pl-10"
-                    value={field.value || ''}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Telefone</FormLabel>
+                <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                    <Input
+                        placeholder="(11) 99999-9999"
+                        {...field}
+                        className="pl-10"
+                        value={field.value || ''}
+                    />
+                    </FormControl>
+                </div>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="whatsapp"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>WhatsApp</FormLabel>
+                <div className="relative">
+                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                    <Input
+                        placeholder="(11) 98888-8888"
+                        {...field}
+                        className="pl-10"
+                        value={field.value || ''}
+                    />
+                    </FormControl>
+                </div>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
 
         <FormField
           control={form.control}
