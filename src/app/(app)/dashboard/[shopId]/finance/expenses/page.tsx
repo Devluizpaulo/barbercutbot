@@ -103,22 +103,13 @@ export default function ExpensesPage() {
                     Acompanhe todas as saídas de dinheiro do seu negócio.
                 </p>
             </div>
-             <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
                 <PeriodNavigator
                   period={period}
                   onPeriodChange={handlePeriodChange}
                   dateOffset={dateOffset}
                   onDateOffsetChange={setDateOffset}
                 />
-                <div className="relative flex-1 min-w-[200px] md:min-w-[320px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar despesa..." 
-                        className="pl-8" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
             </div>
         </div>
         
@@ -133,8 +124,17 @@ export default function ExpensesPage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Histórico de Despesas</CardTitle>
+             <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar despesa..." 
+                    className="pl-8" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
           </CardHeader>
           <CardContent>
             <TransactionsTable 

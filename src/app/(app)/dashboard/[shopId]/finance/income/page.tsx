@@ -112,15 +112,6 @@ export default function IncomePage() {
                   dateOffset={dateOffset}
                   onDateOffsetChange={setDateOffset}
                 />
-                <div className="relative flex-1 min-w-[200px] md:min-w-[320px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar receita..." 
-                        className="pl-8" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
             </div>
         </div>
         
@@ -135,8 +126,17 @@ export default function IncomePage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Histórico de Receitas</CardTitle>
+             <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Buscar receita..." 
+                    className="pl-8" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
           </CardHeader>
           <CardContent>
             <TransactionsTable 
