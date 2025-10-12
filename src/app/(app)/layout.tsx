@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
+import { DashboardLayout } from '../(dashboard)/layout';
 
 export default function AppLayout({
   children,
@@ -18,21 +19,22 @@ export default function AppLayout({
   useEffect(() => {
     if (isUserLoading) return;
 
-    // If no user is logged in, redirect them to the regular login page.
     if (!user) {
+      // If user is not logged in, redirect to login page.
+      // This protects the entire /dashboard route group.
       router.push('/login');
       return;
     }
-
-    // If the user is an admin, they should not be in the regular app section.
-    // Redirect them to the CPanel.
+    
+    // If the user has the 'admin' role, redirect them away from the regular
+    // app dashboard to the CPanel.
     if (user.role === 'admin') {
       router.push('/cpanel');
     }
 
   }, [user, isUserLoading, router, pathname]);
 
-  // Show loading spinner while checking auth or if the user is an admin being redirected.
+  // While loading auth state, or if user is not a regular user (or is null), show a loader.
   if (isUserLoading || !user || user.role === 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -41,6 +43,6 @@ export default function AppLayout({
     );
   }
 
-  // Render children only if the user is a regular user.
-  return <>{children}</>;
+  // Render children inside the DashboardLayout for regular, authenticated users.
+  return <DashboardLayout>{children}</DashboardLayout>;
 }
