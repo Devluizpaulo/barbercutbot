@@ -1,16 +1,16 @@
 {
   "indexes": [
     {
-      "collectionGroup": "messages",
+      "collectionGroup": "appointments",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "userId",
+          "fieldPath": "barberId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "sentAt",
-          "order": "DESCENDING"
+          "fieldPath": "startTime",
+          "order": "ASCENDING"
         }
       ]
     },
