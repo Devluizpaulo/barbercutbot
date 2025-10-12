@@ -102,10 +102,6 @@ export default function AppointmentsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCashierOpen(true)}>
-                <Store className="mr-2 h-4 w-4" />
-                Abrir Caixa
-            </Button>
             <Dialog
               open={isFormOpen}
               onOpenChange={(isOpen) => {
@@ -197,6 +193,14 @@ export default function AppointmentsPage() {
         </div>
       </div>
       <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
+        <Button
+            onClick={() => setCashierOpen(true)}
+            className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+            size="icon"
+        >
+            <Store className="h-8 w-8" />
+            <span className="sr-only">Abrir Caixa</span>
+        </Button>
     </>
   );
 }

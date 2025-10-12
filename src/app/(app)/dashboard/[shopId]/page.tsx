@@ -110,11 +110,11 @@ export default function ShopDashboardPage() {
     let totalServices = 0;
 
     filteredData.appointments.forEach((appt: Appointment) => {
-        appt.serviceIds.forEach((serviceId: string) => {
-            if(serviceCounts[serviceId]) {
-                serviceCounts[serviceId]++;
+        appt.items.forEach(item => {
+            if(serviceCounts[item.serviceId]) {
+                serviceCounts[item.serviceId]++;
             } else {
-                serviceCounts[serviceId] = 1;
+                serviceCounts[item.serviceId] = 1;
             }
             totalServices++;
         });
@@ -309,14 +309,6 @@ export default function ShopDashboardPage() {
       </div>
     </div>
     <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
-      <Button
-        onClick={() => setCashierOpen(true)}
-        className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
-        size="icon"
-      >
-        <Store className="h-8 w-8" />
-        <span className="sr-only">Abrir Caixa</span>
-      </Button>
     </>
   )
 }
