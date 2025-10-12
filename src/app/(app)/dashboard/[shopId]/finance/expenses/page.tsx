@@ -119,7 +119,7 @@ export default function ExpensesPage() {
             <CardDescription>Soma de todas as despesas encontradas no período.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-red-600">R${totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+            <p className="text-3xl font-bold text-red-600">R$ {totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           </CardContent>
         </Card>
 

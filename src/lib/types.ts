@@ -194,6 +194,7 @@ export type SaleItem = {
     price: number;
     quantity: number;
     type: 'service' | 'product';
+    barberId?: string; // Optional, for service commissions
 };
 
 export type Service = {
