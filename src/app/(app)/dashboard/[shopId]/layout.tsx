@@ -66,6 +66,12 @@ export default function ShopLayout({
     },
     { href: `/dashboard/${shopId}/clients`, label: 'Clientes', icon: Users },
     {
+      href: `/dashboard/${shopId}/settings`,
+      query: 'tab=team',
+      label: 'Profissionais',
+      icon: Users,
+    },
+    {
       href: `/dashboard/${shopId}/services`,
       label: 'Serviços',
       icon: ClipboardList,
@@ -96,8 +102,8 @@ export default function ShopLayout({
         <SidebarContent>
           <SidebarMenu>
             {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+              <SidebarMenuItem key={item.label}>
+                <Link href={`${item.href}${item.query ? `?${item.query}`: ''}`}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
