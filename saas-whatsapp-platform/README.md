@@ -46,36 +46,21 @@ saas-whatsapp-platform/
 │
 ├── 📄 LEIA-ME-PRIMEIRO.md          ⭐ COMECE AQUI!
 ├── 📄 INDEX.md                     Índice completo
-├── 📄 STATUS_PROJETO.md            Status detalhado
+├── 📄 docs/PRODUCT_MODULES.md       ⭐ Módulos do Produto
 │
 ├── 📖 docs/
 │   ├── deploy/                     Deploy e infraestrutura
-│   │   ├── 01-DEPLOY-GUIA-COMPLETO.md
-│   │   ├── DEPLOY_GCP_FREE.md
-│   │   └── DEPLOY_PRODUCAO_COMPLETO.md
-│   │
 │   ├── setup/                      Configuração e schema
-│   │   ├── 02-CONFIGURACAO-BARBEARIA.md  ⭐ Adicionar barbearia
-│   │   ├── 03-SCHEMA-FIRESTORE.md
-│   │   └── FIRESTORE_SCHEMA_FINAL.md
-│   │
-│   ├── 04-ACESSO-QUALQUER-PC.md    Acesso remoto
-│   ├── INTEGRACAO_FRONTEND.md      Dashboard futuro
-│   └── PLANO_MIGRACAO.md           Escalabilidade
+│   └── ...                         (outros guias)
 │
 ├── 🤖 n8n-workflows/
 │   └── 04-atendimento-completo-groq.json  ⭐ Workflow principal
 │
 ├── 📜 scripts/
-│   ├── deploy-gcp-free-auto.sh     Deploy automatizado
-│   ├── monitor.sh                  Monitoramento
-│   ├── backup-manual.sh            Backup
-│   └── healthcheck.sh              Health check
+│   └── ...                         Scripts de automação
 │
 ├── 🔥 firebase/
-│   ├── firebase-adminsdk.json      Service Account
-│   ├── firestore.rules             Security rules
-│   └── firestore.indexes.json      Índices
+│   └── ...                         Configurações do Firebase
 │
 └── 🐳 docker-compose.yml            Config Docker produção
 ```
@@ -106,15 +91,11 @@ saas-whatsapp-platform/
 
 ---
 
-## 🤖 Funcionalidades
+## 🤖 Módulos e Funcionalidades
 
-- ✅ **Atendimento com IA** (Groq - Llama 3.1-70b)
-- ✅ **Agendamentos automáticos com IA** (Consulta Firestore em tempo real)
-- ✅ **Multi-tenant** (múltiplas barbearias)
-- ✅ **Salva no Firestore** (Clientes, Conversas, Agendamentos)
-- ✅ **Cria clientes automaticamente**
-- ⏳ **Dashboard Next.js** (em desenvolvimento)
-- ⏳ **Lembretes automáticos** (próximo passo)
+Para uma visão detalhada do que foi construído e quais são os próximos passos, consulte o mapa de módulos do produto:
+
+- **[docs/PRODUCT_MODULES.md](docs/PRODUCT_MODULES.md)** ⭐ Visão Estratégica do Produto
 
 ---
 
@@ -131,22 +112,6 @@ saas-whatsapp-platform/
 ### **Configuração:**
 - **[docs/setup/02-CONFIGURACAO-BARBEARIA.md](docs/setup/02-CONFIGURACAO-BARBEARIA.md)** ⭐
 - **[docs/setup/03-SCHEMA-FIRESTORE.md](docs/setup/03-SCHEMA-FIRESTORE.md)**
-
-### **Gerenciamento:**
-- **[docs/04-ACESSO-QUALQUER-PC.md](docs/04-ACESSO-QUALQUER-PC.md)** ⭐
-
----
-
-## 💰 Custos
-
-| Item | Valor/Mês |
-|------|-----------|
-| VM GCP e2-micro | R$ 0,00 (Free Tier) |
-| Groq API | R$ 0,00 (14k req/dia) |
-| Firebase | R$ 0,00 (Spark Plan) |
-| **TOTAL** | **R$ 0,00/mês** |
-
-**Capacidade:** 4-5 barbearias simultâneas
 
 ---
 
@@ -165,40 +130,6 @@ docker-compose logs -f  # Ver logs em tempo real
 docker-compose restart  # Reiniciar tudo
 docker stats            # Uso de recursos
 ```
-
----
-
-## 📊 Capacidade do Servidor
-
-| Barbearias | RAM Usada | Status |
-|------------|-----------|--------|
-| 1-3 | ~400MB | ✅ Excelente |
-| 4-5 | ~600MB | ✅ Bom |
-| 6+ | >700MB | ⚠️ Upgrade necessário |
-
-**Quando crescer:** Migrar para VPS 4GB (R$ 24/mês) - Ver [docs/PLANO_MIGRACAO.md](docs/PLANO_MIGRACAO.md)
-
----
-
-## 🎯 Próximos Passos (7 minutos)
-
-- [x] Ativar Firestore ✅
-- [x] Criar owner N8N ✅
-- [x] Documento Firestore criado ✅
-- [ ] Completar dados da barbearia
-- [ ] Importar workflow N8N
-- [ ] Conectar WhatsApp
-- [ ] Testar!
-
-**📖 Ver:** [LEIA-ME-PRIMEIRO.md](LEIA-ME-PRIMEIRO.md) (guia atualizado)
-
----
-
-## 🆘 Suporte
-
-- **Documentação:** Pasta `/docs`
-- **Issues:** GitHub Issues
-- **Email:** seu-email@exemplo.com
 
 ---
 
