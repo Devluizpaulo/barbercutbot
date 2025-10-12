@@ -25,13 +25,20 @@ export type PaymentMethod = {
 export type CashierOperator = {
   id: string;
   name: string;
-  role: 'caixa' | 'gerente';
+  role: string; // 'caixa', 'gerente', etc.
   pin?: string; // 4-digit PIN stored securely
 };
 
+export type ChecklistItem = {
+    id: string;
+    label: string;
+    required: boolean;
+};
 
 export type CashierSettings = {
-  requirePassword?: boolean;
+  requirePinToOpen: boolean;
+  openingChecklist: ChecklistItem[];
+  closingChecklist: ChecklistItem[];
   operators?: CashierOperator[];
 };
 
