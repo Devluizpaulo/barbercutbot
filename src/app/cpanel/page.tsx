@@ -82,12 +82,6 @@ export default function AdminDashboard() {
     const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
     
-    const customersQuery = useMemoFirebase(() => user ? query(collectionGroup(firestore, 'customers')) : null, [firestore, user]);
-    const { data: customers, isLoading: isLoadingCustomers } = useCollection<Customer>(customersQuery);
-
-    const financialRecordsQuery = useMemoFirebase(() => user ? query(collectionGroup(firestore, 'financialRecords')) : null, [firestore, user]);
-    const { data: financialRecords, isLoading: isLoadingFinancialRecords } = useCollection<FinancialRecord>(financialRecordsQuery);
-
     const usersQuery = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
@@ -98,11 +92,6 @@ export default function AdminDashboard() {
       return new Date(timestamp);
     }
     
-    const totalRevenue = useMemo(() => {
-        if (!financialRecords) return 0;
-        return financialRecords.reduce((acc, record) => record.type === 'income' ? acc + record.amount : acc, 0)
-    }, [financialRecords]);
-
     const newShopsChartData = useMemo(() => {
         const data = JSON.parse(JSON.stringify(initialChartData));
         if (!shops) return data;
@@ -136,7 +125,7 @@ export default function AdminDashboard() {
         setShopToDeactivate(null);
     };
 
-    const isLoading = isLoadingShops || isLoadingCustomers || isLoadingFinancialRecords || isLoadingUsers;
+    const isLoading = isLoadingShops || isLoadingUsers;
 
   return (
     <>
@@ -154,14 +143,14 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Receita Total (Mês)
+                Receita Total (MRR)
               </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R${totalRevenue.toLocaleString('pt-BR')}</div>}
+              {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">R$ --</div>}
               <p className="text-xs text-muted-foreground">
-                +5.2% em relação ao mês passado (simulado)
+                (Em desenvolvimento)
               </p>
             </CardContent>
           </Card>
@@ -182,12 +171,12 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total de Clientes
+                Total de Usuários
               </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{customers?.length || 0}</div>}
+              {isLoading ? <Skeleton className="h-8 w-1/4" /> : <div className="text-2xl font-bold">{users?.length || 0}</div>}
               <p className="text-xs text-muted-foreground">
                 em toda a plataforma
               </p>
@@ -386,5 +375,3 @@ export default function AdminDashboard() {
     </>
   )
 }
-
-    
