@@ -451,11 +451,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the SaaS application. Note: Authentication details (passwords, etc.) should be managed by Firebase Authentication and are NOT included here.",
+      "description": "Represents a user of the SaaS application.  Note: Authentication details (passwords, etc.) should be managed by Firebase Authentication and are NOT included here.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user. This is the Firebase UID."
+          "description": "Unique identifier for the user.  This is the Firebase UID."
         },
         "firstName": {
           "type": "string",
@@ -469,19 +469,29 @@
           "type": "string",
           "description": "Email address of the user.",
           "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user within the application.",
-          "enum": ["owner", "admin"]
         }
       },
       "required": [
         "id",
         "firstName",
         "lastName",
-        "email",
-        "role"
+        "email"
+      ]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an administrator user. The document ID is the user's UID.",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the admin was added."
+        }
+      },
+      "required": [
+        "createdAt"
       ]
     },
     "Ticket": {
@@ -577,7 +587,13 @@
     "providers": [
       "password",
       "anonymous"
-    ]
+    ],
+    "customClaims": {
+        "admin": {
+            "type": "boolean",
+            "description": "Grants god-mode access to all Firestore data."
+        }
+    }
   },
   "firestore": {
     "structure": [

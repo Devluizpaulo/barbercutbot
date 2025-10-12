@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function CPanelSignupPage() {
@@ -56,10 +56,6 @@ export default function CPanelSignupPage() {
             displayName: `${firstName} ${lastName}`
         });
 
-        // Use a batch to write to both collections atomically
-        const batch = writeBatch(firestore);
-
-        // Create the document in the 'users' collection with the 'admin' role
         const userDocRef = doc(firestore, 'users', user.uid);
         const userData = {
             id: user.uid,
@@ -69,18 +65,20 @@ export default function CPanelSignupPage() {
             role: 'admin', // Assign the admin role
             createdAt: serverTimestamp(),
         };
-        batch.set(userDocRef, userData);
-
-        // No longer need to write to a separate 'admins' collection
+        await setDoc(userDocRef, userData);
         
-        await batch.commit();
-
+        // IMPORTANT: The custom claim must be set on the backend.
+        // This frontend code CANNOT set claims. This toast is aspirational
+        // and assumes a backend function (e.g., a Cloud Function) will
+        // trigger on user creation to set the claim.
+        
         toast({
           title: 'Conta de Administrador Criada!',
-          description: 'Você será redirecionado para o painel de controle.',
+          description: 'Você será redirecionado para o painel de controle. Pode ser necessário fazer login novamente para que as permissões de admin sejam aplicadas.',
         });
         
-        router.push('/cpanel');
+        await signOut(auth);
+        router.push('/cpanel/login');
 
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
@@ -234,4 +232,3 @@ export default function CPanelSignupPage() {
   );
 }
 
-    
