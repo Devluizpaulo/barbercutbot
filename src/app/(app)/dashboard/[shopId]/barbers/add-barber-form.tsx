@@ -260,14 +260,14 @@ export function AddBarberForm({
                 <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
             </TabsList>
              <TabsContent value="profile" className="mt-6 space-y-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-24 w-24">
                     <AvatarImage src={avatarUrl} alt={firstName} />
                     <AvatarFallback>
                       {firstName ? (
-                        firstName.charAt(0)
+                        firstName.charAt(0).toUpperCase()
                       ) : (
-                        <User className="h-8 w-8" />
+                        <User className="h-10 w-10" />
                       )}
                     </AvatarFallback>
                   </Avatar>

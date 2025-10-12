@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -143,12 +144,12 @@ export default function ServicesPage() {
                   Adicionar Serviço
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-xl">
+              <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>{selectedService ? 'Editar Serviço' : 'Adicionar Novo Serviço'}</DialogTitle>
-                  <p className="text-sm text-muted-foreground pt-1">
+                  <DialogDescription>
                     Preencha os detalhes do serviço.
-                  </p>
+                  </DialogDescription>
                 </DialogHeader>
                 <AddServiceForm
                   shopId={shopId}
@@ -287,3 +288,5 @@ export default function ServicesPage() {
     </>
   );
 }
+
+    

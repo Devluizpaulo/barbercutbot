@@ -33,6 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -165,16 +166,16 @@ export default function BarbersPage() {
                   Adicionar Profissional
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl p-0">
+              <DialogContent className="sm:max-w-3xl p-0">
                   <DialogHeader className="p-6 pb-0">
                     <DialogTitle>
                       {selectedBarber
                         ? 'Editar Profissional'
                         : 'Adicionar Novo Profissional'}
                     </DialogTitle>
-                    <p className="text-sm text-muted-foreground pt-1">
+                    <DialogDescription>
                       Preencha os detalhes do novo profissional.
-                    </p>
+                    </DialogDescription>
                   </DialogHeader>
                    <ScrollArea className="max-h-[80vh]">
                      <div className="p-6 pt-0">
@@ -320,3 +321,5 @@ export default function BarbersPage() {
     </>
   );
 }
+
+    
