@@ -32,7 +32,6 @@ export default function CPanelSignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [adminCode, setAdminCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -48,7 +47,7 @@ export default function CPanelSignupPage() {
         setIsLoading(false);
         return;
     }
-
+    
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -83,7 +82,7 @@ export default function CPanelSignupPage() {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
         if (error.code === 'auth/email-already-in-use') {
-            description = 'Esta conta de administrador já existe.';
+            description = 'Este endereço de e-mail já está em uso.';
         }
         toast({
           variant: 'destructive',
