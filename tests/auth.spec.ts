@@ -5,7 +5,7 @@ test('admin login flow', async ({ page }) => {
   await page.goto('/cpanel/login');
 
   // Fill in the email and password
-  await page.getByLabel('Email').fill('admin@bbr.com');
+  await page.getByLabel('Email').fill('admin@flowcutspro.com');
   await page.getByLabel('Senha').fill('password');
 
   // Click the login button
