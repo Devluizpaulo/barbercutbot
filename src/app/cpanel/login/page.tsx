@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,19 +40,6 @@ export default function CpanelLoginPage() {
     return adminDoc.exists();
   };
 
-  useEffect(() => {
-    const checkUser = async () => {
-      if (!isUserLoading && user) {
-        const isAdmin = await checkIsAdmin(user.uid);
-        if (isAdmin) {
-            router.push('/cpanel');
-        }
-      }
-    };
-    checkUser();
-  }, [user, isUserLoading, router]);
-
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -70,8 +58,6 @@ export default function CpanelLoginPage() {
         if (isAdmin) {
             router.push('/cpanel');
         } else {
-            // If a non-admin logs in through the cpanel page, send them to their shops.
-            // Or show an error if you want to restrict this page strictly to admins.
             router.push('/dashboard/shops');
         }
 
@@ -91,7 +77,7 @@ export default function CpanelLoginPage() {
     }
   };
 
-  if (isUserLoading || (!isUserLoading && user)) {
+  if (isUserLoading) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-secondary">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
