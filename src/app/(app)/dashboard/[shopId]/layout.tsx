@@ -14,6 +14,7 @@ import {
   SidebarSeparator,
   SidebarMenuSub,
   SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -33,7 +34,8 @@ import {
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, signOut } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import type { BarberShop } from '@/lib/types';
 
 export default function ShopLayout({
