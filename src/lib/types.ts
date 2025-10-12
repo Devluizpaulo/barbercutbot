@@ -153,6 +153,20 @@ export type Service = {
   createdAt: Timestamp;
 };
 
+export type Product = {
+  id: string;
+  barberShopId: string;
+  name: string;
+  description?: string;
+  price: number;
+  cost?: number;
+  stockQuantity: number;
+  sku?: string;
+  imageUrl?: string;
+  ativo?: boolean;
+  createdAt: Timestamp;
+}
+
 export type FinancialRecord = {
   id: string;
   barberShopId: string;

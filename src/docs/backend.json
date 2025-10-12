@@ -327,6 +327,25 @@
         "duration"
       ]
     },
+     "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product for sale at the barber shop.",
+      "properties": {
+        "id": { "type": "string" },
+        "barberShopId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "sku": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "ativo": { "type": "boolean" }
+      },
+      "required": ["id", "barberShopId", "name", "price", "stockQuantity"]
+    },
     "FinancialRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "FinancialRecord",
@@ -621,6 +640,20 @@
         }
       },
       {
+        "path": "/barberShops/{barberShopId}/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores products for a specific barber shop.",
+          "params": [
+            { "name": "barberShopId" },
+            { "name": "productId" }
+          ]
+        }
+      },
+      {
         "path": "/barberShops/{barberShopId}/customers/{customerId}",
         "definition": {
           "entityName": "Customer",
@@ -773,7 +806,7 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
+    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/products/{productId}`: Stores product data.\n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
   }
 }
     

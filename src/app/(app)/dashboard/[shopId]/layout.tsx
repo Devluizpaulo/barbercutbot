@@ -29,6 +29,7 @@ import {
   LifeBuoy,
   TrendingUp,
   TrendingDown,
+  Package,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ export default function ShopLayout({
     { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
     { href: `/dashboard/${shopId}/barbers`, label: "Barbeiros", icon: User },
     { href: `/dashboard/${shopId}/services`, label: "Serviços", icon: ClipboardList },
+    { href: `/dashboard/${shopId}/products`, label: "Produtos", icon: Package },
     { href: `/dashboard/${shopId}/suppliers`, label: "Fornecedores", icon: Truck },
   ];
   
