@@ -48,9 +48,10 @@ export default function CPanelLayout({
   useEffect(() => {
     // Se o carregamento do usuário terminou
     if (!isUserLoading) {
-      // Se não há usuário, redireciona para a página de login do cpanel
+      // Se não há usuário, redireciona para a página de login do cpanel,
+      // a menos que ele já esteja na página de login ou de cadastro.
       if (!user) {
-        if (pathname !== '/cpanel/login') {
+        if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
             router.push('/cpanel/login');
         }
       } 
@@ -60,7 +61,7 @@ export default function CPanelLayout({
         router.push('/dashboard/shops');
       }
       // Se é o admin e está na página de login, redireciona para o dashboard do cpanel
-      else if (user.email === 'admin@flowcutspro.com' && pathname === '/cpanel/login') {
+      else if (user.email === 'admin@flowcutspro.com' && (pathname === '/cpanel/login' || pathname === '/cpanel/signup')) {
         router.push('/cpanel');
       }
     }
@@ -82,7 +83,7 @@ export default function CPanelLayout({
     { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
 
-  if (isUserLoading || (!user && pathname !== '/cpanel/login')) {
+  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -90,8 +91,8 @@ export default function CPanelLayout({
       )
   }
   
-  // Do not render the layout on the login page
-  if (pathname === '/cpanel/login') {
+  // Do not render the layout on the login or signup pages
+  if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
     return <>{children}</>;
   }
 
