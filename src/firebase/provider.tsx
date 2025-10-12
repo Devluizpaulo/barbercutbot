@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -67,14 +66,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return;
     }
 
-    setUserAuthState({ user: null, isUserLoading: true, userError: null });
-
     const unsubscribe = onIdTokenChanged(
       auth,
       async (firebaseUser) => {
         if (firebaseUser) {
+            // Keep loading until we have the role from the token
+            setUserAuthState(prevState => ({ ...prevState, isUserLoading: true }));
             try {
-                // Force a token refresh to get the latest custom claims.
                 const idTokenResult = await firebaseUser.getIdTokenResult(true);
                 const isAdmin = !!idTokenResult.claims.admin;
 
@@ -84,14 +82,16 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
                     role: isAdmin ? 'admin' : 'owner',
                 };
                 
+                // Now that we have the role, loading is complete
                 setUserAuthState({ user: userWithRole, isUserLoading: false, userError: null });
 
             } catch (error) {
                  console.error("FirebaseProvider: Error processing user token:", error);
-                 // Fallback to basic user if token processing fails
+                 // Fallback to basic user if token processing fails, but mark loading as done
                  setUserAuthState({ user: firebaseUser as UserWithRole, isUserLoading: false, userError: null });
             }
         } else {
+            // No user, loading is complete
             setUserAuthState({ user: null, isUserLoading: false, userError: null });
         }
       },
@@ -101,7 +101,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]); // Removed firestore dependency as it's not used here
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);

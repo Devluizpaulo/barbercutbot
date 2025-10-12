@@ -15,22 +15,24 @@ export default function AuthLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
+    // Wait until the user loading process is fully complete.
     if (isUserLoading) {
-      // Do nothing while loading to prevent flicker
       return;
     }
 
+    // After loading, if a user object exists, then we can safely check its role.
     if (user) {
-      // If a user is logged in, redirect them to the correct dashboard.
       if (user.role === 'admin') {
         router.push('/cpanel');
       } else {
         router.push('/dashboard/shops');
       }
     }
+    // If there's no user after loading, do nothing and let the child page (login/signup) render.
   }, [user, isUserLoading, router]);
 
-  // Show a loading screen while checking for a user or during redirection.
+  // Show a loading screen ONLY if we are still checking the user state.
+  // If we are done loading and there is a user, we will be redirecting, so a loader is appropriate.
   if (isUserLoading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
@@ -39,6 +41,6 @@ export default function AuthLayout({
     );
   }
   
-  // If no user is found after loading, show the children (login/signup page).
+  // If loading is finished AND there is no user, render the login/signup page.
   return <>{children}</>;
 }
