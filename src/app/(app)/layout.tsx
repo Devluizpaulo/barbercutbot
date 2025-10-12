@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import DashboardLayout from './dashboard/layout';
 
 export default function AppLayout({
   children,
@@ -30,5 +29,6 @@ export default function AppLayout({
     );
   }
 
-  return <DashboardLayout>{children}</DashboardLayout>;
+  // The nested dashboard layout will now be automatically applied by Next.js
+  return <>{children}</>;
 }
