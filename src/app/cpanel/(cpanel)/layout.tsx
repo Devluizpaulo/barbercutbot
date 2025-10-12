@@ -5,7 +5,7 @@ import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context'; 
-import { CPanelNav } from '../cpanel-nav';
+import { CPanelNav } from '@/app/cpanel/cpanel-nav.tsx';
 
 export default function CPanelLayout({
   children,
