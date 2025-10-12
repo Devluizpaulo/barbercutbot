@@ -117,8 +117,8 @@ export type Appointment = {
   id: string;
   barberShopId: string;
   customerId: string;
-  barberId: string;
-  serviceIds: string[];
+  barberId: string; // This is now a single ID
+  serviceIds: string[]; // This can still be an array if needed
   items: AppointmentItem[];
   startTime: Timestamp | Date | string;
   endTime: Timestamp | Date | string;
@@ -286,5 +286,3 @@ export type Document = {
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
 };
-
-    
