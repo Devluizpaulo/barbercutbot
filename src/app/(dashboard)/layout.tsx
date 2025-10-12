@@ -57,10 +57,17 @@ export default function DashboardLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // This effect handles redirection for non-authenticated users.
-    // It is kept from the original (app) layout.
-    if (!isUserLoading && !user) {
-       router.push('/login');
+    if (isUserLoading) return;
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    // If the user is an admin, redirect them away from the normal dashboard
+    // to the CPanel.
+    if (user.role === 'admin') {
+      router.push('/cpanel');
     }
   }, [user, isUserLoading, router, pathname]);
 
@@ -71,9 +78,8 @@ export default function DashboardLayout({
     router.push('/login');
   };
   
-  // This loading state covers both user auth check and ensures a user exists
-  // before attempting to render a dashboard.
-  if (isUserLoading || !user) {
+  // This loading state covers auth check and ensures the user is not an admin.
+  if (isUserLoading || !user || user.role === 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -81,7 +87,7 @@ export default function DashboardLayout({
     );
   }
 
-  // This check is important for the case where a user lands on `/dashboard`
+  // This check is important for when a user lands on `/dashboard`
   // without a specific shopId.
   if (!shopId) {
     return (

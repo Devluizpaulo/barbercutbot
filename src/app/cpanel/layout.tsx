@@ -80,29 +80,22 @@ export default function CPanelLayout({
 
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (isUserLoading) {
-        return;
-      }
+    if (isUserLoading) return;
 
-      if (!user) {
-        if (pathname !== '/cpanel/login') {
-            router.push('/cpanel/login');
-        }
-        return;
+    if (!user) {
+      if (pathname !== '/cpanel/login') {
+        router.push('/cpanel/login');
       }
-      
-      // We assume the role is now correctly populated on the user object by useUser
-      if (user.role !== 'admin') {
-         router.push('/dashboard/shops');
-      } else if (pathname === '/cpanel/login') {
-         router.push('/cpanel');
-      }
-    };
-    
-    checkAdminStatus();
+      return;
+    }
 
+    if (user.role !== 'admin') {
+      router.push('/dashboard/shops');
+    } else if (pathname === '/cpanel/login') {
+      router.push('/cpanel');
+    }
   }, [user, isUserLoading, router, pathname]);
+
 
   const handleLogout = async () => {
     if (auth) {
@@ -111,7 +104,7 @@ export default function CPanelLayout({
     router.push('/cpanel/login');
   };
   
-  if (isUserLoading || (!user && pathname !== '/cpanel/login')) {
+  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') || (user && user.role !== 'admin' && pathname !== '/dashboard/shops')) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

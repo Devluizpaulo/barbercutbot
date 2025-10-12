@@ -42,16 +42,10 @@ export default function CpanelLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const loggedInUser = userCredential.user;
 
-        const userDocRef = doc(firestore, 'users', loggedInUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            throw new Error('User profile not found.');
-        }
+        // Force refresh to get custom claims
+        const idTokenResult = await loggedInUser.getIdTokenResult(true);
+        const isAdmin = !!idTokenResult.claims.admin;
 
-        const userData = userDoc.data() as UserProfile;
-        const isAdmin = userData?.role === 'admin';
-        
         toast({
           title: 'Login bem-sucedido!',
           description: isAdmin ? 'Redirecionando para o painel de controle.' : 'Redirecionando para sua loja.',
@@ -85,9 +79,8 @@ export default function CpanelLoginPage() {
       
       if (user) {
         try {
-            const userDocRef = doc(firestore, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+            const idTokenResult = await user.getIdTokenResult();
+            if (idTokenResult.claims.admin) {
                 router.push('/cpanel');
             }
         } catch (error) {
@@ -96,7 +89,7 @@ export default function CpanelLoginPage() {
       }
     };
     checkUser();
-  }, [user, isUserLoading, router, firestore]);
+  }, [user, isUserLoading, router]);
 
   if (isUserLoading) {
       return (
