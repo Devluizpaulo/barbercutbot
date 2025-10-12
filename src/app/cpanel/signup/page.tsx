@@ -109,7 +109,7 @@ export default function CPanelSignupPage() {
             <div className="mx-auto">
                 <Logo />
             </div>
-          <CardTitle>Cadastro de Administrador</CardTitle>
+          <CardTitle className="text-2xl font-headline">Cadastro de Administrador</CardTitle>
           <CardDescription>
             Crie a conta principal para gerenciar a plataforma.
           </CardDescription>

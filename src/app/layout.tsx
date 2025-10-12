@@ -1,12 +1,17 @@
 
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { PT_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
-const poppins = Poppins({ 
+const pt_sans = PT_Sans({ 
+  subsets: ["latin"], 
+  weight: ["400", "700"],
+  variable: "--font-body",
+});
+
+const playfair_display = Playfair_Display({ 
   subsets: ["latin"], 
   weight: ["400", "500", "600", "700"],
   variable: "--font-headline",
@@ -25,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${inter.variable} ${poppins.variable} font-body antialiased`}>
+      <body className={`${pt_sans.variable} ${playfair_display.variable} font-body antialiased`}>
         <FirebaseClientProvider>
           {children}
           <Toaster />

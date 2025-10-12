@@ -76,7 +76,7 @@ export default function CpanelLoginPage() {
             <div className="mx-auto">
                 <Logo />
             </div>
-          <CardTitle>Acesso Restrito</CardTitle>
+          <CardTitle className="text-2xl font-headline">Acesso Restrito</CardTitle>
           <CardDescription>
             Faça login para acessar o painel de administração.
           </CardDescription>
