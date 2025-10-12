@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Firestore } from 'firebase/firestore';
+import { Auth, User, onIdTokenChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 interface FirebaseProviderProps {
@@ -68,29 +69,26 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     setUserAuthState({ user: null, isUserLoading: true, userError: null });
 
-    const unsubscribe = onAuthStateChanged(
+    const unsubscribe = onIdTokenChanged(
       auth,
       async (firebaseUser) => {
         if (firebaseUser) {
             try {
-                // Fetch user document from Firestore to get the role
-                const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-                const userDoc = await getDoc(userDocRef);
-                const role = userDoc.exists() ? userDoc.data().role : 'owner';
+                // Force a token refresh to get the latest custom claims.
+                const idTokenResult = await firebaseUser.getIdTokenResult(true);
+                const isAdmin = !!idTokenResult.claims.admin;
 
                 const userWithRole: UserWithRole = {
                     ...firebaseUser,
-                    // The following line is a hack to get the user object to be the same reference
-                    // This is needed because of how React handles object references in state
                     ...Object.fromEntries(Object.entries(firebaseUser)),
-                    role: role,
+                    role: isAdmin ? 'admin' : 'owner',
                 };
-
+                
                 setUserAuthState({ user: userWithRole, isUserLoading: false, userError: null });
 
             } catch (error) {
-                 console.error("FirebaseProvider: Error fetching user role:", error);
-                 // Fallback to basic user if role fetch fails
+                 console.error("FirebaseProvider: Error processing user token:", error);
+                 // Fallback to basic user if token processing fails
                  setUserAuthState({ user: firebaseUser as UserWithRole, isUserLoading: false, userError: null });
             }
         } else {
@@ -98,12 +96,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }
       },
       (error) => {
-        console.error("FirebaseProvider: onAuthStateChanged error:", error);
+        console.error("FirebaseProvider: onIdTokenChanged error:", error);
         setUserAuthState({ user: null, isUserLoading: false, userError: error });
       }
     );
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]);
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
