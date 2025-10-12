@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Lock, Menu, Shield, Mail } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 
@@ -26,9 +26,22 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        // If a user is already logged in, redirect them.
+        if (user.role === 'admin') {
+            router.push('/cpanel');
+        } else {
+            router.push('/dashboard/shops');
+        }
+    }
+  }, [user, isUserLoading, router]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,22 +49,16 @@ export default function LoginPage() {
 
     try {
         await signInWithEmailAndPassword(auth, email, password);
+        // The useEffect hook will handle redirection after the user state is updated.
         toast({
           title: 'Login bem-sucedido!',
-          description: 'Bem-vindo de volta!',
+          description: 'Redirecionando...',
         });
-        if (email === 'admin@flowcutspro.com') {
-            router.push('/cpanel');
-        } else {
-            router.push('/dashboard/shops');
-        }
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao tentar fazer login.';
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
             description = 'E-mail ou senha inválidos. Por favor, verifique suas credenciais.';
-        } else if (error.code === 'auth/wrong-password') {
-            description = 'Senha incorreta. Por favor, tente novamente.';
         }
         toast({
           variant: 'destructive',
@@ -62,6 +69,14 @@ export default function LoginPage() {
         setIsLoading(false);
     }
   };
+
+  if (isUserLoading || user) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-secondary">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      )
+  }
 
   return (
      <div className="flex flex-col min-h-screen bg-white dark:bg-background">

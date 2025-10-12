@@ -20,16 +20,12 @@ import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
-import type { UserProfile } from '@/lib/types';
 
 export default function CpanelLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,19 +38,23 @@ export default function CpanelLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const loggedInUser = userCredential.user;
 
-        // Force refresh to get custom claims
+        // Force a token refresh to get the latest custom claims.
         const idTokenResult = await loggedInUser.getIdTokenResult(true);
         const isAdmin = !!idTokenResult.claims.admin;
-
-        toast({
-          title: 'Login bem-sucedido!',
-          description: isAdmin ? 'Redirecionando para o painel de controle.' : 'Redirecionando para sua loja.',
-        });
         
         if (isAdmin) {
-            router.push('/cpanel');
+            toast({
+              title: 'Login de Admin bem-sucedido!',
+              description: 'Redirecionando para o painel de controle.',
+            });
+            // Let the auth layout handle the redirection
         } else {
-            router.push('/dashboard/shops');
+            await signOut(auth);
+            toast({
+              variant: 'destructive',
+              title: 'Acesso Negado',
+              description: 'Você não tem permissões de administrador.',
+            });
         }
 
     } catch (error: any) {
@@ -72,32 +72,6 @@ export default function CpanelLoginPage() {
         setIsLoading(false);
     }
   };
-  
-   useEffect(() => {
-    const checkUser = async () => {
-      if (isUserLoading) return;
-      
-      if (user) {
-        try {
-            const idTokenResult = await user.getIdTokenResult();
-            if (idTokenResult.claims.admin) {
-                router.push('/cpanel');
-            }
-        } catch (error) {
-            console.error("Error checking user role on mount:", error);
-        }
-      }
-    };
-    checkUser();
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-secondary">
-            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      )
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
@@ -142,7 +116,7 @@ export default function CpanelLoginPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+      <main className="flex-1 flex items-center justify-center pt-20">
         <Card className="w-full max-w-md">
             <CardHeader className="text-center space-y-4">
                 <div className="mx-auto">
@@ -191,7 +165,7 @@ export default function CpanelLoginPage() {
                         Entrar
                     </Button>
                     <p className="text-sm text-center text-muted-foreground">
-                        Não tem uma conta de admin?{' '}
+                        Precisa de uma conta de admin?{' '}
                         <Link href="/cpanel/signup" className="underline hover:text-primary">
                             Cadastre-se
                         </Link>

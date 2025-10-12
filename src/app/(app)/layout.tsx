@@ -1,10 +1,10 @@
 
-"use client";
+'use client';
 
-import { usePathname, useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
-import { useUser } from "@/firebase";
-import { useEffect } from "react";
+import { usePathname, useRouter } from 'next/navigation';
+import { LoaderCircle } from 'lucide-react';
+import { useUser } from '@/firebase';
+import { useEffect } from 'react';
 
 export default function AppLayout({
   children,
@@ -16,14 +16,24 @@ export default function AppLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-       if(pathname !== '/login' && pathname !== '/signup') {
-         router.push('/login');
-       }
+    if (isUserLoading) return;
+
+    // If no user is logged in, redirect them to the regular login page.
+    if (!user) {
+      router.push('/login');
+      return;
     }
+
+    // If the user is an admin, they should not be in the regular app section.
+    // Redirect them to the CPanel.
+    if (user.role === 'admin') {
+      router.push('/cpanel');
+    }
+
   }, [user, isUserLoading, router, pathname]);
 
-  if (isUserLoading || (!user && (pathname !== '/login' && pathname !== '/signup'))) {
+  // Show loading spinner while checking auth or if the user is an admin being redirected.
+  if (isUserLoading || !user || user.role === 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -31,5 +41,6 @@ export default function AppLayout({
     );
   }
 
+  // Render children only if the user is a regular user.
   return <>{children}</>;
 }

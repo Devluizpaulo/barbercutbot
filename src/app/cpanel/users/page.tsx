@@ -24,11 +24,11 @@ import type { UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { useCPanel } from '../layout'; // Import the new context hook
+import { useCPanel } from '../layout';
 
 export default function AdminUsersPage() {
     const [searchTerm, setSearchTerm] = useState('');
-    const { users, shops, isLoading } = useCPanel(); // Use data from context
+    const { users, shops, isLoading } = useCPanel(); 
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];

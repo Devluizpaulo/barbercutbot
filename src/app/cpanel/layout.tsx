@@ -25,6 +25,7 @@ import {
   Ticket,
   LoaderCircle,
   Store,
+  Shield,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -32,11 +33,9 @@ import { signOut } from "firebase/auth";
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
-import { Button } from "@/components/ui/button";
-import { doc, getDoc, collection, query, where } from "firebase/firestore";
+import { collection, query } from "firebase/firestore";
 import type { UserProfile, BarberShop, Ticket as TicketType } from "@/lib/types";
 
-// 1. Create a Context for CPanel data
 interface CPanelContextType {
   shops: BarberShop[] | null;
   users: UserProfile[] | null;
@@ -51,11 +50,10 @@ const CPanelContext = createContext<CPanelContextType>({
   isLoading: true,
 });
 
-// Custom hook to use the CPanel data
 export const useCPanel = () => useContext(CPanelContext);
 
 
-export default function CPanelLayout({
+export default function CPanelDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -66,39 +64,26 @@ export default function CPanelLayout({
   const auth = useAuth();
   const firestore = useFirestore();
 
-  // --- Data Fetching centralizada no Layout ---
-  const shopsQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'barberShops') : null, [firestore, user]);
+  const shopsQuery = useMemoFirebase(() => (user?.role === 'admin') ? collection(firestore, 'barberShops') : null, [firestore, user]);
   const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
-  const usersQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'users') : null, [firestore, user]);
+  const usersQuery = useMemoFirebase(() => (user?.role === 'admin') ? collection(firestore, 'users') : null, [firestore, user]);
   const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
-  const ticketsQuery = useMemoFirebase(() => user?.role === 'admin' ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
+  const ticketsQuery = useMemoFirebase(() => (user?.role === 'admin') ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
   const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
   
   const isLoadingData = isLoadingShops || isLoadingUsers || isLoadingTickets;
 
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) return; // Wait until user status is resolved
 
-    if (!user) {
-      // Allow access to login and signup pages for unauthenticated users.
-      if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
-        router.push('/cpanel/login');
-      }
-      return;
+    // If no user is logged in, or the user is not an admin, redirect to login
+    if (!user || user.role !== 'admin') {
+      router.push('/cpanel/login');
     }
-
-    // If user is logged in, check their role.
-    if (user.role !== 'admin') {
-      // If not an admin, redirect them away from cpanel.
-      router.push('/dashboard/shops');
-    } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
-      // If an admin is on login/signup, redirect to cpanel dashboard.
-      router.push('/cpanel');
-    }
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isUserLoading, router]);
 
 
   const handleLogout = async () => {
@@ -108,29 +93,13 @@ export default function CPanelLayout({
     router.push('/cpanel/login');
   };
   
-  // Shows a loading screen for auth check or if user is being redirected.
-  if (isUserLoading || (!user && (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) || (user && user.role !== 'admin' && !pathname.startsWith('/dashboard'))) {
+  if (isUserLoading || !user || user.role !== 'admin') {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
         </div>
       )
   }
-  
-  // Render login/signup pages without the main layout.
-  if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
-    return <>{children}</>;
-  }
-  
-  // Fallback loading state for admin users while data is fetched.
-  if (user?.role !== 'admin') {
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
 
   const navItems = [
     { href: `/cpanel`, label: "Visão Geral", icon: LayoutDashboard },
@@ -200,7 +169,7 @@ export default function CPanelLayout({
                       <Link href="/dashboard/shops">
                         <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
                           <LogOut className="rotate-180" />
-                          <span>Voltar para Lojas</span>
+                          <span>Acessar como Cliente</span>
                         </SidebarMenuButton>
                       </Link>
                     </SidebarMenuItem>

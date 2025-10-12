@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { useAuth, useUser, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -50,33 +50,31 @@ export default function CPanelSignupPage() {
     
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        const newUser = userCredential.user;
         
-        await updateProfile(user, {
+        await updateProfile(newUser, {
             displayName: `${firstName} ${lastName}`
         });
 
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userData = {
-            id: user.uid,
+        // This document is crucial for the backend function to pick up the new user
+        // and assign the custom claim.
+        const userDocRef = doc(firestore, 'users', newUser.uid);
+        await setDoc(userDocRef, {
+            id: newUser.uid,
             firstName,
             lastName,
-            email: user.email,
-            role: 'admin', // Assign the admin role
+            email: newUser.email,
+            role: 'admin',
             createdAt: serverTimestamp(),
-        };
-        await setDoc(userDocRef, userData);
-        
-        // IMPORTANT: The custom claim must be set on the backend.
-        // This frontend code CANNOT set claims. This toast is aspirational
-        // and assumes a backend function (e.g., a Cloud Function) will
-        // trigger on user creation to set the claim.
+        });
         
         toast({
           title: 'Conta de Administrador Criada!',
-          description: 'Você será redirecionado para o painel de controle. Pode ser necessário fazer login novamente para que as permissões de admin sejam aplicadas.',
+          description: 'Você será redirecionado para a tela de login para entrar com suas novas credenciais.',
         });
         
+        // Sign out the user immediately after signup, forcing them to log in.
+        // This ensures the custom claim (set by a backend trigger) is present in their next session.
         await signOut(auth);
         router.push('/cpanel/login');
 
@@ -140,7 +138,7 @@ export default function CPanelSignupPage() {
           </div>
         </div>
       </header>
-      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+      <main className="flex-1 flex items-center justify-center pt-20">
         <Card className="w-full max-w-md">
             <CardHeader className="text-center space-y-4">
                 <div className="mx-auto">
@@ -231,4 +229,3 @@ export default function CPanelSignupPage() {
     </div>
   );
 }
-
