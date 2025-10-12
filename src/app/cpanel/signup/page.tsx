@@ -17,8 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, User, Mail, Lock, Key, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, initiateEmailSignUp, setDocumentNonBlocking } from '@/firebase';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -63,13 +63,16 @@ export default function CPanelSignupPage() {
             lastName,
             email: user.email,
         };
-        setDocumentNonBlocking(userDocRef, userData, { merge: true });
-
+        // Use setDoc for the main user profile
+        await setDoc(userDocRef, userData, { merge: true });
+        
+        // Add the user to the 'admins' collection
         const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminData = {
             createdAt: serverTimestamp(),
         };
-        setDocumentNonBlocking(adminDocRef, adminData, { merge: true });
+        await setDoc(adminDocRef, adminData);
+
 
         toast({
           title: 'Conta de Administrador Criada!',
@@ -229,3 +232,5 @@ export default function CPanelSignupPage() {
     </div>
   );
 }
+
+    
