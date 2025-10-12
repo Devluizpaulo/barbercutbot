@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Lock, Menu, Shield } from 'lucide-react';
+import { LoaderCircle, Lock, Menu, Shield, Mail } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
@@ -40,13 +40,23 @@ export default function LoginPage() {
           title: 'Login bem-sucedido!',
           description: 'Bem-vindo de volta!',
         });
-        router.push('/dashboard/shops');
+        if (email === 'admin@flowcutspro.com') {
+            router.push('/cpanel');
+        } else {
+            router.push('/dashboard/shops');
+        }
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
+        let description = 'Ocorreu um erro ao tentar fazer login.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            description = 'E-mail ou senha inválidos. Por favor, verifique suas credenciais.';
+        } else if (error.code === 'auth/wrong-password') {
+            description = 'Senha incorreta. Por favor, tente novamente.';
+        }
         toast({
           variant: 'destructive',
           title: 'Falha no login',
-          description: 'Por favor, verifique seu e-mail e senha.',
+          description,
         });
     } finally {
         setIsLoading(false);
@@ -109,24 +119,32 @@ export default function LoginPage() {
                     <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        />
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="seu@email.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Senha</Label>
-                        <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
                     </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">

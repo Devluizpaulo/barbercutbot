@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Mail, Lock } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
@@ -51,11 +52,18 @@ export default function CpanelLoginPage() {
         router.push('/cpanel');
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
+        let description = 'Ocorreu um erro ao tentar fazer login.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            description = 'Credenciais de administrador inválidas.';
+        } else if (error.code === 'auth/wrong-password') {
+            description = 'Senha incorreta para o administrador.';
+        }
         toast({
           variant: 'destructive',
-          title: 'Credenciais inválidas',
-          description: 'Por favor, verifique seu e-mail e senha.',
+          title: 'Falha no login',
+          description,
         });
+    } finally {
         setIsLoading(false);
     }
   };
@@ -84,24 +92,32 @@ export default function CpanelLoginPage() {
             <CardContent className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                id="email"
-                type="email"
-                placeholder="admin@flowcutspro.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@flowcutspro.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
             </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

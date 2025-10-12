@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, User, Mail, Lock, Key } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -31,7 +31,12 @@ export default function CPanelSignupPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // No ambiente de desenvolvimento, usamos um código fixo. 
+  // Em produção, isso viria de uma variável de ambiente segura.
+  const ADMIN_SECRET_CODE = process.env.NEXT_PUBLIC_ADMIN_SECRET_CODE || 'superadmin2024';
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +47,16 @@ export default function CPanelSignupPage() {
             variant: 'destructive',
             title: 'Cadastro não permitido',
             description: 'Apenas o e-mail de administrador pode se cadastrar aqui.',
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    if (adminCode !== ADMIN_SECRET_CODE) {
+        toast({
+            variant: 'destructive',
+            title: 'Código Inválido',
+            description: 'O código de administrador secreto está incorreto.',
         });
         setIsLoading(false);
         return;
@@ -73,7 +88,6 @@ export default function CPanelSignupPage() {
             email: user.email,
         });
 
-        // Add to admins collection since it's the admin email
         const adminDocRef = doc(firestore, 'admins', user.uid);
         await setDoc(adminDocRef, {
             createdAt: serverTimestamp(),
@@ -119,33 +133,62 @@ export default function CPanelSignupPage() {
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="firstName">Nome</Label>
-                    <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="lastName">Sobrenome</Label>
-                    <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
+                    </div>
                 </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="email">Email de Admin</Label>
-                <Input
-                id="email"
-                type="email"
-                placeholder="admin@flowcutspro.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@flowcutspro.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    />
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="adminCode">Código de Administrador</Label>
+                <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    id="adminCode"
+                    type="password"
+                    placeholder="Código secreto"
+                    required
+                    value={adminCode}
+                    onChange={(e) => setAdminCode(e.target.value)}
+                    className="pl-10"
+                    />
+                </div>
             </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">

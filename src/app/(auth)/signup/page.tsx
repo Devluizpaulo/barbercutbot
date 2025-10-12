@@ -17,10 +17,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -46,6 +47,16 @@ export default function SignupPage() {
         setIsLoading(false);
         return;
     }
+    
+    if (email.toLowerCase() === 'admin@flowcutspro.com') {
+      toast({
+          variant: 'destructive',
+          title: 'Cadastro não permitido',
+          description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -55,7 +66,6 @@ export default function SignupPage() {
             displayName: `${firstName} ${lastName}`
         });
 
-        // Create user document
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, {
             id: user.uid,
@@ -64,24 +74,12 @@ export default function SignupPage() {
             email: user.email,
         });
 
-        // Check if the user is an admin and add to the admins collection
-        if (user.email === 'admin@flowcutspro.com') {
-            const adminDocRef = doc(firestore, 'admins', user.uid);
-            await setDoc(adminDocRef, {
-                createdAt: serverTimestamp(),
-            });
-        }
-
         toast({
           title: 'Conta criada com sucesso!',
           description: 'Você será redirecionado para o painel.',
         });
         
-        if (user.email === 'admin@flowcutspro.com') {
-            router.push('/cpanel');
-        } else {
-            router.push('/dashboard/shops');
-        }
+        router.push('/dashboard/shops');
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
@@ -99,65 +97,124 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-            <div className="mx-auto">
-                <Logo />
-            </div>
-          <CardTitle>Crie sua Conta</CardTitle>
-          <CardDescription>
-            Comece a gerenciar seu negócio hoje mesmo.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSignup}>
-            <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="firstName">Nome</Label>
-                    <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="lastName">Sobrenome</Label>
-                    <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                />
-            </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-                <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                    Criar conta
+    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
+          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+            <Logo />
+          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/login">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Login
+              </Link>
+            </Button>
+          </div>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir Menu</span>
                 </Button>
-                 <p className="text-sm text-center text-muted-foreground">
-                    Já tem uma conta?{' '}
-                    <Link href="/login" className="underline hover:text-primary">
-                        Faça login
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+                      <Logo />
                     </Link>
-                </p>
-            </CardFooter>
-        </form>
-      </Card>
+                  </div>
+                  <div className="p-4 border-t mt-auto flex flex-col gap-4">
+                    <Button variant="ghost" asChild className="w-full">
+                      <Link href="/login">
+                          <Lock className="mr-2 h-4 w-4" />
+                          Login
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center space-y-4">
+                <div className="mx-auto">
+                    <Logo />
+                </div>
+              <CardTitle>Crie sua Conta</CardTitle>
+              <CardDescription>
+                Comece a gerenciar seu negócio hoje mesmo.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSignup}>
+                <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">Nome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="password"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                    <Button className="w-full" type="submit" disabled={isLoading}>
+                        {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar conta
+                    </Button>
+                     <p className="text-sm text-center text-muted-foreground">
+                        Já tem uma conta?{' '}
+                        <Link href="/login" className="underline hover:text-primary">
+                            Faça login
+                        </Link>
+                    </p>
+                </CardFooter>
+            </form>
+          </Card>
+      </main>
     </div>
   );
 }
