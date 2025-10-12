@@ -66,16 +66,23 @@ export type BarberShop = {
   }
 };
 
+export type AppointmentItem = {
+    serviceId: string;
+    barberId: string;
+    price: number;
+    duration: number;
+};
+
 export type Appointment = {
   id: string;
   barberShopId: string;
   customerId: string;
-  barberId: string;
-  serviceIds: string[];
+  items: AppointmentItem[];
   startTime: Timestamp | Date | string;
   endTime: Timestamp | Date | string;
+  totalPrice?: number;
+  totalDuration?: number;
   notes?: string;
-  price?: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
   createdAt: Timestamp;
 };
@@ -198,19 +205,3 @@ export type Document = {
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
 };
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    

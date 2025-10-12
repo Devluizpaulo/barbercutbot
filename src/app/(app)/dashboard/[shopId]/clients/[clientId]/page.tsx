@@ -92,7 +92,7 @@ export default function ClientDetailsPage() {
 
 
   const totalSpent = clientAppointments?.reduce((acc, appt) => {
-    return acc + (appt.price || 0);
+    return acc + (appt.totalPrice || 0);
   }, 0);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
@@ -226,13 +226,12 @@ export default function ClientDetailsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Data e Hora</TableHead>
-                <TableHead className="hidden sm:table-cell">Serviço</TableHead>
-                <TableHead className="hidden md:table-cell">Barbeiro</TableHead>
+                <TableHead className="hidden sm:table-cell">Serviço(s)</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {areAppointmentsLoading && <TableRow><TableCell colSpan={4}><LoaderCircle className="mx-auto animate-spin" /></TableCell></TableRow>}
+              {areAppointmentsLoading && <TableRow><TableCell colSpan={3}><LoaderCircle className="mx-auto animate-spin" /></TableCell></TableRow>}
               {clientAppointments?.map((appointment) => (
                 <TableRow key={appointment.id}>
                   <TableCell>
@@ -242,11 +241,10 @@ export default function ClientDetailsPage() {
                       })}
                     </div>
                      <div className="text-sm text-muted-foreground sm:hidden">
-                       {getServiceName(appointment.serviceIds[0])}
+                       {appointment.items.map(item => getServiceName(item.serviceId)).join(', ')}
                      </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">{getServiceName(appointment.serviceIds[0])}</TableCell>
-                  <TableCell className="hidden md:table-cell">{getBarberName(appointment.barberId)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{appointment.items.map(item => getServiceName(item.serviceId)).join(', ')}</TableCell>
                   <TableCell>
                     <Badge
                       variant={appointment.status === 'completed' ? 'secondary' : appointment.status === 'cancelled' ? 'destructive' : 'default'}

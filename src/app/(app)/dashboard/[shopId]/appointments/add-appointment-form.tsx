@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -18,12 +18,12 @@ import {
   Users,
   PlusCircle,
   Phone,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,32 +54,39 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import type { Appointment, Customer, Barber, Service, AppointmentItem } from '@/lib/types';
+import { useEffect, useMemo, useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, Timestamp, doc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 const quickAddClientSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
   phone: z.string().optional(),
 });
 
-const appointmentFormSchema = z.object({
-  customerId: z.string().min(1, 'Selecione um cliente.'),
+const appointmentItemSchema = z.object({
   serviceId: z.string().min(1, 'Selecione um serviço.'),
   barberId: z.string().min(1, 'Selecione um barbeiro.'),
+  price: z.number(),
+  duration: z.number(),
+});
+
+const appointmentFormSchema = z.object({
+  customerId: z.string().min(1, 'Selecione um cliente.'),
   date: z.date({
     required_error: 'A data é obrigatória.',
   }),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Horário inválido.'),
-  price: z.coerce.number().optional(),
   notes: z.string().optional(),
   status: z
     .enum(['pending', 'confirmed', 'completed', 'cancelled', 'no-show'])
     .default('confirmed'),
+  items: z.array(appointmentItemSchema).min(1, 'Adicione pelo menos um serviço.'),
 });
+
 
 type AddAppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 type QuickAddClientFormValues = z.infer<typeof quickAddClientSchema>;
@@ -115,14 +122,17 @@ export function AddAppointmentForm({
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       customerId: '',
-      serviceId: '',
-      barberId: '',
       date: new Date(),
       time: format(new Date(), 'HH:mm'),
       notes: '',
-      price: 0,
       status: 'confirmed',
+      items: [],
     }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: appointmentForm.control,
+    name: "items",
   });
 
   const quickAddClientForm = useForm<QuickAddClientFormValues>({
@@ -153,36 +163,23 @@ export function AddAppointmentForm({
       const startTime = toDate(initialData.startTime);
       appointmentForm.reset({
         customerId: initialData.customerId,
-        serviceId: initialData.serviceIds[0] || '', // Assuming one service
-        barberId: initialData.barberId,
         date: startTime,
         time: format(startTime, 'HH:mm'),
-        price: initialData.price,
         notes: initialData.notes || '',
         status: initialData.status,
+        items: initialData.items || [],
       });
     } else {
       appointmentForm.reset({
         customerId: '',
-        serviceId: '',
-        barberId: '',
         date: new Date(),
         time: format(new Date(), 'HH:mm'),
         notes: '',
-        price: 0,
         status: 'confirmed',
+        items: [{ serviceId: '', barberId: '', price: 0, duration: 0 }],
       });
     }
   }, [initialData, appointmentForm]);
-
-  const selectedServiceId = appointmentForm.watch('serviceId');
-  const selectedService = availableServices?.find((s) => s.id === selectedServiceId);
-
-  useEffect(() => {
-    if (selectedService) {
-      appointmentForm.setValue('price', selectedService.price);
-    }
-  }, [selectedService, appointmentForm]);
 
   const onQuickAddClient = async (values: QuickAddClientFormValues) => {
     try {
@@ -218,22 +215,33 @@ export function AddAppointmentForm({
     }
   }
 
+  const { totalPrice, totalDuration } = useMemo(() => {
+    const items = appointmentForm.watch('items');
+    return items.reduce((acc, item) => {
+        const service = availableServices?.find(s => s.id === item.serviceId);
+        if (service) {
+            acc.totalPrice += service.price;
+            acc.totalDuration += service.duration;
+        }
+        return acc;
+    }, { totalPrice: 0, totalDuration: 0 });
+  }, [appointmentForm.watch('items'), availableServices]);
+
   const onSubmit = async (values: AddAppointmentFormValues) => {
     try {
       const [hours, minutes] = values.time.split(':').map(Number);
       const startTime = new Date(values.date);
       startTime.setHours(hours, minutes, 0, 0);
 
-      const service = availableServices?.find(s => s.id === values.serviceId);
-      const duration = service?.duration || 0;
-      const endTime = new Date(startTime.getTime() + duration * 60000);
+      const endTime = new Date(startTime.getTime() + totalDuration * 60000);
 
       const appointmentData = {
         ...values,
         barberShopId: shopId,
-        serviceIds: [values.serviceId],
         startTime: Timestamp.fromDate(startTime),
         endTime: Timestamp.fromDate(endTime),
+        totalPrice: totalPrice,
+        totalDuration: totalDuration,
         createdAt: serverTimestamp(),
       };
       
@@ -329,70 +337,6 @@ export function AddAppointmentForm({
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={appointmentForm.control}
-              name="serviceId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Serviço</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <Scissors className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue
-                          placeholder="Selecione um serviço"
-                          className="pl-10"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableServices?.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          {service.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={appointmentForm.control}
-              name="barberId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Barbeiro</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <SelectValue
-                          placeholder="Selecione um barbeiro"
-                          className="pl-10"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableBarbers?.map((barber) => (
-                        <SelectItem key={barber.id} value={barber.id}>
-                          {barber.firstName} {barber.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
           <div className="space-y-6">
@@ -441,7 +385,7 @@ export function AddAppointmentForm({
               name="time"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horário</FormLabel>
+                  <FormLabel>Horário de Início</FormLabel>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <FormControl>
@@ -452,58 +396,121 @@ export function AddAppointmentForm({
                 </FormItem>
               )}
             />
-
-            {selectedService && (
-              <FormField
-                control={appointmentForm.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço (R$)</FormLabel>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          value={field.value || 0}
-                          readOnly
-                          className="pl-10 font-bold"
-                        />
-                      </FormControl>
-                    </div>
-                    <FormDescription>
-                      O preço é definido pelo serviço selecionado.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
           </div>
         </div>
 
-        <FormField
-          control={appointmentForm.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notas (Opcional)</FormLabel>
-              <div className="relative">
-                <PenSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Textarea
-                    placeholder="Alguma observação importante para este agendamento?"
-                    {...field}
-                    value={field.value || ''}
-                    className="pl-10"
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Separator />
+        
+        <div className="space-y-4">
+            <FormLabel>Serviços e Profissionais</FormLabel>
+            {fields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 p-4 border rounded-lg items-end">
+                    <FormField
+                    control={appointmentForm.control}
+                    name={`items.${index}.serviceId`}
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="text-xs">Serviço {index + 1}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione um serviço" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {availableServices?.map((service) => (
+                                <SelectItem key={service.id} value={service.id}>
+                                {service.name} (R${service.price.toFixed(2)})
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                        control={appointmentForm.control}
+                        name={`items.${index}.barberId`}
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel className="text-xs">Barbeiro {index + 1}</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um barbeiro" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                {availableBarbers?.map((barber) => (
+                                    <SelectItem key={barber.id} value={barber.id}>
+                                    {barber.firstName} {barber.lastName}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            ))}
+            <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={() => append({ serviceId: '', barberId: '', price: 0, duration: 0 })}
+            >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Adicionar outro serviço
+            </Button>
+        </div>
+        
+        <Separator />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <p className="text-sm font-medium">Total Estimado</p>
+                <div className="flex items-center justify-between text-lg font-bold p-4 border rounded-lg bg-muted">
+                    <span>
+                        <DollarSign className="inline-block mr-2 h-5 w-5 text-muted-foreground" />
+                        Preço
+                    </span>
+                    <span>R$ {totalPrice.toFixed(2)}</span>
+                </div>
+                 <div className="flex items-center justify-between text-lg font-bold p-4 border rounded-lg bg-muted">
+                    <span>
+                        <Clock className="inline-block mr-2 h-5 w-5 text-muted-foreground" />
+                        Duração
+                    </span>
+                    <span>{totalDuration} min</span>
+                </div>
+            </div>
+             <FormField
+                control={appointmentForm.control}
+                name="notes"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Notas (Opcional)</FormLabel>
+                    <div className="relative h-full">
+                        <PenSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                        <Textarea
+                            placeholder="Observações para este agendamento..."
+                            {...field}
+                            value={field.value || ''}
+                            className="pl-10 h-full min-h-[124px]"
+                        />
+                        </FormControl>
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
 
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>

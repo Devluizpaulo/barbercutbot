@@ -25,8 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, Timestamp } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection } from '@/firebase';
+import { doc, Timestamp, query, collection, where } from 'firebase/firestore';
 
 export default function AppointmentDetailsPage() {
   const params = useParams();
@@ -40,12 +40,13 @@ export default function AppointmentDetailsPage() {
 
   const customerRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
+  
+  const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
+  const { data: allServices } = useCollection<Service>(servicesQuery);
 
-  const barberRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'barbers', appointment.barberId) : null, [firestore, shopId, appointment, user]);
-  const { data: barber } = useDoc<Barber>(barberRef);
+  const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
+  const { data: allBarbers } = useCollection<Barber>(barbersQuery);
 
-  const serviceRef = useMemoFirebase(() => (user && shopId && appointment && appointment.serviceIds.length > 0) ? doc(firestore, 'barberShops', shopId, 'services', appointment.serviceIds[0]) : null, [firestore, shopId, appointment, user]);
-  const { data: service } = useDoc<Service>(serviceRef);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
@@ -167,44 +168,45 @@ export default function AppointmentDetailsPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-muted-foreground" />
-              Barbeiro
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">
-              {barber ? `${barber.firstName} ${barber.lastName}` : <Skeleton className="h-6 w-3/4" />}
-            </div>
-          </CardContent>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                Total
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-2xl font-bold">R$ {appointment.totalPrice?.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">{appointment.totalDuration} min</p>
+            </CardContent>
         </Card>
-
-        <Card className="md:col-span-2">
+      </div>
+      
+       <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scissors className="h-5 w-5 text-muted-foreground" />
-              Serviço
+              Serviços Realizados
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div>
-                <div className="text-lg font-semibold">{service ? service.name : <Skeleton className="h-6 w-1/2" />}</div>
-                <p className="text-muted-foreground">{service?.description}</p>
-             </div>
-             <div className="flex items-center justify-between text-lg">
-                <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-muted-foreground"/>
-                    <span>{service ? `${service.duration} min` : <Skeleton className="h-5 w-12" />}</span>
-                </div>
-                <div className="flex items-center gap-2 font-bold">
-                    <DollarSign className="h-5 w-5 text-muted-foreground"/>
-                    <span>{service ? `R$${service.price.toFixed(2)}` : <Skeleton className="h-5 w-16" />}</span>
-                </div>
-             </div>
+             {appointment.items.map((item, index) => {
+                const service = allServices?.find(s => s.id === item.serviceId);
+                const barber = allBarbers?.find(b => b.id === item.barberId);
+                return (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                        <div>
+                            <p className="font-semibold">{service?.name || <Skeleton className="h-5 w-24" />}</p>
+                            <p className="text-sm text-muted-foreground">com {barber ? `${barber.firstName} ${barber.lastName}` : <Skeleton className="h-4 w-20" />}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="font-semibold">R$ {item.price.toFixed(2)}</p>
+                           <p className="text-sm text-muted-foreground">{item.duration} min</p>
+                        </div>
+                    </div>
+                )
+             })}
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
