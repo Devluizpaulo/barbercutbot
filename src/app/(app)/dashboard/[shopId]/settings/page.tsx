@@ -981,64 +981,82 @@ export default function SettingsPage() {
         </TabsContent>
         
         <TabsContent value="team">
-            <TeamTable shopId={shopId} />
-        </TabsContent>
-        
-        <TabsContent value="access">
-             <Form {...permissionsForm}>
-                <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
+           <Tabs defaultValue="team-members" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="team-members">Membros da Equipe</TabsTrigger>
+                    <TabsTrigger value="permissions">Perfis de Acesso</TabsTrigger>
+                </TabsList>
+                <TabsContent value="team-members">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Perfis de Acesso</CardTitle>
+                            <CardTitle>Membros da Equipe</CardTitle>
                             <CardDescription>
-                                Defina o que cada tipo de usuário pode fazer na plataforma.
+                                Adicione e gerencie os membros da sua equipe.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            {(['manager', 'barber', 'cashier'] as const).map((role) => (
-                                <div key={role} className="space-y-4 rounded-lg border p-4">
-                                    <h4 className="font-semibold capitalize text-lg">{role === 'manager' ? 'Gerente' : (role === 'barber' ? 'Barbeiro' : 'Caixa')}</h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {(Object.keys(permissionLabels) as Array<keyof RolePermissions>).map((permission) => (
-                                            <FormField
-                                                key={permission}
-                                                control={permissionsForm.control}
-                                                name={`${role}.${permission}`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                                        <FormControl>
-                                                            <Checkbox
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
-                                                            />
-                                                        </FormControl>
-                                                        <FormLabel className="font-normal text-sm">{permissionLabels[permission]}</FormLabel>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+                        <CardContent>
+                            <TeamTable shopId={shopId} />
                         </CardContent>
-                         <CardFooter>
-                          <div className="flex justify-end w-full">
-                            <Button
-                              type="submit"
-                              disabled={permissionsForm.formState.isSubmitting}
-                            >
-                              {permissionsForm.formState.isSubmitting && (
-                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                              )}
-                              <Save className="mr-2 h-4 w-4" />
-                              Salvar Permissões
-                            </Button>
-                          </div>
-                        </CardFooter>
                     </Card>
-                </form>
-            </Form>
+                </TabsContent>
+                <TabsContent value="permissions">
+                    <Form {...permissionsForm}>
+                        <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Perfis de Acesso</CardTitle>
+                                    <CardDescription>
+                                        Defina o que cada tipo de usuário pode fazer na plataforma.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {(['manager', 'barber', 'cashier'] as const).map((role) => (
+                                        <div key={role} className="space-y-4 rounded-lg border p-4">
+                                            <h4 className="font-semibold capitalize text-lg">{role === 'manager' ? 'Gerente' : (role === 'barber' ? 'Barbeiro' : 'Caixa')}</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                {(Object.keys(permissionLabels) as Array<keyof RolePermissions>).map((permission) => (
+                                                    <FormField
+                                                        key={permission}
+                                                        control={permissionsForm.control}
+                                                        name={`${role}.${permission}`}
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value}
+                                                                        onCheckedChange={field.onChange}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormLabel className="font-normal text-sm">{permissionLabels[permission]}</FormLabel>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                                <CardFooter>
+                                <div className="flex justify-end w-full">
+                                    <Button
+                                    type="submit"
+                                    disabled={permissionsForm.formState.isSubmitting}
+                                    >
+                                    {permissionsForm.formState.isSubmitting && (
+                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Permissões
+                                    </Button>
+                                </div>
+                                </CardFooter>
+                            </Card>
+                        </form>
+                    </Form>
+                </TabsContent>
+           </Tabs>
         </TabsContent>
+        
 
         <TabsContent value="address">
           <Card>
