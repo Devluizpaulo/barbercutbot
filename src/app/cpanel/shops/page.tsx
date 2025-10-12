@@ -24,20 +24,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection } from "firebase/firestore";
 import type { BarberShop } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AddShopForm } from './add-shop-form';
+import { useCPanel } from '../layout';
 
 export default function AdminShopsPage() {
-    const firestore = useFirestore();
-    const { user } = useUser();
-    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
-    const { data: shops, isLoading } = useCollection<BarberShop>(shopsQuery);
-    
+    const { shops, isLoading } = useCPanel();
     const [isFormOpen, setFormOpen] = useState(false);
     const [selectedShop, setSelectedShop] = useState<BarberShop | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
@@ -173,5 +168,3 @@ export default function AdminShopsPage() {
     </div>
   )
 }
-
-    
