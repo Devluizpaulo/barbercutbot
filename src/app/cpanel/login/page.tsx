@@ -45,12 +45,17 @@ export default function CpanelLoginPage() {
     setIsLoading(true);
 
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: 'Login bem-sucedido!',
           description: 'Redirecionando para o painel de controle.',
         });
-        router.push('/cpanel');
+        
+        if (userCredential.user.email === 'admin@flowcutspro.com') {
+            router.push('/cpanel');
+        } else {
+            router.push('/dashboard/shops');
+        }
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao tentar fazer login.';
