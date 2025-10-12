@@ -216,7 +216,7 @@ export function AddBarberForm({
                 name="color"
                 render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Cor do Profissional</FormLabel>
+                    <FormLabel>Cor de destaque na agenda</FormLabel>
                      <Popover>
                         <PopoverTrigger asChild>
                             <FormControl>
