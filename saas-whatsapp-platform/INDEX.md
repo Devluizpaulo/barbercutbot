@@ -12,6 +12,7 @@
 ## ⚙️ Documentação de Configuração
 - **[docs/setup/02-CONFIGURACAO-BARBEARIA.md](docs/setup/02-CONFIGURACAO-BARBEARIA.md)** - Como adicionar uma nova barbearia.
 - **[docs/setup/03-SCHEMA-FIRESTORE.md](docs/setup/03-SCHEMA-FIRESTORE.md)** - Schema simplificado do Firestore.
+- **[docs/setup/04-SECURITY-RULES-EXPLAINED.md](docs/setup/04-SECURITY-RULES-EXPLAINED.md)** - Explicação das Regras de Segurança. ⭐
 - **[docs/setup/FIRESTORE_SCHEMA_FINAL.md](docs/setup/FIRESTORE_SCHEMA_FINAL.md)** - Schema detalhado e completo do Firestore.
 
 ## 🔗 Documentação de Integração
