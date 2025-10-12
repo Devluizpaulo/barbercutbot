@@ -47,6 +47,7 @@
     "firebase": "^11.9.1",
     "genkit": "^1.20.0",
     "html2canvas": "^1.4.1",
+    "input-otp": "^1.2.5",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.475.0",
     "mercadopago": "^2.0.10",
