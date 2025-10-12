@@ -16,6 +16,8 @@ import {
   Scissors,
   User,
   Users,
+  PlusCircle,
+  Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,13 +55,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, Timestamp, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, Timestamp, doc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 
+const quickAddClientSchema = z.object({
+  firstName: z.string().min(1, 'O nome é obrigatório.'),
+  phone: z.string().optional(),
+});
 
-const formSchema = z.object({
+const appointmentFormSchema = z.object({
   customerId: z.string().min(1, 'Selecione um cliente.'),
   serviceId: z.string().min(1, 'Selecione um serviço.'),
   barberId: z.string().min(1, 'Selecione um barbeiro.'),
@@ -74,7 +81,8 @@ const formSchema = z.object({
     .default('confirmed'),
 });
 
-type AddAppointmentFormValues = z.infer<typeof formSchema>;
+type AddAppointmentFormValues = z.infer<typeof appointmentFormSchema>;
+type QuickAddClientFormValues = z.infer<typeof quickAddClientSchema>;
 
 interface AddAppointmentFormProps {
   shopId: string;
@@ -90,8 +98,12 @@ export function AddAppointmentForm({
   const { toast } = useToast();
   const firestore = useFirestore();
 
+  const [isClientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [isQuickAddClientOpen, setQuickAddClientOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+
   const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
-  const { data: customers } = useCollection<Customer>(customersQuery);
+  const { data: customers, isLoading: isLoadingCustomers, refresh: refreshCustomers } = useCollection<Customer>(customersQuery);
 
   const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
   const { data: availableServices } = useCollection<Service>(servicesQuery);
@@ -99,8 +111,8 @@ export function AddAppointmentForm({
   const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
   const { data: availableBarbers } = useCollection<Barber>(barbersQuery);
 
-  const form = useForm<AddAppointmentFormValues>({
-    resolver: zodResolver(formSchema),
+  const appointmentForm = useForm<AddAppointmentFormValues>({
+    resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       customerId: '',
       serviceId: '',
@@ -113,7 +125,15 @@ export function AddAppointmentForm({
     }
   });
 
-  const { isSubmitting } = form.formState;
+  const quickAddClientForm = useForm<QuickAddClientFormValues>({
+    resolver: zodResolver(quickAddClientSchema),
+    defaultValues: {
+      firstName: '',
+      phone: '',
+    },
+  });
+
+  const { isSubmitting } = appointmentForm.formState;
 
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
@@ -121,12 +141,17 @@ export function AddAppointmentForm({
     }
     return new Date(timestamp);
   }
+  
+  useEffect(() => {
+    if (clientSearch) {
+        quickAddClientForm.setValue('firstName', clientSearch);
+    }
+  }, [clientSearch, quickAddClientForm]);
 
-  // Set default values and handle initialData
   useEffect(() => {
     if (initialData) {
       const startTime = toDate(initialData.startTime);
-      form.reset({
+      appointmentForm.reset({
         customerId: initialData.customerId,
         serviceId: initialData.serviceIds[0] || '', // Assuming one service
         barberId: initialData.barberId,
@@ -137,7 +162,7 @@ export function AddAppointmentForm({
         status: initialData.status,
       });
     } else {
-      form.reset({
+      appointmentForm.reset({
         customerId: '',
         serviceId: '',
         barberId: '',
@@ -148,17 +173,50 @@ export function AddAppointmentForm({
         status: 'confirmed',
       });
     }
-  }, [initialData, form]);
+  }, [initialData, appointmentForm]);
 
-  const selectedServiceId = form.watch('serviceId');
+  const selectedServiceId = appointmentForm.watch('serviceId');
   const selectedService = availableServices?.find((s) => s.id === selectedServiceId);
 
-  // Set price whenever service changes
   useEffect(() => {
     if (selectedService) {
-      form.setValue('price', selectedService.price);
+      appointmentForm.setValue('price', selectedService.price);
     }
-  }, [selectedService, form]);
+  }, [selectedService, appointmentForm]);
+
+  const onQuickAddClient = async (values: QuickAddClientFormValues) => {
+    try {
+        const customersRef = collection(firestore, 'barberShops', shopId, 'customers');
+        const [firstName, ...lastNameParts] = values.firstName.split(' ');
+        const lastName = lastNameParts.join(' ');
+
+        const newCustomerDoc = await addDoc(customersRef, {
+            firstName,
+            lastName: lastName || '.',
+            phone: values.phone || '',
+            barberShopId: shopId,
+            createdAt: serverTimestamp(),
+        });
+        
+        toast({
+            title: 'Cliente Adicionado!',
+            description: `${values.firstName} foi adicionado com sucesso.`
+        });
+        
+        await refreshCustomers();
+        appointmentForm.setValue('customerId', newCustomerDoc.id);
+        setQuickAddClientOpen(false);
+        setClientPopoverOpen(false);
+        quickAddClientForm.reset();
+
+    } catch (error) {
+         console.error('Error adding client:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Erro ao adicionar cliente',
+        });
+    }
+  }
 
   const onSubmit = async (values: AddAppointmentFormValues) => {
     try {
@@ -206,18 +264,18 @@ export function AddAppointmentForm({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+    <Dialog open={isQuickAddClientOpen} onOpenChange={setQuickAddClientOpen}>
+    <Form {...appointmentForm}>
+      <form onSubmit={appointmentForm.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Coluna da Esquerda */}
           <div className="space-y-6">
             <FormField
-              control={form.control}
+              control={appointmentForm.control}
               name="customerId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Cliente</FormLabel>
-                  <Popover>
+                  <Popover open={isClientPopoverOpen} onOpenChange={setClientPopoverOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -228,10 +286,8 @@ export function AddAppointmentForm({
                             !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {field.value
-                            ? customers?.find(
-                                (client) => client.id === field.value
-                              )?.firstName
+                          {field.value && customers
+                            ? customers.find((c) => c.id === field.value)?.firstName + ' ' + customers.find((c) => c.id === field.value)?.lastName
                             : 'Selecione um cliente'}
                           <Users className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -239,16 +295,26 @@ export function AddAppointmentForm({
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
                       <Command>
-                        <CommandInput placeholder="Buscar cliente..." />
+                        <CommandInput 
+                          placeholder="Buscar cliente..."
+                          onValueChange={setClientSearch}
+                        />
                         <CommandList>
-                          <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                          {isLoadingCustomers ? <CommandItem>Carregando...</CommandItem> : (
+                            <CommandEmpty>
+                                <Button variant="ghost" className="w-full" onClick={() => setQuickAddClientOpen(true)}>
+                                    <PlusCircle className="mr-2"/> Adicionar "{clientSearch}"
+                                </Button>
+                            </CommandEmpty>
+                          )}
                           <CommandGroup>
                             {customers?.map((client) => (
                               <CommandItem
                                 value={`${client.firstName} ${client.lastName}`}
                                 key={client.id}
                                 onSelect={() => {
-                                  form.setValue('customerId', client.id);
+                                  appointmentForm.setValue('customerId', client.id);
+                                  setClientPopoverOpen(false);
                                 }}
                               >
                                 {client.firstName} {client.lastName}
@@ -265,14 +331,13 @@ export function AddAppointmentForm({
             />
 
             <FormField
-              control={form.control}
+              control={appointmentForm.control}
               name="serviceId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Serviço</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
                     value={field.value}
                   >
                     <FormControl>
@@ -298,14 +363,13 @@ export function AddAppointmentForm({
             />
 
             <FormField
-              control={form.control}
+              control={appointmentForm.control}
               name="barberId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Barbeiro</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
                     value={field.value}
                   >
                     <FormControl>
@@ -331,10 +395,9 @@ export function AddAppointmentForm({
             />
           </div>
 
-          {/* Coluna da Direita */}
           <div className="space-y-6">
             <FormField
-              control={form.control}
+              control={appointmentForm.control}
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -374,7 +437,7 @@ export function AddAppointmentForm({
             />
 
             <FormField
-              control={form.control}
+              control={appointmentForm.control}
               name="time"
               render={({ field }) => (
                 <FormItem>
@@ -392,7 +455,7 @@ export function AddAppointmentForm({
 
             {selectedService && (
               <FormField
-                control={form.control}
+                control={appointmentForm.control}
                 name="price"
                 render={({ field }) => (
                   <FormItem>
@@ -421,7 +484,7 @@ export function AddAppointmentForm({
         </div>
 
         <FormField
-          control={form.control}
+          control={appointmentForm.control}
           name="notes"
           render={({ field }) => (
             <FormItem>
@@ -452,5 +515,51 @@ export function AddAppointmentForm({
         </div>
       </form>
     </Form>
+    <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adicionar Novo Cliente</DialogTitle>
+        </DialogHeader>
+        <Form {...quickAddClientForm}>
+            <form onSubmit={quickAddClientForm.handleSubmit(onQuickAddClient)} className="space-y-4">
+                <FormField
+                    control={quickAddClientForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nome Completo</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Nome do novo cliente" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={quickAddClientForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Telefone (Opcional)</FormLabel>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <FormControl>
+                                    <Input placeholder="(11) 99999-9999" {...field} value={field.value || ''} className="pl-10" />
+                                </FormControl>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <DialogFooter>
+                    <Button type="button" variant="ghost" onClick={() => setQuickAddClientOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={quickAddClientForm.formState.isSubmitting}>
+                         {quickAddClientForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                         Salvar Cliente
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+    </DialogContent>
+    </Dialog>
   );
 }
