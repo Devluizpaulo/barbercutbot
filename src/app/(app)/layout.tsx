@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import { DashboardLayout } from '@/app/(app)/dashboard/layout';
+import DashboardLayout from './dashboard/layout';
 
 export default function AppLayout({
   children,
@@ -12,7 +12,6 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
@@ -20,15 +19,10 @@ export default function AppLayout({
 
     if (!user) {
       router.push('/login');
-      return;
-    }
-    
-    // Redirect admin away from the main app dashboard
-    if (user.role === 'admin') {
+    } else if (user.role === 'admin') {
       router.push('/cpanel');
     }
-
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isUserLoading, router]);
 
   if (isUserLoading || !user || user.role === 'admin') {
     return (
