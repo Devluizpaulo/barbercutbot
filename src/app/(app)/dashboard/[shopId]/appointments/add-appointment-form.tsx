@@ -56,11 +56,12 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Appointment, Customer, Barber, Service, AppointmentItem } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, Timestamp, doc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, Timestamp, doc, serverTimestamp, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { TimeSlotPicker } from './time-slot-picker';
 
 const quickAddClientSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -79,7 +80,7 @@ const appointmentFormSchema = z.object({
   date: z.date({
     required_error: 'A data é obrigatória.',
   }),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Horário inválido.'),
+  time: z.string().min(1, { message: 'Selecione um horário.' }),
   notes: z.string().optional(),
   status: z
     .enum(['pending', 'confirmed', 'completed', 'cancelled', 'no-show'])
@@ -123,7 +124,7 @@ export function AddAppointmentForm({
     defaultValues: {
       customerId: '',
       date: new Date(),
-      time: format(new Date(), 'HH:mm'),
+      time: '',
       notes: '',
       status: 'confirmed',
       items: [],
@@ -173,7 +174,7 @@ export function AddAppointmentForm({
       appointmentForm.reset({
         customerId: '',
         date: new Date(),
-        time: format(new Date(), 'HH:mm'),
+        time: '',
         notes: '',
         status: 'confirmed',
         items: [{ serviceId: '', barberId: '', price: 0, duration: 0 }],
@@ -226,6 +227,15 @@ export function AddAppointmentForm({
         return acc;
     }, { totalPrice: 0, totalDuration: 0 });
   }, [appointmentForm.watch('items'), availableServices]);
+  
+  const selectedBarberIds = useMemo(() => {
+    const items = appointmentForm.watch('items');
+    const ids = new Set(items.map(item => item.barberId).filter(Boolean));
+    return Array.from(ids);
+  }, [appointmentForm.watch('items')]);
+  
+  const selectedDate = appointmentForm.watch('date');
+
 
   const onSubmit = async (values: AddAppointmentFormValues) => {
     try {
@@ -246,7 +256,6 @@ export function AddAppointmentForm({
       };
       
       delete (appointmentData as any).date;
-      delete (appointmentData as any).time;
 
       if (initialData) {
         const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', initialData.id);
@@ -369,29 +378,17 @@ export function AddAppointmentForm({
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                           if (date) {
+                            field.onChange(date);
+                            appointmentForm.setValue('time', '');
+                           }
+                        }}
                         initialFocus
                         locale={ptBR}
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={appointmentForm.control}
-              name="time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horário de Início</FormLabel>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input type="time" {...field} className="pl-10" />
-                    </FormControl>
-                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -471,6 +468,29 @@ export function AddAppointmentForm({
         
         <Separator />
         
+        <FormField
+            control={appointmentForm.control}
+            name="time"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Horários Disponíveis</FormLabel>
+                <FormControl>
+                    <TimeSlotPicker 
+                        shopId={shopId}
+                        selectedDate={selectedDate}
+                        barberIds={selectedBarberIds}
+                        serviceDuration={totalDuration}
+                        selectedValue={field.value}
+                        onValueChange={field.onChange}
+                    />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
+        
+        <Separator />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
                 <p className="text-sm font-medium">Total Estimado</p>

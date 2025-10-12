@@ -26,7 +26,7 @@ import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bo
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Holiday } from '@/lib/types';
+import type { BarberShop, Holiday, WorkingHour } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
@@ -151,7 +151,7 @@ export default function SettingsPage() {
                 { day: 'Terça-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Quarta-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Quinta-feira', open: '09:00', close: '19:00', enabled: true },
-                { day: 'Festa-feira', open: '09:00', close: '19:00', enabled: true },
+                { day: 'Sexta-feira', open: '09:00', close: '19:00', enabled: true },
                 { day: 'Sábado', open: '09:00', close: '17:00', enabled: true },
                 { day: 'Domingo', open: '09:00', close: '19:00', enabled: false },
             ]
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                     const savedDay = shop.workingHours?.find(h => h.day === daySetting.day);
                     return savedDay || daySetting;
                 });
-                replace(currentHours);
+                replace(currentHours as WorkingHour[]);
             }
              
             fetchAndSetHolidays();
@@ -1116,5 +1116,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
