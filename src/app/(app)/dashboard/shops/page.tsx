@@ -1,4 +1,3 @@
-
 'use client';
 
 import { redirect, useRouter } from 'next/navigation';
@@ -12,6 +11,8 @@ export default function DashboardShopsPage() {
   const firestore = useFirestore();
   const router = useRouter();
 
+  // FIX: The query now filters for shops where ownerId matches the current user's UID.
+  // This aligns with the Firestore security rules and prevents permission errors.
   const userShopsQuery = useMemoFirebase(
     () => user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid)) : null,
     [firestore, user]
