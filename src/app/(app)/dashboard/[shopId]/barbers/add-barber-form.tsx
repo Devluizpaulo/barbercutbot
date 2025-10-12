@@ -423,7 +423,7 @@ export function AddBarberForm({
                                   </FormControl>
                                 </FormItem>
                                 {isSelected && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                         <FormField
                                             control={form.control}
                                             name={`services.${fieldIndex}.commissionType`}
@@ -486,7 +486,7 @@ export function AddBarberForm({
             </AccordionItem>
         </Accordion>
         
-        <DialogFooter>
+        <DialogFooter className="pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

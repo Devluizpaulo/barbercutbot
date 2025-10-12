@@ -166,7 +166,7 @@ export default function BarbersPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl p-0">
-                  <DialogHeader>
+                  <DialogHeader className="p-6 pb-0">
                     <DialogTitle>
                       {selectedBarber
                         ? 'Editar Profissional'
@@ -176,8 +176,8 @@ export default function BarbersPage() {
                       Preencha os detalhes do novo profissional.
                     </p>
                   </DialogHeader>
-                   <ScrollArea className="max-h-[70vh]">
-                     <div className="p-6">
+                   <ScrollArea className="max-h-[80vh]">
+                     <div className="p-6 pt-0">
                         <AddBarberForm
                             shopId={shopId}
                             initialData={selectedBarber}
