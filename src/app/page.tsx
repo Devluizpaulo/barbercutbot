@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Star, CheckCircle, TrendingUp, Users, Lock, Menu } from "lucide-react";
+import { Star, CheckCircle, TrendingUp, Users, Lock, Menu, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -251,10 +251,15 @@ export default function LandingPage() {
            <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
               <Logo />
            </Link>
-          <nav className="flex flex-wrap justify-center gap-4 text-center md:gap-6">
+          <nav className="flex flex-wrap justify-center items-center gap-4 text-center md:gap-6">
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
-             <Link href="/cpanel/login" className="text-sm text-muted-foreground hover:text-primary">Admin</Link>
+             <Button variant="ghost" size="sm" asChild>
+                <Link href="/cpanel/login">
+                    <Shield className="mr-2 h-4 w-4"/>
+                    Admin
+                </Link>
+             </Button>
           </nav>
           <p className="text-sm text-muted-foreground text-center md:text-right">
             © {new Date().getFullYear()} FlowCuts Pro. Todos os direitos reservados.
