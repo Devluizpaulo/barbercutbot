@@ -29,6 +29,5 @@ export default function AppLayout({
     );
   }
 
-  // The nested dashboard layout will now be automatically applied by Next.js
   return <>{children}</>;
 }
