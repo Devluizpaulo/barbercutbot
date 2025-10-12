@@ -451,11 +451,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the SaaS application.  Note: Authentication details (passwords, etc.) should be managed by Firebase Authentication and are NOT included here.",
+      "description": "Represents a user of the SaaS application. Note: Authentication details (passwords, etc.) should be managed by Firebase Authentication and are NOT included here.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user.  This is the Firebase UID."
+          "description": "Unique identifier for the user. This is the Firebase UID."
         },
         "firstName": {
           "type": "string",
@@ -469,29 +469,19 @@
           "type": "string",
           "description": "Email address of the user.",
           "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user within the application.",
+          "enum": ["owner", "admin"]
         }
       },
       "required": [
         "id",
         "firstName",
         "lastName",
-        "email"
-      ]
-    },
-    "Admin": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Admin",
-      "type": "object",
-      "description": "Represents an administrator user. The document ID is the user's UID.",
-      "properties": {
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the admin was added."
-        }
-      },
-      "required": [
-        "createdAt"
+        "email",
+        "role"
       ]
     },
     "Ticket": {
@@ -603,22 +593,6 @@
             {
               "name": "userId",
               "description": "The Firebase UID of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/admins/{adminId}",
-        "definition": {
-          "entityName": "Admin",
-          "schema": {
-            "$ref": "#/backend/entities/Admin"
-          },
-          "description": "Stores a list of admin user UIDs.",
-          "params": [
-            {
-              "name": "adminId",
-              "description": "The Firebase UID of the admin user."
             }
           ]
         }
@@ -806,7 +780,7 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/products/{productId}`: Stores product data.\n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
+    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/products/{productId}`: Stores product data.\n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopsId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
   }
 }
     
@@ -814,3 +788,6 @@
 
     
 
+
+
+    

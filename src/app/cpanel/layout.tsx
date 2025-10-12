@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 import { Button } from "@/components/ui/button";
 import { doc, getDoc } from "firebase/firestore";
+import type { UserProfile } from "@/lib/types";
 
 export default function CPanelLayout({
   children,
@@ -49,13 +50,10 @@ export default function CPanelLayout({
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // Don't do anything while the user state is loading.
       if (isUserLoading) {
         return;
       }
 
-      // If loading is finished and there's no user, redirect to login.
-      // Allow access to login/signup pages.
       if (!user) {
         if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
             router.push('/cpanel/login');
@@ -63,22 +61,18 @@ export default function CPanelLayout({
         return;
       }
 
-      // If a user is logged in, check if they are an admin.
       try {
-        const adminDocRef = doc(firestore, 'admins', user.uid);
-        const adminDoc = await getDoc(adminDocRef);
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data() as UserProfile;
 
-        if (!adminDoc.exists()) {
-           // If they are NOT an admin, redirect them away from cpanel.
+        if (userData?.role !== 'admin') {
            router.push('/dashboard/shops');
-        }
-        // If they are an admin, they can stay. If they are on login/signup, push them to the dashboard.
-         else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
+        } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
            router.push('/cpanel');
         }
       } catch (error) {
         console.error("Error checking admin status:", error);
-        // On error, a safe default is to redirect away from admin area.
         router.push('/login');
       }
     };
@@ -93,6 +87,19 @@ export default function CPanelLayout({
     }
     router.push('/cpanel/login');
   };
+  
+  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      )
+  }
+  
+  if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
+    return <>{children}</>;
+  }
+
 
   const navItems = [
     { href: `/cpanel`, label: "Visão Geral", icon: LayoutDashboard },
@@ -102,20 +109,6 @@ export default function CPanelLayout({
     { href: `/cpanel/documents`, label: "Documentos", icon: FileText },
     { href: `/cpanel/settings`, label: "Configurações", icon: Settings },
   ];
-
-  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      )
-  }
-  
-  // Do not render the layout on the login or signup pages
-  if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
-    return <>{children}</>;
-  }
-
 
   return (
     <SidebarProvider>
@@ -196,3 +189,5 @@ export default function CPanelLayout({
     </SidebarProvider>
   );
 }
+
+    

@@ -22,6 +22,7 @@ import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
+import type { UserProfile } from '@/lib/types';
 
 export default function CpanelLoginPage() {
   const router = useRouter();
@@ -33,13 +34,6 @@ export default function CpanelLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const checkIsAdmin = async (userId: string): Promise<boolean> => {
-    if (!firestore) return false;
-    const adminDocRef = doc(firestore, 'admins', userId);
-    const adminDoc = await getDoc(adminDocRef);
-    return adminDoc.exists();
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -48,7 +42,11 @@ export default function CpanelLoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const loggedInUser = userCredential.user;
 
-        const isAdmin = await checkIsAdmin(loggedInUser.uid);
+        const userDocRef = doc(firestore, 'users', loggedInUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data() as UserProfile;
+
+        const isAdmin = userData?.role === 'admin';
 
         toast({
           title: 'Login bem-sucedido!',
@@ -76,19 +74,23 @@ export default function CpanelLoginPage() {
         setIsLoading(false);
     }
   };
-
-  useEffect(() => {
+  
+   useEffect(() => {
     const checkUser = async () => {
-      if (!isUserLoading && user) {
-        const isAdmin = await checkIsAdmin(user.uid);
-        if (isAdmin && (pathname === '/cpanel/login' || pathname === '/cpanel/signup')) {
-          router.push('/cpanel');
+      if (isUserLoading) return;
+      
+      if (user) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data() as UserProfile;
+        
+        if (userData?.role === 'admin') {
+            router.push('/cpanel');
         }
       }
     };
-    const pathname = window.location.pathname;
     checkUser();
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, firestore]);
 
   if (isUserLoading) {
       return (

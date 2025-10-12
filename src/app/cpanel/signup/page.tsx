@@ -18,9 +18,9 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export default function CPanelSignupPage() {
@@ -56,23 +56,24 @@ export default function CPanelSignupPage() {
             displayName: `${firstName} ${lastName}`
         });
 
-        // Create the document in the 'users' collection
+        // Use a batch to write to both collections atomically
+        const batch = writeBatch(firestore);
+
+        // Create the document in the 'users' collection with the 'admin' role
         const userDocRef = doc(firestore, 'users', user.uid);
         const userData = {
             id: user.uid,
             firstName,
             lastName,
             email: user.email,
-        };
-        await setDoc(userDocRef, userData, { merge: true });
-        
-        // Create the document in the 'admins' collection to grant admin privileges
-        const adminDocRef = doc(firestore, 'admins', user.uid);
-        const adminData = {
+            role: 'admin', // Assign the admin role
             createdAt: serverTimestamp(),
         };
-        await setDoc(adminDocRef, adminData);
+        batch.set(userDocRef, userData);
 
+        // No longer need to write to a separate 'admins' collection
+        
+        await batch.commit();
 
         toast({
           title: 'Conta de Administrador Criada!',
@@ -216,7 +217,7 @@ export default function CPanelSignupPage() {
         </Card>
       </main>
       <footer className="py-8 border-t bg-secondary">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:px-6">
           <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
               <Logo />
           </Link>

@@ -21,7 +21,7 @@ import { MoreVertical, PlusCircle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { collection, Timestamp } from "firebase/firestore";
 import type { BarberShop, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
@@ -54,6 +54,14 @@ export default function AdminUsersPage() {
     }
     
     const isLoading = isLoadingUsers || isLoadingShops;
+    
+    const toDate = (timestamp: Timestamp | Date | string): Date => {
+        if (timestamp instanceof Timestamp) {
+            return timestamp.toDate();
+        }
+        return new Date(timestamp);
+    }
+
 
     return (
         <div className="flex flex-1 flex-col gap-8">
@@ -102,7 +110,7 @@ export default function AdminUsersPage() {
                             ))}
                             {filteredUsers?.map(user => {
                                 const associatedShop = getShopByOwnerId(user.id);
-                                const isAdmin = user.email === 'admin@flowcutspro.com';
+                                const isAdmin = user.role === 'admin';
                                 const userRole = isAdmin ? 'Admin' : 'Dono de Negócio';
                                 return (
                                     <TableRow key={user.id}>
@@ -121,7 +129,7 @@ export default function AdminUsersPage() {
                                             {associatedShop ? associatedShop.name : 'Nenhum'}
                                         </TableCell>
                                          <TableCell className="hidden sm:table-cell">
-                                            {user.createdAt ? format(user.createdAt.toDate(), 'dd/MM/yyyy') : 'N/A'}
+                                            {user.createdAt ? format(toDate(user.createdAt), 'dd/MM/yyyy') : 'N/A'}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={isAdmin ? 'destructive' : 'outline'}>{userRole}</Badge>
@@ -157,3 +165,5 @@ export default function AdminUsersPage() {
         </div>
     )
 }
+
+    

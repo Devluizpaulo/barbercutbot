@@ -72,6 +72,8 @@ export default function SignupPage() {
             firstName,
             lastName,
             email: user.email,
+            role: 'owner', // Assign the owner role
+            createdAt: serverTimestamp(),
         });
 
         toast({
@@ -218,3 +220,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
