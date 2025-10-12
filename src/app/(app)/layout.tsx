@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import { DashboardLayout } from './dashboard/layout';
+import { DashboardLayout } from '@/app/(app)/dashboard/layout';
 
 export default function AppLayout({
   children,
