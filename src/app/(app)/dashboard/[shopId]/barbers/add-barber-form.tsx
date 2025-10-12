@@ -128,8 +128,6 @@ export function AddBarberForm({
     name: 'services'
   });
 
-  const selectedServiceIds = new Set((form.watch('services') || []).map(s => s.serviceId));
-
   const { isSubmitting } = form.formState;
   const avatarUrl = form.watch('avatar');
   const firstName = form.watch('firstName');
