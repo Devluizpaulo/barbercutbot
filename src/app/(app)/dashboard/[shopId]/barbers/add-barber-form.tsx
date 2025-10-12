@@ -261,7 +261,7 @@ export function AddBarberForm({
                 <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
             </TabsList>
              <TabsContent value="profile" className="mt-6 space-y-6">
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={avatarUrl} alt={firstName} />
                     <AvatarFallback>
@@ -272,7 +272,7 @@ export function AddBarberForm({
                       )}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 w-full space-y-4">
                     <FormField
                         control={form.control}
                         name="avatar"
@@ -689,3 +689,4 @@ export function AddBarberForm({
     </Form>
   );
 }
+    
