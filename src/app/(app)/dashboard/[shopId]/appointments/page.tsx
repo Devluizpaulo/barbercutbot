@@ -3,32 +3,12 @@
 
 import { useState } from 'react';
 import {
-  MoreHorizontal,
   PlusCircle,
-  Edit,
-  Eye,
-  CheckCircle,
-  XCircle,
 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useParams } from 'next/navigation';
 
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+
 import {
   Dialog,
   DialogContent,
@@ -37,42 +17,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+
 import { AddAppointmentForm } from './add-appointment-form';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  useCollection,
-  useFirestore,
-  useMemoFirebase,
-  useUser,
-} from '@/firebase';
-import {
-  collection,
-  doc,
-  Timestamp,
-  updateDoc,
-} from 'firebase/firestore';
-import type { Appointment, Customer, Barber } from '@/lib/types';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, Timestamp } from 'firebase/firestore';
+import type { Appointment, Customer, Barber, Service } from '@/lib/types';
+import { CalendarView } from './calendar-view';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
-  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
 
   const params = useParams();
-  const router = useRouter();
-  const { toast } = useToast();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { user } = useUser();
@@ -81,18 +38,19 @@ export default function AppointmentsPage() {
     () => user ? collection(firestore, 'barberShops', shopId, 'appointments') : null,
     [firestore, shopId, user]
   );
-  const { data: appointments, isLoading } = useCollection<Appointment>(appointmentsQuery);
+  const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
   const customersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
-  const { data: customers } = useCollection<Customer>(customersQuery);
+  const { data: customers, isLoading: areCustomersLoading } = useCollection<Customer>(customersQuery);
 
   const barbersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
-  const { data: barbers } = useCollection<Barber>(barbersQuery);
+  const { data: barbers, isLoading: areBarbersLoading } = useCollection<Barber>(barbersQuery);
 
-  const handleEdit = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setFormOpen(true);
-  };
+  const servicesQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
+  const { data: services, isLoading: areServicesLoading } = useCollection<Service>(servicesQuery);
+
+  const isLoading = areAppointmentsLoading || areCustomersLoading || areBarbersLoading || areServicesLoading;
+
 
   const handleAddNew = () => {
     setSelectedAppointment(undefined);
@@ -102,79 +60,18 @@ export default function AppointmentsPage() {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setSelectedAppointment(undefined);
-    // Toast is handled in the form
   };
-
-  const handleStatusUpdate = async (
-    appointmentId: string,
-    status: 'completed' | 'cancelled'
-  ) => {
-    try {
-      const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointmentId);
-      await updateDoc(appointmentRef, { status });
-      toast({
-        title: 'Status Atualizado!',
-        description: `O agendamento foi marcado como ${status === 'completed' ? 'Concluído' : 'Cancelado'}.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao atualizar status',
-        description: 'Não foi possível atualizar o status do agendamento.',
-      });
-    } finally {
-        if (status === 'cancelled') {
-            setAppointmentToCancel(null);
-        }
-    }
-  };
-
-  const getStatusVariant = (status: Appointment['status']) => {
-    switch (status) {
-      case 'completed': return 'secondary';
-      case 'cancelled': return 'destructive';
-      case 'confirmed': return 'default';
-      default: return 'outline';
-    }
-  };
-  
-  const getStatusLabel = (status: Appointment['status']) => {
-      switch (status) {
-        case 'completed': return 'Concluído';
-        case 'cancelled': return 'Cancelado';
-        case 'confirmed': return 'Confirmado';
-        case 'pending': return 'Pendente';
-        default: return 'Desconhecido';
-      }
-  }
-
-  const getClientName = (clientId: string) => {
-    const client = customers?.find(c => c.id === clientId);
-    return client ? `${client.firstName} ${client.lastName}` : '...';
-  }
-
-  const getBarberName = (barberId: string) => {
-    const barber = barbers?.find(b => b.id === barberId);
-    return barber ? `${barber.firstName} ${barber.lastName}` : '...';
-  }
-
-  const toDate = (timestamp: Timestamp | Date | string): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    return new Date(timestamp);
-  }
 
   return (
     <>
-      <div className="flex flex-col gap-8">
+      <div className="flex h-full flex-col gap-8">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-              Agendamentos
+              Agenda
             </h1>
             <p className="text-muted-foreground">
-              Aqui está uma lista de todos os seus agendamentos.
+              Visualize e gerencie os agendamentos do seu time.
             </p>
           </div>
           <Dialog
@@ -212,166 +109,17 @@ export default function AppointmentsPage() {
           </Dialog>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="hidden sm:table-cell">
-                        Barbeiro
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data e Hora
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>
-                        <span className="sr-only">Ações</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell colSpan={5}>
-                            <Skeleton className="h-8 w-full" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {appointments?.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>
-                          <div className="font-medium">
-                            {getClientName(appointment.customerId)}
-                          </div>
-                          <div className="text-sm text-muted-foreground md:hidden">
-                            {getBarberName(appointment.barberId)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {getBarberName(appointment.barberId)}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {format(
-                            toDate(appointment.startTime),
-                            "dd/MM/yyyy 'às' HH:mm",
-                            { locale: ptBR }
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusVariant(appointment.status)}>
-                            {getStatusLabel(appointment.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Ações</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(appointment)}
-                              >
-                                <Edit className="mr-2 h-4 w-4" /> Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/${shopId}/appointments/${appointment.id}`
-                                  )
-                                }
-                              >
-                                <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleStatusUpdate(
-                                    appointment.id,
-                                    'completed'
-                                  )
-                                }
-                                disabled={appointment.status === 'completed'}
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" /> Marcar como
-                                Concluído
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() =>
-                                  setAppointmentToCancel(appointment)
-                                }
-                                disabled={appointment.status === 'cancelled'}
-                              >
-                                <XCircle className="mr-2 h-4 w-4" /> Cancelar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!isLoading && appointments?.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="h-24 text-center text-muted-foreground"
-                        >
-                          Nenhum agendamento encontrado.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-1 flex flex-col gap-8">
-            <Card>
-              <CardContent className="flex justify-center p-0">
-                <Calendar
-                  mode="single"
-                  selected={new Date()}
-                  className="rounded-md"
-                  locale={ptBR}
-                />
-              </CardContent>
-            </Card>
-          </div>
+        <div className="flex-1 overflow-auto -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8">
+            <CalendarView 
+                appointments={appointments || []}
+                barbers={barbers || []}
+                customers={customers || []}
+                services={services || []}
+                isLoading={isLoading}
+            />
         </div>
       </div>
-
-      <AlertDialog
-        open={!!appointmentToCancel}
-        onOpenChange={(isOpen) => !isOpen && setAppointmentToCancel(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá marcar o agendamento
-              como cancelado.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                handleStatusUpdate(appointmentToCancel!.id, 'cancelled')
-              }
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Sim, cancelar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
+

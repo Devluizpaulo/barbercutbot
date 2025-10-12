@@ -1,0 +1,200 @@
+
+'use client';
+
+import { useState, useMemo } from 'react';
+import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn, getEventColor } from '@/lib/utils';
+import type { Appointment, Customer, Barber, Service } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Scissors } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface CalendarViewProps {
+  appointments: Appointment[];
+  barbers: Barber[];
+  customers: Customer[];
+  services: Service[];
+  isLoading: boolean;
+}
+
+const timeSlots = Array.from({ length: 15 * 4 }, (_, i) => {
+  const hour = 8 + Math.floor(i / 4);
+  const minute = (i % 4) * 15;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+});
+
+export function CalendarView({ appointments, barbers, customers, services, isLoading }: CalendarViewProps) {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
+
+  const toDate = (timestamp: any): Date => {
+    if (timestamp?.toDate) return timestamp.toDate();
+    return new Date(timestamp);
+  };
+  
+  const filteredBarbers = useMemo(() => {
+    if (selectedBarberId === 'all') return barbers;
+    return barbers.filter(b => b.id === selectedBarberId);
+  }, [barbers, selectedBarberId]);
+
+  const dailyAppointments = useMemo(() => {
+    return appointments.filter(a => isSameDay(toDate(a.startTime), selectedDate));
+  }, [appointments, selectedDate]);
+
+  const getAppointmentDetails = (appointment: Appointment) => {
+    const service = services.find(s => appointment.serviceIds.includes(s.id));
+    const customer = customers.find(c => c.id === appointment.customerId);
+    return {
+      service,
+      customer
+    };
+  };
+
+  const changeDate = (amount: number) => {
+    setSelectedDate(prev => new Date(prev.setDate(prev.getDate() + amount)));
+  };
+
+  return (
+    <div className="flex h-full flex-col bg-card border-t">
+      <header className="flex flex-none items-center justify-between border-b px-6 py-4">
+        <div className="flex items-center gap-4">
+            <h1 className="text-xl font-semibold hidden md:block">Agenda</h1>
+             <div className="flex items-center gap-2">
+                <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Todos os Barbeiros" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Barbeiros</SelectItem>
+                        {barbers.map(barber => (
+                            <SelectItem key={barber.id} value={barber.id}>{barber.firstName}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+             </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-[180px] justify-start text-left font-normal">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {format(selectedDate, 'PPP', { locale: ptBR })}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <CalendarPicker
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <div className="flex flex-auto overflow-auto">
+        <div className="grid flex-none grid-cols-1 grid-rows-1">
+          <div className="row-end-1 h-7"></div>
+          {timeSlots.map(time => (
+            <div key={time} className="flex items-center justify-center pr-2 text-right text-xs leading-5 text-muted-foreground">
+              {time.endsWith(':00') && time}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid flex-auto grid-cols-1 grid-rows-1">
+          <div className="col-start-1 col-end-2 row-start-1 grid divide-x" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length}, minmax(10rem, 1fr))` }}>
+            {filteredBarbers.map(() => <div key={Math.random()} />)}
+          </div>
+          <div className="col-start-1 col-end-2 row-start-1 grid grid-cols-1" style={{ gridTemplateRows: '1.75rem repeat(56, minmax(0, 1fr))' }}>
+            <div className="row-end-1 h-7"></div>
+            {timeSlots.map(time => (
+              <div key={time} className={cn('border-t', time.endsWith(':00') ? 'border-dashed' : 'border-dotted')} />
+            ))}
+          </div>
+          <ol className="col-start-1 col-end-2 row-start-1 grid" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length}, minmax(10rem, 1fr))`, gridTemplateRows: `1.75rem repeat(${timeSlots.length}, minmax(0, 1fr))` }}>
+            <li className="relative col-span-full flex items-center justify-between border-b px-6">
+              {filteredBarbers.map(barber => (
+                <div key={barber.id} className="text-center font-semibold text-sm">
+                  {barber.firstName} {barber.lastName}
+                </div>
+              ))}
+            </li>
+            
+            {isLoading && filteredBarbers.map((_, barberIndex) => (
+                timeSlots.slice(0,5).map((_, timeIndex) => (
+                    <li key={`${barberIndex}-${timeIndex}`} className="relative mt-px flex" style={{ gridRow: `${timeIndex * 4 + 2} / span ${Math.floor(Math.random() * 4) + 4}`, gridColumnStart: barberIndex + 1 }}>
+                        <Skeleton className="absolute inset-1" />
+                    </li>
+                ))
+            ))}
+            
+            {!isLoading && dailyAppointments.map(appointment => {
+                const { service, customer } = getAppointmentDetails(appointment);
+                if (!service || !customer) return null;
+
+                const barberIndex = filteredBarbers.findIndex(b => b.id === appointment.barberId);
+                if (barberIndex === -1) return null;
+
+                const startTime = toDate(appointment.startTime);
+                const startHour = startTime.getHours();
+                const startMinute = startTime.getMinutes();
+
+                const startRow = (startHour - 8) * 4 + (startMinute / 15) + 2;
+                const durationInIntervals = Math.ceil(service.duration / 15);
+                const endRow = startRow + durationInIntervals;
+                
+                const eventColor = getEventColor(service.name);
+
+                return (
+                    <li key={appointment.id} className="relative mt-px flex" style={{ gridRow: `${startRow} / span ${durationInIntervals}`, gridColumnStart: barberIndex + 1 }}>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <div className={cn(
+                                    "absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg p-2 text-xs leading-5",
+                                    eventColor.bg,
+                                    eventColor.border
+                                )}>
+                                    <p className="font-semibold text-primary/80">{service.name}</p>
+                                    <p className="text-primary/70">{customer.firstName}</p>
+                                    <p className="text-primary/70">{format(startTime, 'HH:mm')} - {format(addMinutes(startTime, service.duration), 'HH:mm')}</p>
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                                <div className="space-y-4">
+                                    <h3 className="font-semibold text-lg">{service.name}</h3>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <User className="h-4 w-4" />
+                                        <span>{customer.firstName} {customer.lastName}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Scissors className="h-4 w-4" />
+                                        <span>com {barbers.find(b => b.id === appointment.barberId)?.firstName}</span>
+                                    </div>
+                                    <Button className="w-full" size="sm" onClick={() => {
+                                        // TODO: Implement edit functionality
+                                    }}>Editar Agendamento</Button>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </li>
+                )
+            })}
+          </ol>
+        </div>
+      </div>
+    </div>
+  )
+}

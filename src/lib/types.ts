@@ -116,7 +116,7 @@ export type Barber = {
   email?: string;
   bio?: string;
   avatar?: string;
-  services: BarberServiceCommission[];
+  services?: BarberServiceCommission[];
   createdAt: Timestamp;
 };
 
@@ -192,6 +192,7 @@ export type Document = {
 };
 
     
+
 
 
 
