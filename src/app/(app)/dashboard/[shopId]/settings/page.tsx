@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle, Palette } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -44,7 +44,7 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { nationalHolidays2024 } from '@/lib/holidays';
+import { nationalHolidays } from '@/lib/holidays';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -232,7 +232,7 @@ export default function SettingsPage() {
              if (shop.holidays) {
                 replaceHolidays(shop.holidays.map(h => ({...h, date: toDate(h.date)})));
             } else {
-                const defaultHolidays = nationalHolidays2024.map(h => ({
+                const defaultHolidays = nationalHolidays.map(h => ({
                     date: parse(h.date, 'yyyy-MM-dd', new Date()),
                     description: h.description,
                     isClosed: true,
@@ -1068,7 +1068,7 @@ export default function SettingsPage() {
                         {isLoading ? <Skeleton className="h-24 w-full" /> : (
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg mt-4 gap-4">
                                 <div>
-                                    <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={subscriptionStatus === 'active' ? 'bg-green-500 hover:bg-green-500/90' : ''}>{planName}</Badge></div>
+                                    <div className="font-semibold">Plano Atual: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'} className={cn(subscriptionStatus === 'active' && 'bg-green-500 hover:bg-green-500/90')}>{planName}</Badge></div>
                                     <p className="text-sm text-muted-foreground">
                                         {subscriptionStatus === 'active' ? `Sua assinatura está ativa. Próxima cobrança em ${nextBillingDate}.` : 'Você está no período de teste ou seu plano não está ativo.'}
                                     </p>
