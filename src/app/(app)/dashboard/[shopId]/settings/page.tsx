@@ -322,7 +322,7 @@ export default function SettingsPage() {
     }
     
   const subscriptionStatus = shop?.subscription?.status || 'free';
-  const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Plano Gratuito';
+  const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Gratuito';
   const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy') : 'N/A';
 
   const paymentMethodLabels: { [key in z.infer<typeof paymentSettingsFormSchema>['paymentMethods'][number]['method']]: string } = {
@@ -346,12 +346,12 @@ export default function SettingsPage() {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
-            <TabsTrigger value="profile"><User className="mr-2" /> Perfil</TabsTrigger>
-            <TabsTrigger value="address"><MapPin className="mr-2" /> Endereço</TabsTrigger>
-            <TabsTrigger value="hours"><Clock className="mr-2" /> Horários</TabsTrigger>
-            <TabsTrigger value="integrations"><Bot className="mr-2" /> Automação</TabsTrigger>
-            <TabsTrigger value="payments"><Wallet className="mr-2" /> Recebimentos</TabsTrigger>
-            <TabsTrigger value="billing"><CreditCard className="mr-2" /> Conta</TabsTrigger>
+            <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 data-[state=inactive]:text-primary" /> Perfil</TabsTrigger>
+            <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><MapPin className="mr-2 data-[state=inactive]:text-primary" /> Endereço</TabsTrigger>
+            <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Clock className="mr-2 data-[state=inactive]:text-primary" /> Horários</TabsTrigger>
+            <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Bot className="mr-2 data-[state=inactive]:text-primary" /> Automação</TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 data-[state=inactive]:text-primary" /> Recebimentos</TabsTrigger>
+            <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 data-[state=inactive]:text-primary" /> Conta</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
