@@ -45,6 +45,13 @@ export type RolePermissions = {
     manageSettings: boolean;
 }
 
+export type Role = {
+  id: string;
+  name: string;
+  isBuiltIn: boolean;
+  permissions: RolePermissions;
+};
+
 
 export type BarberShop = {
   id: string;
@@ -70,11 +77,7 @@ export type BarberShop = {
   holidays?: Holiday[];
   paymentSettings?: PaymentMethod[];
   cashierSettings?: CashierSettings;
-  permissions?: {
-      manager: RolePermissions;
-      barber: RolePermissions;
-      cashier: RolePermissions;
-  };
+  roles?: Role[];
   createdAt?: Timestamp;
   subscription?: {
     plan: 'free' | 'pro';
@@ -144,7 +147,7 @@ export type TeamMember = {
   lastName: string;
   phone?: string;
   email?: string;
-  role: 'barber' | 'manager' | 'cashier'; // Perfis de acesso
+  role: string; // ID of the role
   // Campos de Barber
   bio?: string;
   avatar?: string;

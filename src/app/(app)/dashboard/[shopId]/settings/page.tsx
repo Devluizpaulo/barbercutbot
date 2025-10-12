@@ -61,6 +61,7 @@ import type {
   CashierSettings,
   CashierOperator,
   RolePermissions,
+  Role,
 } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -189,35 +190,25 @@ const cashierFormSchema = z.object({
     .optional(),
 });
 
-const permissionsFormSchema = z.object({
-  manager: z.object({
-    viewDashboard: z.boolean().default(true),
-    manageAppointments: z.boolean().default(true),
-    manageClients: z.boolean().default(true),
-    manageTeam: z.boolean().default(true),
-    manageServices: z.boolean().default(true),
-    viewFinancial: z.boolean().default(true),
-    manageSettings: z.boolean().default(true),
-  }),
-  barber: z.object({
-    viewDashboard: z.boolean().default(false),
-    manageAppointments: z.boolean().default(true),
-    manageClients: z.boolean().default(false),
-    manageTeam: z.boolean().default(false),
-    manageServices: z.boolean().default(false),
-    viewFinancial: z.boolean().default(false),
-    manageSettings: z.boolean().default(false),
-  }),
-  cashier: z.object({
-    viewDashboard: z.boolean().default(false),
-    manageAppointments: z.boolean().default(false),
-    manageClients: z.boolean().default(false),
-    manageTeam: z.boolean().default(false),
-    manageServices: z.boolean().default(false),
-    viewFinancial: z.boolean().default(true),
-    manageSettings: z.boolean().default(false),
-  }),
+const roleSchema = z.object({
+    id: z.string(),
+    name: z.string().min(2, "O nome do perfil é obrigatório."),
+    isBuiltIn: z.boolean().default(false),
+    permissions: z.object({
+        viewDashboard: z.boolean().default(true),
+        manageAppointments: z.boolean().default(true),
+        manageClients: z.boolean().default(true),
+        manageTeam: z.boolean().default(true),
+        manageServices: z.boolean().default(true),
+        viewFinancial: z.boolean().default(true),
+        manageSettings: z.boolean().default(true),
+    })
 });
+
+const permissionsFormSchema = z.object({
+  roles: z.array(roleSchema),
+});
+
 
 export default function SettingsPage() {
   const params = useParams();
@@ -229,6 +220,8 @@ export default function SettingsPage() {
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [pinOperator, setPinOperator] = useState<CashierOperator | null>(null);
   const [currentPin, setCurrentPin] = useState('');
+  const [newRoleName, setNewRoleName] = useState("");
+  const [isAddingRole, setIsAddingRole] = useState(false);
 
   const shopRef = useMemoFirebase(
     () => doc(firestore, 'barberShops', shopId),
@@ -312,33 +305,7 @@ export default function SettingsPage() {
   const permissionsForm = useForm<z.infer<typeof permissionsFormSchema>>({
     resolver: zodResolver(permissionsFormSchema),
     defaultValues: {
-      manager: {
-        viewDashboard: true,
-        manageAppointments: true,
-        manageClients: true,
-        manageTeam: true,
-        manageServices: true,
-        viewFinancial: true,
-        manageSettings: true,
-      },
-      barber: {
-        viewDashboard: false,
-        manageAppointments: true,
-        manageClients: false,
-        manageTeam: false,
-        manageServices: false,
-        viewFinancial: false,
-        manageSettings: false,
-      },
-      cashier: {
-        viewDashboard: false,
-        manageAppointments: false,
-        manageClients: false,
-        manageTeam: false,
-        manageServices: false,
-        viewFinancial: true,
-        manageSettings: false,
-      },
+      roles: [],
     },
   });
 
@@ -379,6 +346,12 @@ export default function SettingsPage() {
     control: cashierForm.control,
     name: 'operators',
   });
+
+  const { fields: roleFields, append: appendRole, remove: removeRole } = useFieldArray({
+    control: permissionsForm.control,
+    name: "roles"
+  });
+
 
   useEffect(() => {
     const fetchAndSetHolidays = async () => {
@@ -480,8 +453,16 @@ export default function SettingsPage() {
       if (shop.cashierSettings) {
         cashierForm.reset(shop.cashierSettings);
       }
-      if (shop.permissions) {
-        permissionsForm.reset(shop.permissions);
+       if (shop.roles) {
+        permissionsForm.reset({ roles: shop.roles });
+      } else {
+         permissionsForm.reset({
+          roles: [
+            { id: 'manager', name: 'Gerente', isBuiltIn: true, permissions: { viewDashboard: true, manageAppointments: true, manageClients: true, manageTeam: true, manageServices: true, viewFinancial: true, manageSettings: true }},
+            { id: 'barber', name: 'Barbeiro', isBuiltIn: true, permissions: { viewDashboard: false, manageAppointments: true, manageClients: false, manageTeam: false, manageServices: false, viewFinancial: false, manageSettings: false }},
+            { id: 'cashier', name: 'Caixa', isBuiltIn: true, permissions: { viewDashboard: false, manageAppointments: false, manageClients: false, manageTeam: false, manageServices: false, viewFinancial: true, manageSettings: false }},
+          ]
+        });
       }
     }
   }, [
@@ -497,6 +478,30 @@ export default function SettingsPage() {
     shopId,
     replaceHolidays,
   ]);
+  
+  const handleAddNewRole = () => {
+    if (newRoleName.trim() === "") {
+        toast({ variant: "destructive", title: "Nome do perfil inválido." });
+        return;
+    }
+    appendRole({
+        id: newRoleName.toLowerCase().replace(/\s+/g, '-'),
+        name: newRoleName,
+        isBuiltIn: false,
+        permissions: {
+            viewDashboard: false,
+            manageAppointments: false,
+            manageClients: false,
+            manageTeam: false,
+            manageServices: false,
+            viewFinancial: false,
+            manageSettings: false,
+        }
+    });
+    setNewRoleName("");
+    setIsAddingRole(false);
+  };
+
 
   const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
     const sanitizedValues = {
@@ -617,10 +622,10 @@ export default function SettingsPage() {
   const onPermissionsSubmit = (
     values: z.infer<typeof permissionsFormSchema>
   ) => {
-    setDocumentNonBlocking(shopRef, { permissions: values }, { merge: true });
+    setDocumentNonBlocking(shopRef, { roles: values.roles }, { merge: true });
     toast({
       title: 'Permissões atualizadas!',
-      description: 'Os níveis de acesso foram salvos.',
+      description: 'Os perfis de acesso foram salvos.',
     });
   };
 
@@ -721,8 +726,8 @@ export default function SettingsPage() {
             <User className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Perfil
           </TabsTrigger>
-           <TabsTrigger value="team">
-                <UsersIcon className="mr-2" /> Equipe e Acessos
+           <TabsTrigger value="team" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground">
+                <UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" /> Equipe e Acessos
             </TabsTrigger>
           <TabsTrigger
             value="address"
@@ -980,7 +985,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="team">
+         <TabsContent value="team">
            <Tabs defaultValue="team-members" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="team-members">Membros da Equipe</TabsTrigger>
@@ -1010,24 +1015,37 @@ export default function SettingsPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    {(['manager', 'barber', 'cashier'] as const).map((role) => (
-                                        <div key={role} className="space-y-4 rounded-lg border p-4">
-                                            <h4 className="font-semibold capitalize text-lg">{role === 'manager' ? 'Gerente' : (role === 'barber' ? 'Barbeiro' : 'Caixa')}</h4>
+                                     {roleFields.map((role, index) => (
+                                        <div key={role.id} className="space-y-4 rounded-lg border p-4">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-semibold capitalize text-lg">{role.name}</h4>
+                                                {!role.isBuiltIn && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeRole(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                                 {(Object.keys(permissionLabels) as Array<keyof RolePermissions>).map((permission) => (
                                                     <FormField
                                                         key={permission}
                                                         control={permissionsForm.control}
-                                                        name={`${role}.${permission}`}
+                                                        name={`roles.${index}.permissions.${permission}`}
                                                         render={({ field }) => (
                                                             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                                                 <FormControl>
                                                                     <Checkbox
                                                                         checked={field.value}
                                                                         onCheckedChange={field.onChange}
+                                                                        disabled={role.isBuiltIn}
                                                                     />
                                                                 </FormControl>
-                                                                <FormLabel className="font-normal text-sm">{permissionLabels[permission]}</FormLabel>
+                                                                <FormLabel className={cn("font-normal text-sm", role.isBuiltIn && "text-muted-foreground")}>{permissionLabels[permission]}</FormLabel>
                                                             </FormItem>
                                                         )}
                                                     />
@@ -1035,6 +1053,23 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
                                     ))}
+                                    {isAddingRole ? (
+                                        <div className="flex items-center gap-2 p-4 border border-dashed rounded-lg">
+                                            <Input 
+                                                placeholder="Nome do novo perfil" 
+                                                value={newRoleName}
+                                                onChange={(e) => setNewRoleName(e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Button type="button" onClick={handleAddNewRole}>Salvar Perfil</Button>
+                                            <Button type="button" variant="ghost" onClick={() => setIsAddingRole(false)}>Cancelar</Button>
+                                        </div>
+                                    ) : (
+                                        <Button type="button" variant="outline" className="w-full" onClick={() => setIsAddingRole(true)}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Adicionar Novo Perfil
+                                        </Button>
+                                    )}
                                 </CardContent>
                                 <CardFooter>
                                 <div className="flex justify-end w-full">
@@ -1046,7 +1081,7 @@ export default function SettingsPage() {
                                         <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                     )}
                                     <Save className="mr-2 h-4 w-4" />
-                                    Salvar Permissões
+                                    Salvar Perfis de Acesso
                                     </Button>
                                 </div>
                                 </CardFooter>
