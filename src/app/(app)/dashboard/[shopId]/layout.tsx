@@ -1,8 +1,7 @@
+'use client';
 
-"use client";
-
-import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import Link from 'next/link';
+import { usePathname, useParams } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -14,8 +13,8 @@ import {
   SidebarSeparator,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem
-} from "@/components/ui/sidebar";
+  SidebarMenuSubItem,
+} from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
   Calendar,
@@ -30,12 +29,12 @@ import {
   TrendingUp,
   TrendingDown,
   Package,
-} from "lucide-react";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
-import type { BarberShop } from "@/lib/types";
+} from 'lucide-react';
+import { Logo } from '@/components/logo';
+import { Button } from '@/components/ui/button';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { BarberShop } from '@/lib/types';
 
 export default function ShopLayout({
   children,
@@ -48,128 +47,163 @@ export default function ShopLayout({
   const firestore = useFirestore();
 
   const shopRef = useMemoFirebase(
-    () => (shopId ? doc(firestore, "barberShops", shopId) : null),
+    () => (shopId ? doc(firestore, 'barberShops', shopId) : null),
     [firestore, shopId]
   );
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
   const navItems = [
-    { href: `/dashboard/${shopId}`, label: "Visão Geral", icon: LayoutDashboard },
-    { href: `/dashboard/${shopId}/appointments`, label: "Agendamentos", icon: Calendar },
-    { href: `/dashboard/${shopId}/clients`, label: "Clientes", icon: Users },
-    { href: `/dashboard/${shopId}/barbers`, label: "Barbeiros", icon: User },
-    { href: `/dashboard/${shopId}/services`, label: "Serviços", icon: ClipboardList },
-    { href: `/dashboard/${shopId}/products`, label: "Produtos", icon: Package },
-    { href: `/dashboard/${shopId}/suppliers`, label: "Fornecedores", icon: Truck },
+    {
+      href: `/dashboard/${shopId}`,
+      label: 'Visão Geral',
+      icon: LayoutDashboard,
+    },
+    {
+      href: `/dashboard/${shopId}/appointments`,
+      label: 'Agendamentos',
+      icon: Calendar,
+    },
+    { href: `/dashboard/${shopId}/clients`, label: 'Clientes', icon: Users },
+    {
+      href: `/dashboard/${shopId}/services`,
+      label: 'Serviços',
+      icon: ClipboardList,
+    },
+    { href: `/dashboard/${shopId}/products`, label: 'Produtos', icon: Package },
+    {
+      href: `/dashboard/${shopId}/suppliers`,
+      label: 'Fornecedores',
+      icon: Truck,
+    },
   ];
-  
+
   const financePath = `/dashboard/${shopId}/finance`;
 
   return (
-      <div className="flex flex-1">
-        <Sidebar>
-          <SidebarHeader className="p-4 flex items-center justify-between">
-              <Logo />
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground">
-                  <Settings />
-              </Button>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href}>
-                    <SidebarMenuButton
-                      isActive={pathname === item.href}
-                      tooltip={item.label}
-                      className="justify-start"
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-               <SidebarMenuItem>
+    <div className="flex flex-1">
+      <Sidebar>
+        <SidebarHeader className="p-4 flex items-center justify-between">
+          <Logo />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+          >
+            <Settings />
+          </Button>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname.startsWith(financePath)}
-                    tooltip="Finanças"
+                    isActive={pathname === item.href}
+                    tooltip={item.label}
                     className="justify-start"
-                    asChild
                   >
-                    <Link href={financePath}>
-                      <CreditCard />
-                      <span>Finanças</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                        <Link href={`${financePath}/income`}>
-                            <SidebarMenuSubButton asChild isActive={pathname === `${financePath}/income`}>
-                                <span>
-                                    <TrendingUp />
-                                    Receitas
-                                </span>
-                            </SidebarMenuSubButton>
-                        </Link>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                        <Link href={`${financePath}/expenses`}>
-                            <SidebarMenuSubButton asChild isActive={pathname === `${financePath}/expenses`}>
-                                <span>
-                                    <TrendingDown />
-                                    Despesas
-                                </span>
-                            </SidebarMenuSubButton>
-                        </Link>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarSeparator />
-          <SidebarFooter>
-            <SidebarMenu>
-                 <SidebarMenuItem>
-                    <Link href={`/dashboard/${shopId}/support`}>
-                        <SidebarMenuButton tooltip="Suporte" className="justify-start" isActive={pathname.startsWith(`/dashboard/${shopId}/support`)}>
-                            <LifeBuoy />
-                            <span>Suporte</span>
-                        </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
-               <SidebarMenuItem>
-                <Link href={`/dashboard/${shopId}/settings`}>
-                  <SidebarMenuButton tooltip="Configurações" className="justify-start"
-                   isActive={pathname.startsWith(`/dashboard/${shopId}/settings`)}
-                  >
-                    <Settings />
-                    <span>Configurações</span>
+                    <item.icon />
+                    <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href={`/dashboard/${shopId}/profile`}>
-                  <SidebarMenuButton tooltip="Perfil" className="justify-start" isActive={pathname.startsWith(`/dashboard/${shopId}/profile`)}>
-                    <User />
-                    <span>Perfil</span>
-                  </SidebarMenuButton>
+            ))}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith(financePath)}
+                tooltip="Finanças"
+                className="justify-start"
+                asChild
+              >
+                <Link href={financePath}>
+                  <CreditCard />
+                  <span>Finanças</span>
                 </Link>
-              </SidebarMenuItem>
-               <SidebarMenuItem>
-                <Link href="/">
-                  <SidebarMenuButton tooltip="Sair" className="justify-start">
-                    <LogOut />
-                    <span>Sair</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
-          {children}
-        </main>
-      </div>
+              </SidebarMenuButton>
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <Link href={`${financePath}/income`}>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={pathname === `${financePath}/income`}
+                    >
+                      <span>
+                        <TrendingUp />
+                        Receitas
+                      </span>
+                    </SidebarMenuSubButton>
+                  </Link>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <Link href={`${financePath}/expenses`}>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={pathname === `${financePath}/expenses`}
+                    >
+                      <span>
+                        <TrendingDown />
+                        Despesas
+                      </span>
+                    </SidebarMenuSubButton>
+                  </Link>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarSeparator />
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Link href={`/dashboard/${shopId}/support`}>
+                <SidebarMenuButton
+                  tooltip="Suporte"
+                  className="justify-start"
+                  isActive={pathname.startsWith(`/dashboard/${shopId}/support`)}
+                >
+                  <LifeBuoy />
+                  <span>Suporte</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href={`/dashboard/${shopId}/settings`}>
+                <SidebarMenuButton
+                  tooltip="Configurações"
+                  className="justify-start"
+                  isActive={pathname.startsWith(`/dashboard/${shopId}/settings`)}
+                >
+                  <Settings />
+                  <span>Configurações</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href={`/dashboard/${shopId}/profile`}>
+                <SidebarMenuButton
+                  tooltip="Perfil"
+                  className="justify-start"
+                  isActive={pathname.startsWith(`/dashboard/${shopId}/profile`)}
+                >
+                  <User />
+                  <span>Perfil</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/">
+                <SidebarMenuButton tooltip="Sair" className="justify-start">
+                  <LogOut />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
+        {children}
+      </main>
+    </div>
   );
 }
