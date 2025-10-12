@@ -108,7 +108,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { PinInput, PinInputField } from '@/components/ui/pin-input';
-import { AddTeamMemberForm } from './add-team-member-form';
 import { TeamTable } from './team-table';
 
 
@@ -1791,7 +1790,110 @@ export default function SettingsPage() {
             </form>
           </Form>
         </TabsContent>
+        
+        <TabsContent value="cashier">
+          <Form {...cashierForm}>
+            <form onSubmit={cashierForm.handleSubmit(onCashierSubmit)}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurações do Caixa</CardTitle>
+                  <CardDescription>Gerencie a segurança e os operadores do seu caixa.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={cashierForm.control}
+                    name="requirePassword"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Exigir PIN</FormLabel>
+                          <FormDescription>
+                            Exigir um PIN de 4 dígitos para abrir ou fechar o caixa.
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="space-y-4">
+                    <Label className="text-base font-medium">Operadores de Caixa</Label>
+                    {operatorFields.map((operator, index) => (
+                      <div key={operator.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium">{operator.name}</p>
+                          <Badge variant="outline" className="capitalize">{operator.role}</Badge>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setPinOperator(operator)}>
+                          <Key className="mr-2 h-4 w-4" />
+                          {operator.pin ? 'Alterar PIN' : 'Definir PIN'}
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOperator(index)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                     <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => appendOperator({ id: crypto.randomUUID(), name: 'Novo Operador', role: 'caixa' })}
+                    >
+                       <PlusCircle className="mr-2 h-4 w-4"/> Adicionar Operador
+                    </Button>
+                  </div>
+                </CardContent>
+                 <CardFooter>
+                  <div className="flex justify-end w-full">
+                    <Button
+                      type="submit"
+                      disabled={cashierForm.formState.isSubmitting}
+                    >
+                      {cashierForm.formState.isSubmitting && (
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar Config. do Caixa
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            </form>
+          </Form>
+        </TabsContent>
       </Tabs>
+
+      <Dialog open={!!pinOperator} onOpenChange={(isOpen) => !isOpen && setPinOperator(null)}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Definir PIN para {pinOperator?.name}</DialogTitle>
+            <DialogDescription>
+                Digite um PIN de 4 dígitos. Este PIN será usado para operações de caixa.
+            </DialogDescription>
+          </DialogHeader>
+            <div className="flex justify-center p-4">
+              <PinInput onComplete={(value) => setCurrentPin(value)}>
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+                  <PinInputField />
+              </PinInput>
+            </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancelar</Button>
+             </DialogClose>
+            <Button type="button" onClick={handleSavePin}>Salvar PIN</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
