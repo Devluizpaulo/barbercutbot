@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -76,7 +76,7 @@ export default function CPanelSignupPage() {
         // Sign out the user immediately after signup, forcing them to log in.
         // This ensures the custom claim (set by a backend trigger) is present in their next session.
         await signOut(auth);
-        router.push('/cpanel/login');
+        router.push('/login');
 
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
@@ -103,9 +103,9 @@ export default function CPanelSignupPage() {
           </Link>
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild>
-              <Link href="/cpanel/login">
+              <Link href="/login">
                   <Lock className="mr-2 h-4 w-4" />
-                  Login de Admin
+                  Login
               </Link>
             </Button>
           </div>
@@ -126,9 +126,9 @@ export default function CPanelSignupPage() {
                   </div>
                   <div className="p-4 border-t mt-auto">
                     <Button variant="ghost" asChild className="w-full">
-                      <Link href="/cpanel/login">
+                      <Link href="/login">
                           <Lock className="mr-2 h-4 w-4" />
-                          Login de Admin
+                          Login
                       </Link>
                     </Button>
                   </div>
@@ -204,7 +204,7 @@ export default function CPanelSignupPage() {
                     </Button>
                     <p className="text-sm text-center text-muted-foreground">
                         Já tem uma conta?{' '}
-                        <Link href="/cpanel/login" className="underline hover:text-primary">
+                        <Link href="/login" className="underline hover:text-primary">
                             Faça login
                         </Link>
                     </p>

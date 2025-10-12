@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -15,21 +16,21 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (isUserLoading) {
+      // Do nothing while loading to prevent flicker
       return;
     }
 
     if (user) {
-        if (user.role === 'admin') {
-            router.push('/cpanel');
-        } else {
-            router.push('/dashboard/shops');
-        }
+      // If a user is logged in, redirect them to the correct dashboard.
+      if (user.role === 'admin') {
+        router.push('/cpanel');
+      } else {
+        router.push('/dashboard/shops');
+      }
     }
-    
   }, [user, isUserLoading, router]);
 
-  // Show a loading screen while checking for an existing session
-  // or if a logged-in user is being redirected.
+  // Show a loading screen while checking for a user or during redirection.
   if (isUserLoading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
@@ -38,6 +39,6 @@ export default function AuthLayout({
     );
   }
   
-  // If no user is logged in, show the login/signup page.
+  // If no user is found after loading, show the children (login/signup page).
   return <>{children}</>;
 }

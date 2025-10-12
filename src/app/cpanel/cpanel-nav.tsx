@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -17,7 +16,6 @@ import {
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import {
-  Bell,
   Home,
   Users,
   Store,
@@ -33,6 +31,7 @@ const menuItems = [
   { href: '/cpanel', label: 'Dashboard', icon: Home },
   { href: '/cpanel/shops', label: 'Lojas', icon: Store },
   { href: '/cpanel/users', label: 'Usuários', icon: Users },
+  { href: '/cpanel/team', label: 'Equipe', icon: Shield },
   { href: '/cpanel/tickets', label: 'Tickets', icon: Ticket },
   { href: '/cpanel/documents', label: 'Documentos', icon: FileText },
   { href: '/cpanel/settings', label: 'Configurações', icon: Settings },

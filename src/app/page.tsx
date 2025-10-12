@@ -255,7 +255,7 @@ export default function LandingPage() {
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
              <Button variant="ghost" size="sm" asChild>
-                <Link href="/cpanel/login">
+                <Link href="/login">
                     <Shield className="mr-2 h-4 w-4"/>
                     Admin
                 </Link>
