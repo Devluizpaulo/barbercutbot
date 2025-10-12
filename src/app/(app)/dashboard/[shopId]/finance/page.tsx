@@ -51,6 +51,7 @@ import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
+import { TransactionsTable } from './transactions-table';
 
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"];
@@ -426,59 +427,6 @@ export default function FinancePage() {
             </Card>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="font-headline">Histórico de Transações</CardTitle>
-                    <CardDescription>Visualize todas as receitas e despesas registradas no período selecionado.</CardDescription>
-                </div>
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar transação..." 
-                        className="pl-8" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList>
-              <TabsTrigger value="all">Todas</TabsTrigger>
-              <TabsTrigger value="income">Receitas</TabsTrigger>
-              <TabsTrigger value="expenses">Despesas</TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-4">
-               <TransactionsTable 
-                  transactions={filteredTransactions} 
-                  isLoading={isLoading} 
-                  onEdit={(t) => { setSelectedTransaction(t); setAddTransactionOpen(true); }}
-                  onDelete={(t) => setTransactionToDelete(t)}
-                />
-            </TabsContent>
-            <TabsContent value="income" className="mt-4">
-              <TransactionsTable 
-                transactions={incomeRecords} 
-                isLoading={isLoading} 
-                onEdit={(t) => { setSelectedTransaction(t); setAddTransactionOpen(true); }}
-                onDelete={(t) => setTransactionToDelete(t)}
-              />
-            </TabsContent>
-             <TabsContent value="expenses" className="mt-4">
-               <TransactionsTable 
-                transactions={expenseRecords} 
-                isLoading={isLoading} 
-                onEdit={(t) => { setSelectedTransaction(t); setAddTransactionOpen(true); }}
-                onDelete={(t) => setTransactionToDelete(t)}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
     </div>
     <AlertDialog
         open={!!transactionToDelete}
@@ -507,112 +455,6 @@ export default function FinancePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  )
-}
-
-function TransactionsTable({ transactions, isLoading, onEdit, onDelete }: { transactions: FinancialRecord[], isLoading: boolean, onEdit: (t: FinancialRecord) => void, onDelete: (t: FinancialRecord) => void }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  const totalPages = Math.ceil(transactions.length / itemsPerPage);
-  const paginatedTransactions = transactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
-  const toDate = (timestamp: Timestamp | Date | string): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    return new Date(timestamp);
-  }
-
-  return (
-    <>
-      <Table>
-          <TableHeader>
-              <TableRow>
-                  <TableHead>Detalhes</TableHead>
-                  <TableHead className="hidden sm:table-cell">Categoria</TableHead>
-                  <TableHead className="hidden md:table-cell">Data</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="w-[40px]"><span className="sr-only">Ações</span></TableHead>
-              </TableRow>
-          </TableHeader>
-          <TableBody>
-             {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
-                </TableRow>
-              ))}
-              {paginatedTransactions.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    <div className="font-medium">{record.description}</div>
-                    {record.paymentMethod && <div className="text-sm text-muted-foreground md:hidden">{record.paymentMethod}</div>}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="outline">{record.category}</Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{format(toDate(record.date), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell className={`text-right font-medium ${record.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {record.type === 'expense' && '-'}R${record.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Ações</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(record)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(record)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && paginatedTransactions.length === 0 && (
-                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">Nenhuma transação encontrada para este período.</TableCell>
-                 </TableRow>
-              )}
-          </TableBody>
-      </Table>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4">
-            <span className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
-            </span>
-            <div className="flex items-center gap-2">
-                <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                >
-                    Anterior
-                </Button>
-                <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                >
-                    Próxima
-                </Button>
-            </div>
-        </div>
-      )}
     </>
   )
 }

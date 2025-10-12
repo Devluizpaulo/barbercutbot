@@ -12,6 +12,9 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -24,6 +27,8 @@ import {
   ClipboardList,
   Truck,
   LifeBuoy,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -54,8 +59,9 @@ export default function ShopLayout({
     { href: `/dashboard/${shopId}/barbers`, label: "Barbeiros", icon: User },
     { href: `/dashboard/${shopId}/services`, label: "Serviços", icon: ClipboardList },
     { href: `/dashboard/${shopId}/suppliers`, label: "Fornecedores", icon: Truck },
-    { href: `/dashboard/${shopId}/finance`, label: "Finanças", icon: CreditCard },
   ];
+  
+  const financePath = `/dashboard/${shopId}/finance`;
 
   return (
       <div className="flex flex-1">
@@ -72,7 +78,7 @@ export default function ShopLayout({
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
                     <SidebarMenuButton
-                      isActive={item.href === pathname}
+                      isActive={pathname === item.href}
                       tooltip={item.label}
                       className="justify-start"
                     >
@@ -82,6 +88,37 @@ export default function ShopLayout({
                   </Link>
                 </SidebarMenuItem>
               ))}
+               <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={pathname.startsWith(financePath)}
+                    tooltip="Finanças"
+                    className="justify-start"
+                    asChild
+                  >
+                    <Link href={financePath}>
+                      <CreditCard />
+                      <span>Finanças</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <Link href={`${financePath}/income`}>
+                            <SidebarMenuSubButton isActive={pathname === `${financePath}/income`}>
+                                <TrendingUp />
+                                Receitas
+                            </SidebarMenuSubButton>
+                        </Link>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                        <Link href={`${financePath}/expenses`}>
+                            <SidebarMenuSubButton isActive={pathname === `${financePath}/expenses`}>
+                                <TrendingDown />
+                                Despesas
+                            </SidebarMenuSubButton>
+                        </Link>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarSeparator />
