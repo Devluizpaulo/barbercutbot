@@ -4,7 +4,6 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -23,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -76,6 +75,14 @@ const workingHoursFormSchema = z.object({
         open: z.string(),
         close: z.string(),
         enabled: z.boolean(),
+    }))
+});
+
+const paymentSettingsFormSchema = z.object({
+    paymentMethods: z.array(z.object({
+        method: z.enum(['money', 'pix', 'debit', 'credit']),
+        enabled: z.boolean(),
+        rate: z.coerce.number().min(0).optional(),
     }))
 });
 
@@ -135,6 +142,18 @@ export default function SettingsPage() {
         }
     });
 
+    const paymentSettingsForm = useForm<z.infer<typeof paymentSettingsFormSchema>>({
+        resolver: zodResolver(paymentSettingsFormSchema),
+        defaultValues: {
+            paymentMethods: [
+                { method: 'money', enabled: true },
+                { method: 'pix', enabled: true },
+                { method: 'debit', enabled: false, rate: 2.5 },
+                { method: 'credit', enabled: false, rate: 4.5 },
+            ]
+        }
+    });
+
     
     const toDate = (timestamp: Timestamp | Date | string): Date => {
       if (timestamp instanceof Timestamp) {
@@ -146,6 +165,11 @@ export default function SettingsPage() {
     const { fields, replace } = useFieldArray({
         control: workingHoursForm.control,
         name: "hours",
+    });
+    
+    const { fields: paymentMethodFields, replace: replacePaymentMethods } = useFieldArray({
+        control: paymentSettingsForm.control,
+        name: "paymentMethods",
     });
 
     useEffect(() => {
@@ -175,8 +199,15 @@ export default function SettingsPage() {
                 });
                 replace(currentHours);
             }
+             if (shop.paymentSettings) {
+                const currentMethods = paymentSettingsForm.getValues('paymentMethods').map(pm => {
+                    const savedMethod = shop.paymentSettings?.find(spm => spm.method === pm.method);
+                    return savedMethod || pm;
+                });
+                replacePaymentMethods(currentMethods);
+            }
         }
-    }, [shop, profileForm, workingHoursForm, replace, shopId]);
+    }, [shop, profileForm, workingHoursForm, paymentSettingsForm, replace, replacePaymentMethods, shopId]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -252,6 +283,12 @@ export default function SettingsPage() {
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
     }
 
+    const onPaymentSettingsSubmit = (values: z.infer<typeof paymentSettingsFormSchema>) => {
+        setDocumentNonBlocking(shopRef, { paymentSettings: values.paymentMethods }, { merge: true });
+        toast({ title: 'Recebimentos atualizados!', description: 'As formas de pagamento foram salvas.' });
+    }
+
+
     const handleManageSubscription = async () => {
         setIsBillingLoading(true);
         try {
@@ -282,6 +319,14 @@ export default function SettingsPage() {
   const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Plano Gratuito';
   const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy') : 'N/A';
 
+  const paymentMethodLabels = {
+    money: 'Dinheiro',
+    pix: 'PIX',
+    debit: 'Cartão de Débito',
+    credit: 'Cartão de Crédito',
+  };
+
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -294,10 +339,11 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-8">
             <TabsTrigger value="profile"><User className="mr-2" /> Perfil</TabsTrigger>
             <TabsTrigger value="hours"><Clock className="mr-2" /> Horários</TabsTrigger>
             <TabsTrigger value="integrations"><Bot className="mr-2" /> Automação</TabsTrigger>
+            <TabsTrigger value="payments"><Wallet className="mr-2" /> Recebimentos</TabsTrigger>
             <TabsTrigger value="billing"><CreditCard className="mr-2" /> Faturamento</TabsTrigger>
         </TabsList>
 
@@ -340,7 +386,7 @@ export default function SettingsPage() {
                                                 </FormControl>
                                             </div>
                                             <FormDescription>
-                                                Insira a URL de uma imagem. No futuro, você poderá fazer o upload do seu computador.
+                                                 No futuro, você poderá fazer o upload de uma imagem diretamente.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -685,7 +731,7 @@ export default function SettingsPage() {
                                 <Shield className="h-4 w-4" />
                                 <AlertTitle>Aviso Importante</AlertTitle>
                                 <AlertDescription>
-                                    A API utilizada não é oficial do WhatsApp, o que implica em um risco de banimento do número. Para uma solução 100% segura, oferecemos integração com a API oficial mediante consulta. <Link href={`/dashboard/${shopId}/support`} className="font-bold underline">Fale com o suporte</Link>.
+                                    A API utilizada não é oficial do WhatsApp, o que implica em um risco de banimento do número. Para uma solução 100% segura, oferecemos integração com a API oficial mediante consulta. <a href={`/dashboard/${shopId}/support`} className="font-bold underline">Fale com o suporte</a>.
                                 </AlertDescription>
                             </Alert>
                             <FormField
@@ -766,6 +812,67 @@ export default function SettingsPage() {
                                      {profileForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Automação
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
+        </TabsContent>
+        
+        <TabsContent value="payments">
+             <Form {...paymentSettingsForm}>
+                <form onSubmit={paymentSettingsForm.handleSubmit(onPaymentSettingsSubmit)}>
+                    <Card>
+                        <CardHeader>
+                        <CardTitle>Meios de Recebimento</CardTitle>
+                        <CardDescription>
+                            Configure as formas de pagamento que seu negócio aceita no local e suas taxas.
+                        </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {paymentMethodFields.map((field, index) => (
+                                 <div key={field.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg gap-4">
+                                    <FormField
+                                        control={paymentSettingsForm.control}
+                                        name={`paymentMethods.${index}.enabled`}
+                                        render={({ field: checkboxField }) => (
+                                            <FormItem className="flex items-center gap-3">
+                                                <FormControl>
+                                                    <Checkbox checked={checkboxField.value} onCheckedChange={checkboxField.onChange} id={`check-${field.method}`} />
+                                                </FormControl>
+                                                <Label htmlFor={`check-${field.method}`} className="text-base font-medium min-w-[140px]">{paymentMethodLabels[field.method]}</Label>
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {(field.method === 'credit' || field.method === 'debit') && (
+                                        <FormField
+                                            control={paymentSettingsForm.control}
+                                            name={`paymentMethods.${index}.rate`}
+                                            render={({ field: inputField }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center gap-2">
+                                                        <Label className="text-sm text-muted-foreground">Taxa</Label>
+                                                        <div className="relative">
+                                                            <FormControl>
+                                                                <Input type="number" {...inputField} value={inputField.value || 0} className="w-24 pl-8" disabled={!paymentSettingsForm.watch(`paymentMethods.${index}.enabled`)} />
+                                                            </FormControl>
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                                                        </div>
+                                                    </div>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </CardContent>
+                        <CardFooter>
+                            <div className="flex justify-end w-full">
+                                <Button type="submit" disabled={paymentSettingsForm.formState.isSubmitting}>
+                                     {paymentSettingsForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Recebimentos
                                 </Button>
                             </div>
                         </CardFooter>

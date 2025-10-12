@@ -9,6 +9,12 @@ export type WorkingHour = {
   enabled: boolean;
 };
 
+export type PaymentMethod = {
+  method: 'money' | 'pix' | 'debit' | 'credit';
+  enabled: boolean;
+  rate?: number; // Taxa em porcentagem
+};
+
 export type BarberShop = {
   id: string;
   name: string;
@@ -36,12 +42,7 @@ export type BarberShop = {
     mercadoPagoId?: string;
     currentPeriodEnd?: Timestamp;
   },
-  paymentGateways?: {
-    mercadoPago?: {
-      publicKey?: string;
-      accessToken?: string;
-    }
-  },
+  paymentSettings?: PaymentMethod[];
   whatsapp?: {
     instanceId: string;
     status?: string;
@@ -181,6 +182,7 @@ export type Document = {
 };
 
     
+
 
 
 
