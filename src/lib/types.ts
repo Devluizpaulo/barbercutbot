@@ -35,6 +35,17 @@ export type CashierSettings = {
   operators?: CashierOperator[];
 };
 
+export type RolePermissions = {
+    viewDashboard: boolean;
+    manageAppointments: boolean;
+    manageClients: boolean;
+    manageBarbers: boolean;
+    manageServices: boolean;
+    viewFinancial: boolean;
+    manageSettings: boolean;
+}
+
+
 export type BarberShop = {
   id: string;
   name: string;
@@ -59,6 +70,11 @@ export type BarberShop = {
   holidays?: Holiday[];
   paymentSettings?: PaymentMethod[];
   cashierSettings?: CashierSettings;
+  permissions?: {
+      manager: RolePermissions;
+      barber: RolePermissions;
+      cashier: RolePermissions;
+  };
   createdAt?: Timestamp;
   subscription?: {
     plan: 'free' | 'pro';

@@ -22,11 +22,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle, Palette, Lock } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle, Palette, Lock, Users as UsersIcon } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Holiday, WorkingHour, CashierSettings, CashierOperator } from '@/lib/types';
+import type { BarberShop, Holiday, WorkingHour, CashierSettings, CashierOperator, RolePermissions } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
@@ -114,6 +114,36 @@ const cashierFormSchema = z.object({
   })).optional(),
 });
 
+const permissionsFormSchema = z.object({
+    manager: z.object({
+        viewDashboard: z.boolean().default(true),
+        manageAppointments: z.boolean().default(true),
+        manageClients: z.boolean().default(true),
+        manageBarbers: z.boolean().default(true),
+        manageServices: z.boolean().default(true),
+        viewFinancial: z.boolean().default(true),
+        manageSettings: z.boolean().default(true),
+    }),
+    barber: z.object({
+        viewDashboard: z.boolean().default(false),
+        manageAppointments: z.boolean().default(true),
+        manageClients: z.boolean().default(false),
+        manageBarbers: z.boolean().default(false),
+        manageServices: z.boolean().default(false),
+        viewFinancial: z.boolean().default(false),
+        manageSettings: z.boolean().default(false),
+    }),
+    cashier: z.object({
+        viewDashboard: z.boolean().default(false),
+        manageAppointments: z.boolean().default(false),
+        manageClients: z.boolean().default(false),
+        manageBarbers: z.boolean().default(false),
+        manageServices: z.boolean().default(false),
+        viewFinancial: z.boolean().default(true),
+        manageSettings: z.boolean().default(false),
+    }),
+});
+
 
 export default function SettingsPage() {
     const params = useParams();
@@ -198,6 +228,15 @@ export default function SettingsPage() {
         requirePassword: false,
         operators: [],
       }
+    });
+
+    const permissionsForm = useForm<z.infer<typeof permissionsFormSchema>>({
+        resolver: zodResolver(permissionsFormSchema),
+        defaultValues: {
+            manager: { viewDashboard: true, manageAppointments: true, manageClients: true, manageBarbers: true, manageServices: true, viewFinancial: true, manageSettings: true },
+            barber: { viewDashboard: false, manageAppointments: true, manageClients: false, manageBarbers: false, manageServices: false, viewFinancial: false, manageSettings: false },
+            cashier: { viewDashboard: false, manageAppointments: false, manageClients: false, manageBarbers: false, manageServices: false, viewFinancial: true, manageSettings: false },
+        }
     });
 
     
@@ -310,8 +349,11 @@ export default function SettingsPage() {
             if (shop.cashierSettings) {
                 cashierForm.reset(shop.cashierSettings);
             }
+             if (shop.permissions) {
+                permissionsForm.reset(shop.permissions);
+            }
         }
-    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, cashierForm, replace, replacePaymentMethods, shopId, replaceHolidays]);
+    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, cashierForm, permissionsForm, replace, replacePaymentMethods, shopId, replaceHolidays]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -409,6 +451,11 @@ export default function SettingsPage() {
         toast({ title: 'Configurações do Caixa atualizadas!', description: 'As preferências do caixa foram salvas.' });
     };
 
+    const onPermissionsSubmit = (values: z.infer<typeof permissionsFormSchema>) => {
+        setDocumentNonBlocking(shopRef, { permissions: values }, { merge: true });
+        toast({ title: 'Permissões atualizadas!', description: 'Os níveis de acesso foram salvos.' });
+    };
+
     const handleSavePin = () => {
         if (pinOperator && currentPin.length === 4) {
             const index = operatorFields.findIndex(op => op.id === pinOperator.id);
@@ -468,6 +515,16 @@ export default function SettingsPage() {
     credit: 'Cartão de Crédito',
   };
 
+  const permissionLabels: { [key in keyof RolePermissions]: string } = {
+        viewDashboard: 'Ver Visão Geral',
+        manageAppointments: 'Gerenciar Agendamentos',
+        manageClients: 'Gerenciar Clientes',
+        manageBarbers: 'Gerenciar Barbeiros',
+        manageServices: 'Gerenciar Serviços',
+        viewFinancial: 'Ver Financeiro',
+        manageSettings: 'Gerenciar Configurações',
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -481,12 +538,13 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-8 mb-8">
             <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 text-primary data-[state=active]:text-inherit" /> Perfil</TabsTrigger>
             <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><MapPin className="mr-2 text-primary data-[state=active]:text-inherit" /> Endereço</TabsTrigger>
             <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Clock className="mr-2 text-primary data-[state=active]:text-inherit" /> Horários</TabsTrigger>
             <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Bot className="mr-2 text-primary data-[state=active]:text-inherit" /> Automação</TabsTrigger>
             <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 text-primary data-[state=active]:text-inherit" /> Recebimentos</TabsTrigger>
+            <TabsTrigger value="access" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" /> Acessos</TabsTrigger>
             <TabsTrigger value="cashier" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Lock className="mr-2 text-primary data-[state=active]:text-inherit" /> Caixa</TabsTrigger>
             <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 text-primary data-[state=active]:text-inherit" /> Conta</TabsTrigger>
         </TabsList>
@@ -1135,6 +1193,57 @@ export default function SettingsPage() {
                                      {paymentSettingsForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Recebimentos
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
+        </TabsContent>
+        
+        <TabsContent value="access">
+            <Form {...permissionsForm}>
+                <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Níveis de Acesso</CardTitle>
+                            <CardDescription>
+                                Defina o que cada perfil de usuário pode fazer no sistema.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {(['manager', 'barber', 'cashier'] as const).map(role => (
+                                <div key={role} className="space-y-4 p-4 border rounded-lg">
+                                    <h3 className="text-lg font-semibold capitalize">{role === 'manager' ? 'Gerente' : (role === 'barber' ? 'Barbeiro' : 'Caixa')}</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {Object.keys(permissionLabels).map(key => (
+                                            <FormField
+                                                key={key}
+                                                control={permissionsForm.control}
+                                                name={`${role}.${key as keyof RolePermissions}`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex items-center gap-2 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">{permissionLabels[key as keyof RolePermissions]}</FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                        <CardFooter>
+                             <div className="flex justify-end w-full">
+                                <Button type="submit" disabled={permissionsForm.formState.isSubmitting}>
+                                    {permissionsForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Permissões
                                 </Button>
                             </div>
                         </CardFooter>
