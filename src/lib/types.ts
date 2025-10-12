@@ -188,6 +188,13 @@ export type TeamMember = {
   createdAt: Timestamp;
 };
 
+export type SaleItem = {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    type: 'service' | 'product';
+};
 
 export type Service = {
   id: string;
@@ -233,6 +240,7 @@ export type FinancialRecord = {
   isRecurring?: boolean;
   appointmentId?: string;
   operatorId?: string; // ID of the CashierOperator
+  items?: SaleItem[];
   createdAt: Timestamp;
 };
 

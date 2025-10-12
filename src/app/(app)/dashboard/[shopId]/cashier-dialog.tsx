@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,18 +22,21 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { Appointment, Service, Barber, Customer, BarberShop, ChecklistItem, FinancialRecord } from '@/lib/types';
-import { format, isSameDay } from 'date-fns';
+import type { Appointment, Service, Barber, Customer, BarberShop, ChecklistItem, FinancialRecord, Product, SaleItem } from '@/lib/types';
+import { format, isSameDay, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AddTransactionForm } from './finance/add-transaction-form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { DollarSign, CheckSquare, Square } from 'lucide-react';
+import { DollarSign, CheckSquare, Square, ShoppingCart, Trash2, PlusCircle, Search } from 'lucide-react';
 import { ReceiptDialog } from './receipt-dialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, Timestamp, doc, where } from 'firebase/firestore';
+import { collection, query, Timestamp, doc, where, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface CashierDialogProps {
   open: boolean;
@@ -42,13 +45,12 @@ interface CashierDialogProps {
 }
 
 export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps) {
-  const [isCashierSessionActive, setIsCashierSessionActive] = useState(false);
+  const [view, setView] = useState<'closed' | 'open' | 'closing'>('closed');
   const [openingBalance, setOpeningBalance] = useState('');
   const [closingBalance, setClosingBalance] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [receiptAppointment, setReceiptAppointment] = useState<Appointment | null>(null);
+  const [receiptData, setReceiptData] = useState<{ items: SaleItem[], customer: Customer | { firstName: string }, totalPrice: number, paymentMethod: string } | null>(null);
   const [isReceiptOpen, setReceiptOpen] = useState(false);
-  const [view, setView] = useState<'closed' | 'open' | 'closing'>('closed');
   
   const [openingChecklist, setOpeningChecklist] = useState<Record<string, boolean>>({});
   const [closingChecklist, setClosingChecklist] = useState<Record<string, boolean>>({});
@@ -107,42 +109,72 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   
   const handleFinalizeAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
-    setReceiptOpen(true);
   };
 
-  const onPaymentSuccess = (appointment: Appointment, paymentMethod: string) => {
-    const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
-    const customer = allCustomers?.find(c => c.id === appointment.customerId);
-    addDocumentNonBlocking(recordsRef, {
-      barberShopId: shopId,
-      date: Timestamp.fromDate(new Date()),
-      type: 'income',
-      description: `Serviço - ${customer?.firstName || 'Cliente'}`,
-      amount: appointment.totalPrice || 0,
-      category: 'Venda de Serviço',
-      paymentMethod: paymentMethod,
-      appointmentId: appointment.id,
-      createdAt: serverTimestamp(),
-    });
+  const onPaymentSuccess = async (appointment: Appointment, paymentMethod: string) => {
+    try {
+      const batch = writeBatch(firestore);
+      const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
+      const customer = allCustomers?.find(c => c.id === appointment.customerId);
+      const description = appointment.items.map(i => allServices?.find(s => s.id === i.serviceId)?.name).join(', ') || 'Serviço';
 
-    const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
-    setDocumentNonBlocking(appointmentRef, { status: 'completed' }, { merge: true });
+      const financialRecordData = {
+        barberShopId: shopId,
+        date: Timestamp.fromDate(new Date()),
+        type: 'income' as const,
+        description: `Agendamento - ${customer?.firstName || 'Cliente'}`,
+        amount: appointment.totalPrice || 0,
+        category: 'Venda de Serviço',
+        paymentMethod: paymentMethod,
+        appointmentId: appointment.id,
+        createdAt: serverTimestamp(),
+        items: appointment.items.map(item => {
+          const service = allServices?.find(s => s.id === item.serviceId);
+          return {
+            id: item.serviceId,
+            name: service?.name || 'Serviço desconhecido',
+            price: item.price,
+            quantity: 1,
+            type: 'service'
+          }
+        })
+      };
 
-    setReceiptAppointment(appointment);
-    setReceiptOpen(true);
-    setSelectedAppointment(null);
+      const recordDocRef = doc(recordsRef);
+      batch.set(recordDocRef, financialRecordData);
+
+      const appointmentRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+      batch.update(appointmentRef, { status: 'completed' });
+
+      await batch.commit();
+
+      setReceiptData({
+        items: financialRecordData.items,
+        customer: customer || { firstName: 'Cliente' },
+        totalPrice: appointment.totalPrice || 0,
+        paymentMethod,
+      });
+      setReceiptOpen(true);
+      setSelectedAppointment(null);
+
+    } catch(error) {
+      console.error("Error finalizing payment:", error);
+      toast({ variant: 'destructive', title: "Erro ao finalizar", description: "Não foi possível registrar o pagamento."});
+    }
   };
 
   const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
-    collection(firestore, 'barberShops', shopId, 'appointments')
+    collection(firestore, 'barberShops', shopId, 'appointments'), where('startTime', '>=', startOfToday())
   ) : null, [firestore, shopId, user]);
   const { data: allAppointments } = useCollection<Appointment>(appointmentsQuery);
   
   const todayAppointments = allAppointments?.filter(appt => isSameDay(toDate(appt.startTime), new Date()));
 
-
   const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: allServices } = useCollection<Service>(servicesQuery);
+  
+  const productsQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'products') : null, [firestore, shopId, user]);
+  const { data: allProducts } = useCollection<Product>(productsQuery);
 
   const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
   const { data: allBarbers } = useCollection<Barber>(barbersQuery);
@@ -181,7 +213,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Gerenciador de Caixa</DialogTitle>
             <DialogDescription>
@@ -257,7 +289,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                                           {appt.status}
                                       </Badge>
                                       {appt.totalPrice && <p className="font-bold text-lg">R${appt.totalPrice.toFixed(2)}</p>}
-                                      <Button size="sm" onClick={() => setSelectedAppointment(appt)} disabled={isCompleted}>
+                                      <Button size="sm" onClick={() => handleFinalizeAppointment(appt)} disabled={isCompleted}>
                                         {isCompleted ? 'Finalizado' : 'Finalizar'}
                                       </Button>
                                   </div>
@@ -272,17 +304,16 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
                   </div>
                 </TabsContent>
                 <TabsContent value="walk-in" className="flex-1 overflow-y-auto">
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Registrar Venda Avulsa</CardTitle>
-                          <CardDescription>Use para serviços ou produtos vendidos sem agendamento prévio.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          <AddTransactionForm shopId={shopId} onSuccess={() => {
-                              toast({ title: 'Venda Avulsa Registrada!'});
-                          }} />
-                      </CardContent>
-                  </Card>
+                  <WalkInSale 
+                    shopId={shopId} 
+                    services={allServices || []} 
+                    products={allProducts || []}
+                    customers={allCustomers || []}
+                    onSaleSuccess={(data) => {
+                      setReceiptData(data);
+                      setReceiptOpen(true);
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
               <Separator className="my-4" />
@@ -356,17 +387,16 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
             onSuccess={onPaymentSuccess}
         />
       )}
-      {receiptAppointment && (
+      {receiptData && (
         <ReceiptDialog
           open={isReceiptOpen}
           onOpenChange={setReceiptOpen}
-          appointment={receiptAppointment}
+          receipt={receiptData}
         />
       )}
     </>
   );
 }
-
 
 function PaymentMethodDialog({ appointment, onClose, onSuccess }: { appointment: Appointment, onClose: () => void, onSuccess: (appointment: Appointment, paymentMethod: string) => void }) {
     const paymentMethods = ['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito'];
@@ -396,3 +426,190 @@ function PaymentMethodDialog({ appointment, onClose, onSuccess }: { appointment:
         </Dialog>
     )
 }
+
+
+function WalkInSale({ shopId, services, products, customers, onSaleSuccess }: { shopId: string, services: Service[], products: Product[], customers: Customer[], onSaleSuccess: (data: { items: SaleItem[], customer: Customer | { firstName: string }, totalPrice: number, paymentMethod: string }) => void }) {
+    const [cart, setCart] = useState<SaleItem[]>([]);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [isCustomerPopoverOpen, setIsCustomerPopoverOpen] = useState(false);
+    const [isFinalizeOpen, setIsFinalizeOpen] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const totalPrice = useMemo(() => cart.reduce((acc, item) => acc + item.price * item.quantity, 0), [cart]);
+
+    const addToCart = useCallback((item: Service | Product, type: 'service' | 'product') => {
+        setCart(prevCart => {
+            const existingItem = prevCart.find(i => i.id === item.id && i.type === type);
+            if (existingItem) {
+                // For products, check stock
+                if (type === 'product' && existingItem.quantity >= (item as Product).stockQuantity) {
+                    toast({ variant: 'destructive', title: 'Estoque insuficiente' });
+                    return prevCart;
+                }
+                return prevCart.map(i => i.id === item.id && i.type === type ? { ...i, quantity: i.quantity + 1 } : i);
+            }
+            return [...prevCart, { id: item.id, name: item.name, price: item.price, quantity: 1, type }];
+        });
+    }, [toast]);
+
+    const removeFromCart = useCallback((itemId: string, itemType: 'service' | 'product') => {
+        setCart(prevCart => prevCart.filter(item => !(item.id === itemId && item.type === itemType)));
+    }, []);
+
+    const handleFinalizeSale = async (paymentMethod: string) => {
+        try {
+            const batch = writeBatch(firestore);
+
+            // 1. Create Financial Record
+            const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
+            const financialRecordData = {
+                barberShopId: shopId,
+                date: Timestamp.fromDate(new Date()),
+                type: 'income' as const,
+                description: `Venda Avulsa - ${selectedCustomer?.firstName || 'Consumidor Final'}`,
+                amount: totalPrice,
+                category: 'Venda Avulsa',
+                paymentMethod: paymentMethod,
+                createdAt: serverTimestamp(),
+                items: cart,
+            };
+            const recordDocRef = doc(recordsRef);
+            batch.set(recordDocRef, financialRecordData);
+
+            // 2. Decrement Product Stock
+            cart.forEach(item => {
+                if (item.type === 'product') {
+                    const productRef = doc(firestore, 'barberShops', shopId, 'products', item.id);
+                    const product = products.find(p => p.id === item.id);
+                    if (product) {
+                        batch.update(productRef, { stockQuantity: product.stockQuantity - item.quantity });
+                    }
+                }
+            });
+
+            await batch.commit();
+            onSaleSuccess({ items: cart, customer: selectedCustomer || { firstName: 'Consumidor Final' }, totalPrice, paymentMethod });
+            setCart([]);
+            setSelectedCustomer(null);
+            setIsFinalizeOpen(false);
+
+        } catch (error) {
+            console.error("Error finalizing walk-in sale:", error);
+            toast({ variant: 'destructive', title: "Erro na Venda", description: "Não foi possível registrar a venda avulsa." });
+        }
+    };
+    
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Catálogo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Tabs defaultValue="services">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="services">Serviços</TabsTrigger>
+                            <TabsTrigger value="products">Produtos</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="services">
+                             <ScrollArea className="h-96">
+                                <div className="space-y-2 p-1">
+                                    {services.map(s => <Button key={s.id} variant="outline" className="w-full justify-start" onClick={() => addToCart(s, 'service')}>{s.name} - R${s.price.toFixed(2)}</Button>)}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
+                        <TabsContent value="products">
+                             <ScrollArea className="h-96">
+                                <div className="space-y-2 p-1">
+                                    {products.filter(p => p.stockQuantity > 0).map(p => <Button key={p.id} variant="outline" className="w-full justify-start" onClick={() => addToCart(p, 'product')}>{p.name} - R${p.price.toFixed(2)}</Button>)}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
+            <div className="flex flex-col gap-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ShoppingCart /> Carrinho</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Popover open={isCustomerPopoverOpen} onOpenChange={setIsCustomerPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start mb-4">
+                                    {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : 'Selecionar Cliente (Opcional)'}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Buscar cliente..." />
+                                    <CommandList>
+                                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                                        <CommandGroup>
+                                            {customers.map((c) => (
+                                                <CommandItem key={c.id} onSelect={() => { setSelectedCustomer(c); setIsCustomerPopoverOpen(false); }}>
+                                                    {c.firstName} {c.lastName}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+
+                        <ScrollArea className="h-64">
+                            <div className="space-y-2">
+                                {cart.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Carrinho vazio</p> : cart.map((item, index) => (
+                                    <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded-md">
+                                        <div>
+                                            <p className="font-medium">{item.name}</p>
+                                            <p className="text-muted-foreground">Qtd: {item.quantity}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <p>R${(item.price * item.quantity).toFixed(2)}</p>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeFromCart(item.id, item.type)}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                        <Separator className="my-4" />
+                        <div className="flex justify-between font-bold text-xl">
+                            <span>Total</span>
+                            <span>R${totalPrice.toFixed(2)}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Button onClick={() => setIsFinalizeOpen(true)} disabled={cart.length === 0} size="lg">Finalizar Venda</Button>
+            </div>
+            {isFinalizeOpen && (
+                 <Dialog open={isFinalizeOpen} onOpenChange={setIsFinalizeOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Finalizar Venda Avulsa</DialogTitle>
+                            <DialogDescription>
+                                Selecione a forma de pagamento para o valor de R${totalPrice.toFixed(2)}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-2 gap-4 py-4">
+                            {['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito'].map(method => (
+                                <Button
+                                    key={method}
+                                    variant="outline"
+                                    className="h-16 text-lg"
+                                    onClick={() => handleFinalizeSale(method)}
+                                >
+                                    {method}
+                                </Button>
+                            ))}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </div>
+    );
+}
+
