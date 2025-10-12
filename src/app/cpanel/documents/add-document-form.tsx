@@ -1,158 +1,221 @@
-
-
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { LoaderCircle, Type, MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, doc, serverTimestamp } from 'firebase/firestore';
-import type { Document as DocumentType } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
+import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-const formSchema = z.object({
-  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres.'),
-  content: z.string().min(20, 'O conteúdo deve ter pelo menos 20 caracteres.'),
-  status: z.enum(['Rascunho', 'Publicado']),
-});
-
-type AddDocumentFormValues = z.infer<typeof formSchema>;
-
-interface AddDocumentFormProps {
-  initialData?: DocumentType;
-  onSuccess?: () => void;
-}
-
-export function AddDocumentForm({ initialData, onSuccess }: AddDocumentFormProps) {
+export default function SignupPage() {
+  const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
   const firestore = useFirestore();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<AddDocumentFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      title: '',
-      content: '',
-      status: 'Rascunho',
-    },
-  });
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  const { isSubmitting } = form.formState;
+    if (password.length < 6) {
+        toast({
+            variant: 'destructive',
+            title: 'Senha muito curta',
+            description: 'A senha deve ter pelo menos 6 caracteres.',
+        });
+        setIsLoading(false);
+        return;
+    }
+    
+    if (email.toLowerCase() === 'admin@flowcutspro.com') {
+      toast({
+          variant: 'destructive',
+          title: 'Cadastro não permitido',
+          description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
+      });
+      setIsLoading(false);
+      return;
+    }
 
-  const onSubmit = async (values: AddDocumentFormValues) => {
     try {
-      const docData = {
-        ...values,
-        lastUpdatedAt: serverTimestamp(),
-      };
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        await updateProfile(user, {
+            displayName: `${firstName} ${lastName}`
+        });
 
-      if (initialData) {
-        const docRef = doc(firestore, 'documents', initialData.id);
-        await setDocumentNonBlocking(docRef, docData, { merge: true });
-      } else {
-        const docsRef = collection(firestore, 'documents');
-        await addDocumentNonBlocking(docsRef, { ...docData, createdAt: serverTimestamp() });
-      }
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            id: user.uid,
+            firstName,
+            lastName,
+            email: user.email,
+            role: 'owner', // Assign the owner role
+            createdAt: serverTimestamp(),
+        });
 
-      toast({
-        title: initialData ? 'Documento Atualizado!' : 'Documento Criado!',
-        description: `O documento "${values.title}" foi salvo com sucesso.`,
-      });
-      onSuccess?.();
-      if (!initialData) form.reset();
-    } catch (error) {
-      console.error("Error saving document:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao salvar',
-        description: 'Não foi possível salvar o documento.',
-      });
+        toast({
+          title: 'Conta criada com sucesso!',
+          description: 'Você será redirecionado para o painel.',
+        });
+        
+        router.push('/dashboard/shops');
+    } catch (error: any) {
+        console.error("Firebase Auth Error:", error);
+        let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
+        if (error.code === 'auth/email-already-in-use') {
+            description = 'Este endereço de e-mail já está em uso.';
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Falha no cadastro',
+          description,
+        });
+    } finally {
+        setIsLoading(false);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Título do Documento</FormLabel>
-              <div className="relative">
-                <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Input placeholder="Ex: Termos de Uso" {...field} className="pl-10" />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Conteúdo</FormLabel>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Textarea
-                    placeholder="Insira o conteúdo completo do documento aqui..."
-                    {...field}
-                    className="pl-10 min-h-[250px]"
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Rascunho">Rascunho</SelectItem>
-                  <SelectItem value="Publicado">Publicado</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? 'Salvar Alterações' : 'Salvar Documento'}
-          </Button>
+    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
+          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+            <Logo />
+          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/login">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Login
+              </Link>
+            </Button>
+          </div>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+                      <Logo />
+                    </Link>
+                  </div>
+                  <div className="p-4 border-t mt-auto flex flex-col gap-4">
+                    <Button variant="ghost" asChild className="w-full">
+                      <Link href="/login">
+                          <Lock className="mr-2 h-4 w-4" />
+                          Login
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </form>
-    </Form>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center space-y-4">
+                <div className="mx-auto">
+                    <Logo />
+                </div>
+              <CardTitle>Crie sua Conta</CardTitle>
+              <CardDescription>
+                Comece a gerenciar seu negócio hoje mesmo.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSignup}>
+                <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">Nome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="password"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                    <Button className="w-full" type="submit" disabled={isLoading}>
+                        {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar conta
+                    </Button>
+                     <p className="text-sm text-center text-muted-foreground">
+                        Já tem uma conta?{' '}
+                        <Link href="/login" className="underline hover:text-primary">
+                            Faça login
+                        </Link>
+                    </p>
+                </CardFooter>
+            </form>
+          </Card>
+      </main>
+    </div>
   );
 }

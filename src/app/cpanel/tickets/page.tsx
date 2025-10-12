@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -221,5 +220,3 @@ function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { ti
         </Table>
     )
 }
-
-    

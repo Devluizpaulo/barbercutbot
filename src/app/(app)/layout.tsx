@@ -1,10 +1,10 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import DashboardLayout from './dashboard/layout';
+import DashboardLayout from '@/app/(app)/dashboard/layout';
 
 export default function AppLayout({
   children,
@@ -19,17 +19,24 @@ export default function AppLayout({
 
     if (!user) {
       router.push('/login');
-    } else if (user.role === 'admin') {
-      router.push('/cpanel');
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user || user.role === 'admin') {
+  if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
+  }
+  
+  if (user.role === 'admin') {
+      router.push('/cpanel');
+      return (
+         <div className="flex min-h-screen items-center justify-center bg-background">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      )
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;

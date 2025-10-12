@@ -1,223 +1,221 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription
-} from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, Timestamp, doc } from "firebase/firestore";
-import type { BarberShop, Ticket as TicketType } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Ticket as TicketIcon, MoreVertical } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/card";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AddTicketForm } from './add-ticket-form';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
+import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
+export default function SignupPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-export default function AdminTicketsPage() {
-    const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
-    const firestore = useFirestore();
-    const { user } = useUser();
-    
-    const ticketsQuery = useMemoFirebase(() => user ? query(collection(firestore, 'tickets')) : null, [firestore, user]);
-    const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
-    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
-
-    const findShopName = (shopId: string) => shops?.find(s => s.id === shopId)?.name || 'N/A';
-    const isLoading = isLoadingTickets || isLoadingShops;
-
-    const { toast } = useToast();
-
-    const handleStatusChange = (ticket: TicketType, status: TicketType['status']) => {
-        if (!ticket || !ticket.id) return;
-        const ticketRef = doc(firestore, 'tickets', ticket.id);
-        setDocumentNonBlocking(ticketRef, { status, lastUpdatedAt: new Date() }, { merge: true });
+    if (password.length < 6) {
         toast({
-            title: `Ticket #${ticket.id.substring(0,6)}... atualizado`,
-            description: `O status do ticket foi alterado para ${status}.`,
+            variant: 'destructive',
+            title: 'Senha muito curta',
+            description: 'A senha deve ter pelo menos 6 caracteres.',
         });
-    };
-
-    return (
-        <div className="flex flex-col gap-8">
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                        <TicketIcon />
-                        Tickets de Suporte
-                    </h1>
-                    <p className="text-muted-foreground">
-                    Gerencie todas as solicitações de suporte dos seus parceiros.
-                    </p>
-                </div>
-                 <Dialog open={isTicketDialogOpen} onOpenChange={setTicketDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                          Abrir Ticket (Simulação)
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl">
-                        <DialogHeader>
-                        <DialogTitle>Abrir Novo Ticket de Suporte</DialogTitle>
-                        <DialogDescription>
-                            Simule a abertura de um ticket por um usuário.
-                        </DialogDescription>
-                        </DialogHeader>
-                        <AddTicketForm
-                            shopId="simulatedShopId"
-                            onSuccess={() => setTicketDialogOpen(false)}
-                        />
-                    </DialogContent>
-                </Dialog>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Caixa de Entrada</CardTitle>
-                    <CardDescription>Veja e responda aos tickets de suporte abertos pelos usuários.</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <Tabs defaultValue="abertos">
-                        <TabsList>
-                            <TabsTrigger value="abertos">Abertos</TabsTrigger>
-                            <TabsTrigger value="andamento">Em Andamento</TabsTrigger>
-                            <TabsTrigger value="fechados">Fechados</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="abertos" className="mt-4">
-                            <TicketsTable 
-                                tickets={tickets?.filter(t => t.status === 'Aberto')} 
-                                findShopName={findShopName} 
-                                isLoading={isLoading}
-                                onStatusChange={handleStatusChange}
-                            />
-                        </TabsContent>
-                        <TabsContent value="andamento" className="mt-4">
-                            <TicketsTable 
-                                tickets={tickets?.filter(t => t.status === 'Em Andamento')} 
-                                findShopName={findShopName} 
-                                isLoading={isLoading}
-                                onStatusChange={handleStatusChange}
-                            />
-                        </TabsContent>
-                        <TabsContent value="fechados" className="mt-4">
-                             <TicketsTable 
-                                tickets={tickets?.filter(t => t.status === 'Fechado')} 
-                                findShopName={findShopName} 
-                                isLoading={isLoading}
-                                onStatusChange={handleStatusChange}
-                             />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </div>
-    )
-}
-
-
-function TicketsTable({ tickets, findShopName, isLoading, onStatusChange }: { tickets?: TicketType[], findShopName: (id: string) => string, isLoading: boolean, onStatusChange: (ticket: TicketType, status: TicketType['status']) => void }) {
-    
-    const getStatusVariant = (status: TicketType['status']) => {
-        switch (status) {
-            case 'Aberto': return 'destructive';
-            case 'Em Andamento': return 'default';
-            case 'Fechado': return 'secondary';
-            default: return 'outline';
-        }
-    };
-    
-    const toDate = (timestamp: Timestamp | Date | string): Date => {
-        if (timestamp instanceof Timestamp) {
-            return timestamp.toDate();
-        }
-        return new Date(timestamp);
+        setIsLoading(false);
+        return;
     }
     
-    return (
-         <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Barbearia</TableHead>
-                    <TableHead>Assunto</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Última Atualização</TableHead>
-                    <TableHead><span className="sr-only">Ações</span></TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {isLoading && Array.from({length: 3}).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell colSpan={5}><Skeleton className="h-8 w-full"/></TableCell>
-                    </TableRow>
-                ))}
-                {!isLoading && tickets && tickets.length > 0 ? tickets.map(ticket => (
-                    <TableRow key={ticket.id}>
-                        <TableCell className="font-medium">{findShopName(ticket.shopId)}</TableCell>
-                        <TableCell>
-                            <div>{ticket.subject}</div>
-                            <div className="text-sm text-muted-foreground md:hidden">
-                                {formatDistanceToNow(toDate(ticket.lastUpdatedAt), { addSuffix: true, locale: ptBR })}
-                            </div>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                             <Badge variant={getStatusVariant(ticket.status)}>{ticket.status}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                            {formatDistanceToNow(toDate(ticket.lastUpdatedAt), { addSuffix: true, locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => onStatusChange(ticket, 'Em Andamento')}>
-                                        Marcar como "Em Andamento"
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => onStatusChange(ticket, 'Fechado')}>
-                                        Marcar como "Fechado"
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                )) : (
-                     !isLoading && <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">Nenhum ticket encontrado nesta categoria.</TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-    )
+    if (email.toLowerCase() === 'admin@flowcutspro.com') {
+      toast({
+          variant: 'destructive',
+          title: 'Cadastro não permitido',
+          description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        await updateProfile(user, {
+            displayName: `${firstName} ${lastName}`
+        });
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            id: user.uid,
+            firstName,
+            lastName,
+            email: user.email,
+            role: 'owner', // Assign the owner role
+            createdAt: serverTimestamp(),
+        });
+
+        toast({
+          title: 'Conta criada com sucesso!',
+          description: 'Você será redirecionado para o painel.',
+        });
+        
+        router.push('/dashboard/shops');
+    } catch (error: any) {
+        console.error("Firebase Auth Error:", error);
+        let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
+        if (error.code === 'auth/email-already-in-use') {
+            description = 'Este endereço de e-mail já está em uso.';
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Falha no cadastro',
+          description,
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
+          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+            <Logo />
+          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/login">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Login
+              </Link>
+            </Button>
+          </div>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+                      <Logo />
+                    </Link>
+                  </div>
+                  <div className="p-4 border-t mt-auto flex flex-col gap-4">
+                    <Button variant="ghost" asChild className="w-full">
+                      <Link href="/login">
+                          <Lock className="mr-2 h-4 w-4" />
+                          Login
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center space-y-4">
+                <div className="mx-auto">
+                    <Logo />
+                </div>
+              <CardTitle>Crie sua Conta</CardTitle>
+              <CardDescription>
+                Comece a gerenciar seu negócio hoje mesmo.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSignup}>
+                <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">Nome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="password"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                    <Button className="w-full" type="submit" disabled={isLoading}>
+                        {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar conta
+                    </Button>
+                     <p className="text-sm text-center text-muted-foreground">
+                        Já tem uma conta?{' '}
+                        <Link href="/login" className="underline hover:text-primary">
+                            Faça login
+                        </Link>
+                    </p>
+                </CardFooter>
+            </form>
+          </Card>
+      </main>
+    </div>
+  );
 }

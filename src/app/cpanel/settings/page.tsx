@@ -1,220 +1,221 @@
-
 'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Save, Trash2, Bot, Palette, CreditCard as CreditCardIcon, FileText, Key, LoaderCircle, User, Settings, Shield } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { useState } from 'react';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
+import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
+export default function SignupPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-const paymentFormSchema = z.object({
-  publicKey: z.string().min(1, "A Public Key é obrigatória."),
-  accessToken: z.string().min(1, "O Access Token é obrigatório."),
-});
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+    if (password.length < 6) {
+        toast({
+            variant: 'destructive',
+            title: 'Senha muito curta',
+            description: 'A senha deve ter pelo menos 6 caracteres.',
+        });
+        setIsLoading(false);
+        return;
+    }
+    
+    if (email.toLowerCase() === 'admin@flowcutspro.com') {
+      toast({
+          variant: 'destructive',
+          title: 'Cadastro não permitido',
+          description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
+      });
+      setIsLoading(false);
+      return;
+    }
 
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        await updateProfile(user, {
+            displayName: `${firstName} ${lastName}`
+        });
 
-export default function GlobalSettingsPage() {
-    const { toast } = useToast();
-    const [isSaving, setIsSaving] = useState(false);
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            id: user.uid,
+            firstName,
+            lastName,
+            email: user.email,
+            role: 'owner', // Assign the owner role
+            createdAt: serverTimestamp(),
+        });
 
-    const paymentForm = useForm<PaymentFormValues>({
-        resolver: zodResolver(paymentFormSchema),
-        // Aqui você buscaria as credenciais salvas do banco de dados
-        defaultValues: {
-            publicKey: '',
-            accessToken: '',
+        toast({
+          title: 'Conta criada com sucesso!',
+          description: 'Você será redirecionado para o painel.',
+        });
+        
+        router.push('/dashboard/shops');
+    } catch (error: any) {
+        console.error("Firebase Auth Error:", error);
+        let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
+        if (error.code === 'auth/email-already-in-use') {
+            description = 'Este endereço de e-mail já está em uso.';
         }
-    });
-
-    const onPaymentSubmit = (values: PaymentFormValues) => {
-        setIsSaving(true);
-        console.log("Salvando credenciais do Mercado Pago:", values);
-        // Aqui iria a lógica para salvar as credenciais de forma segura no backend/Firestore
-        setTimeout(() => {
-            toast({
-                title: "Credenciais Salvas!",
-                description: "Suas credenciais do Mercado Pago foram atualizadas com sucesso.",
-            });
-            setIsSaving(false);
-        }, 1000);
-    };
+        toast({
+          variant: 'destructive',
+          title: 'Falha no cadastro',
+          description,
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
-          Configurações da Plataforma
-        </h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações globais do FlowCuts Pro.
-        </p>
-      </div>
-
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
-          <TabsTrigger value="general"><Settings className="mr-2" /> Geral</TabsTrigger>
-          <TabsTrigger value="appearance"><Palette className="mr-2" /> Aparência</TabsTrigger>
-          <TabsTrigger value="billing"><CreditCardIcon className="mr-2" /> Pagamentos</TabsTrigger>
-          <TabsTrigger value="advanced"><Shield className="mr-2" /> Avançado</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações Gerais</CardTitle>
-              <CardDescription>
-                Informações básicas sobre a sua plataforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="platform-name">Nome da Plataforma</Label>
-                <Input id="platform-name" defaultValue="FlowCuts Pro" />
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button><Save className="mr-2 h-4 w-4" />Salvar</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Palette /> Aparência</CardTitle>
-              <CardDescription>
-                Personalize as cores e o logo da plataforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Cor Primária</Label>
-                <div className="flex items-center gap-2">
-                    <Input type="color" defaultValue="#6d28d9" className="w-12 h-10 p-1" />
-                    <Input defaultValue="#6d28d9" />
-                </div>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="logo-upload">Logo da Plataforma</Label>
-                <Input id="logo-upload" type="file" />
-              </div>
-               <div className="flex justify-end pt-4">
-                <Button><Save className="mr-2 h-4 w-4" />Salvar Aparência</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="billing">
-            <Form {...paymentForm}>
-                <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle  className="flex items-center gap-2"><CreditCardIcon /> Pagamentos</CardTitle>
-                            <CardDescription>
-                                Integre com o Mercado Pago para gerenciar as assinaturas das barbearias.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-start gap-4 p-4 border rounded-lg bg-muted/30">
-                                <img src="https://logopng.com.br/logos/mercado-pago-24.svg" alt="Mercado Pago Logo" className="h-10 w-10 mt-1" />
-                                <div>
-                                    <h4 className="font-semibold">Integração com Mercado Pago</h4>
-                                    <p className="text-sm text-muted-foreground">Insira suas credenciais de produção para começar a aceitar pagamentos.</p>
-                                </div>
-                            </div>
-                            <FormField
-                                control={paymentForm.control}
-                                name="publicKey"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Label>Public Key</Label>
-                                        <div className="relative">
-                                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <FormControl>
-                                                <Input type="password" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...field} className="pl-10" />
-                                            </FormControl>
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={paymentForm.control}
-                                name="accessToken"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Label>Access Token</Label>
-                                        <div className="relative">
-                                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <FormControl>
-                                                <Input type="password" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" {...field} className="pl-10" />
-                                            </FormControl>
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                        <CardContent>
-                            <div className="flex justify-end">
-                                <Button type="submit" disabled={isSaving}>
-                                    {isSaving && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Salvar Credenciais
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </form>
-            </Form>
-        </TabsContent>
-
-        <TabsContent value="advanced">
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
-              <CardDescription>
-                Ações irreversíveis relacionadas à plataforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-                    <div>
-                        <h4 className="font-semibold text-destructive">Resetar a Plataforma</h4>
-                        <p className="text-sm text-destructive/80">Isto irá apagar TODAS as barbearias e dados de usuários.</p>
-                    </div>
-                    <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Resetar Plataforma
+    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
+      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+        <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
+          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+            <Logo />
+          </Link>
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/login">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Login
+              </Link>
+            </Button>
+          </div>
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <div className="flex flex-col h-full">
+                  <div className="p-4 border-b">
+                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+                      <Logo />
+                    </Link>
+                  </div>
+                  <div className="p-4 border-t mt-auto flex flex-col gap-4">
+                    <Button variant="ghost" asChild className="w-full">
+                      <Link href="/login">
+                          <Lock className="mr-2 h-4 w-4" />
+                          Login
+                      </Link>
                     </Button>
+                  </div>
                 </div>
-            </CardContent>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center space-y-4">
+                <div className="mx-auto">
+                    <Logo />
+                </div>
+              <CardTitle>Crie sua Conta</CardTitle>
+              <CardDescription>
+                Comece a gerenciar seu negócio hoje mesmo.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSignup}>
+                <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="firstName">Nome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" />
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        id="password"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        />
+                    </div>
+                </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                    <Button className="w-full" type="submit" disabled={isLoading}>
+                        {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar conta
+                    </Button>
+                     <p className="text-sm text-center text-muted-foreground">
+                        Já tem uma conta?{' '}
+                        <Link href="/login" className="underline hover:text-primary">
+                            Faça login
+                        </Link>
+                    </p>
+                </CardFooter>
+            </form>
           </Card>
-        </TabsContent>
-      </Tabs>
+      </main>
     </div>
   );
 }
