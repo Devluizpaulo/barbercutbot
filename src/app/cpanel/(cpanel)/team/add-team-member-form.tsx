@@ -74,7 +74,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
-        role: values.role,
+        role: values.role, // FIX: Use the role from the form values
         createdAt: serverTimestamp(),
       });
 

@@ -17,21 +17,22 @@ export default function CPanelLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) return; // Wait until user status is resolved
 
+    // If loading is done and there's no user, redirect to login
     if (!user) {
-      router.push('/cpanel/login');
+      router.push('/login');
       return;
     }
     
-    // This check is now more reliable because the role is available
+    // If a user is logged in but is NOT an admin, redirect them away from cpanel
     if (user.role !== 'admin') {
-      router.push('/dashboard/shops'); // Redirect non-admins away
+      router.push('/dashboard/shops');
     }
 
   }, [user, isUserLoading, router]);
 
-  // Show loading screen until user data (including role) is fully loaded.
+  // Show a loading screen while user status is being checked or if the user is not an admin
   if (isUserLoading || !user || user.role !== 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
@@ -40,6 +41,7 @@ export default function CPanelLayout({
     );
   }
 
+  // If user is a confirmed admin, render the layout
   return (
     <SidebarProvider>
       <CPanelProvider>
