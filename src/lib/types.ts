@@ -9,6 +9,11 @@ export type WorkingHour = {
   enabled: boolean;
 };
 
+export type Holiday = {
+    date: Timestamp | Date | string;
+    description: string;
+}
+
 export type PaymentMethod = {
   method: 'money' | 'pix' | 'debit' | 'credit';
   enabled: boolean;
@@ -36,6 +41,7 @@ export type BarberShop = {
   website?: string;
   status?: 'active' | 'inactive';
   workingHours?: WorkingHour[];
+  holidays?: Holiday[];
   createdAt?: Timestamp;
   subscription?: {
     plan: 'free' | 'pro';
@@ -183,6 +189,7 @@ export type Document = {
 };
 
     
+
 
 
 

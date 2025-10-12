@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -35,11 +35,14 @@ import { useToast } from '@/hooks/use-toast';
 import { createPayment } from '@/ai/flows/create-payment-flow';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -76,6 +79,13 @@ const workingHoursFormSchema = z.object({
         open: z.string(),
         close: z.string(),
         enabled: z.boolean(),
+    }))
+});
+
+const holidaysFormSchema = z.object({
+    holidays: z.array(z.object({
+        date: z.date(),
+        description: z.string().min(1, "A descrição é obrigatória."),
     }))
 });
 
@@ -144,6 +154,13 @@ export default function SettingsPage() {
         }
     });
 
+    const holidaysForm = useForm<z.infer<typeof holidaysFormSchema>>({
+        resolver: zodResolver(holidaysFormSchema),
+        defaultValues: {
+            holidays: [],
+        }
+    });
+
     const paymentSettingsForm = useForm<z.infer<typeof paymentSettingsFormSchema>>({
         resolver: zodResolver(paymentSettingsFormSchema),
         defaultValues: {
@@ -167,6 +184,11 @@ export default function SettingsPage() {
     const { fields, replace } = useFieldArray({
         control: workingHoursForm.control,
         name: "hours",
+    });
+
+    const { fields: holidayFields, append: appendHoliday, remove: removeHoliday } = useFieldArray({
+        control: holidaysForm.control,
+        name: "holidays",
     });
     
     const { fields: paymentMethodFields, replace: replacePaymentMethods } = useFieldArray({
@@ -202,6 +224,9 @@ export default function SettingsPage() {
                 });
                 replace(currentHours);
             }
+            if (shop.holidays) {
+                holidaysForm.reset({ holidays: shop.holidays.map(h => ({ ...h, date: toDate(h.date) })) });
+            }
              if (shop.paymentSettings) {
                 const currentMethods = paymentSettingsForm.getValues('paymentMethods').map(pm => {
                     const savedMethod = shop.paymentSettings?.find(spm => spm.method === pm.method);
@@ -210,7 +235,7 @@ export default function SettingsPage() {
                 replacePaymentMethods(currentMethods);
             }
         }
-    }, [shop, profileForm, workingHoursForm, paymentSettingsForm, replace, replacePaymentMethods, shopId]);
+    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, replace, replacePaymentMethods, shopId]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -289,6 +314,11 @@ export default function SettingsPage() {
         toast({ title: 'Horários atualizados!', description: 'Seu horário de funcionamento foi salvo.' });
     }
 
+    const onHolidaysSubmit = (values: z.infer<typeof holidaysFormSchema>) => {
+        setDocumentNonBlocking(shopRef, { holidays: values.holidays.map(h => ({...h, date: Timestamp.fromDate(h.date)})) }, { merge: true });
+        toast({ title: 'Feriados atualizados!', description: 'As datas foram salvas com sucesso.' });
+    }
+
     const onPaymentSettingsSubmit = (values: z.infer<typeof paymentSettingsFormSchema>) => {
         setDocumentNonBlocking(shopRef, { paymentSettings: values.paymentMethods }, { merge: true });
         toast({ title: 'Recebimentos atualizados!', description: 'As formas de pagamento foram salvas.' });
@@ -346,12 +376,12 @@ export default function SettingsPage() {
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
-            <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 data-[state=inactive]:text-primary" /> Perfil</TabsTrigger>
-            <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><MapPin className="mr-2 data-[state=inactive]:text-primary" /> Endereço</TabsTrigger>
-            <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Clock className="mr-2 data-[state=inactive]:text-primary" /> Horários</TabsTrigger>
-            <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Bot className="mr-2 data-[state=inactive]:text-primary" /> Automação</TabsTrigger>
-            <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 data-[state=inactive]:text-primary" /> Recebimentos</TabsTrigger>
-            <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 data-[state=inactive]:text-primary" /> Conta</TabsTrigger>
+            <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 text-primary data-[state=active]:text-inherit" /> Perfil</TabsTrigger>
+            <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><MapPin className="mr-2 text-primary data-[state=active]:text-inherit" /> Endereço</TabsTrigger>
+            <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Clock className="mr-2 text-primary data-[state=active]:text-inherit" /> Horários</TabsTrigger>
+            <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Bot className="mr-2 text-primary data-[state=active]:text-inherit" /> Automação</TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 text-primary data-[state=active]:text-inherit" /> Recebimentos</TabsTrigger>
+            <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 text-primary data-[state=active]:text-inherit" /> Conta</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -713,6 +743,81 @@ export default function SettingsPage() {
                                      {workingHoursForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Horários
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
+
+            <Form {...holidaysForm}>
+                <form onSubmit={holidaysForm.handleSubmit(onHolidaysSubmit)}>
+                    <Card className="mt-8">
+                        <CardHeader>
+                            <CardTitle>Feriados e Pontos Facultativos</CardTitle>
+                            <CardDescription>Adicione datas em que o negócio não abrirá.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {holidayFields.map((field, index) => (
+                                <div key={field.id} className="flex items-center gap-2">
+                                    <FormField
+                                        control={holidaysForm.control}
+                                        name={`holidays.${index}.date`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={"w-full pl-3 text-left font-normal"}
+                                                        >
+                                                            {field.value ? format(field.value, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={field.value}
+                                                            onSelect={field.onChange}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={holidaysForm.control}
+                                        name={`holidays.${index}.description`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <Input placeholder="Descrição (ex: Natal)" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeHoliday(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={() => appendHoliday({ date: new Date(), description: '' })}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Adicionar Feriado
+                            </Button>
+                        </CardContent>
+                        <CardFooter>
+                            <div className="flex justify-end w-full">
+                                <Button type="submit" disabled={holidaysForm.formState.isSubmitting}>
+                                     {holidaysForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Feriados
                                 </Button>
                             </div>
                         </CardFooter>
