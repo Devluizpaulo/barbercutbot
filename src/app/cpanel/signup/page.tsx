@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -17,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -55,6 +56,7 @@ export default function CPanelSignupPage() {
             displayName: `${firstName} ${lastName}`
         });
 
+        // Create the document in the 'users' collection
         const userDocRef = doc(firestore, 'users', user.uid);
         const userData = {
             id: user.uid,
@@ -62,10 +64,9 @@ export default function CPanelSignupPage() {
             lastName,
             email: user.email,
         };
-        // Use setDoc for the main user profile
         await setDoc(userDocRef, userData, { merge: true });
         
-        // Add the user to the 'admins' collection
+        // Create the document in the 'admins' collection to grant admin privileges
         const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminData = {
             createdAt: serverTimestamp(),
@@ -231,3 +232,5 @@ export default function CPanelSignupPage() {
     </div>
   );
 }
+
+    

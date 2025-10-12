@@ -77,6 +77,19 @@ export default function CpanelLoginPage() {
     }
   };
 
+  useEffect(() => {
+    const checkUser = async () => {
+      if (!isUserLoading && user) {
+        const isAdmin = await checkIsAdmin(user.uid);
+        if (isAdmin && (pathname === '/cpanel/login' || pathname === '/cpanel/signup')) {
+          router.push('/cpanel');
+        }
+      }
+    };
+    const pathname = window.location.pathname;
+    checkUser();
+  }, [user, isUserLoading, router]);
+
   if (isUserLoading) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-secondary">
@@ -187,7 +200,7 @@ export default function CpanelLoginPage() {
         </Card>
       </main>
       <footer className="py-8 border-t bg-secondary">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:px-6">
           <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
               <Logo />
           </Link>
@@ -203,3 +216,5 @@ export default function CpanelLoginPage() {
     </div>
   );
 }
+
+    

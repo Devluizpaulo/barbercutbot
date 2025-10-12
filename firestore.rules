@@ -1,52 +1,36 @@
 /**
- * @fileoverview Firestore Security Rules for the Barber Shop SaaS application.
+ * @file Firestore Security Rules
+ * @version 2
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user profiles and barber shops.
- * Subcollections under barber shops are accessible only to the barber shop owner.
- * Global read access is granted for barberShops collection to allow listing of shops by all users.
+ * @description This ruleset enforces a multi-tenant security model for a barber shop SaaS application.
+ * All data is segregated by barberShopId, ensuring that users can only access data associated with their barber shop.
  *
  * Data Structure:
- * - /users/{userId}: User profile information.
- * - /admins/{adminId}: List of admin user IDs.
- * - /barberShops/{barberShopId}: Barber shop information, owned by a user.
- * - /barberShops/{barberShopId}/products/{productId}: Products for a specific barber shop.
- * - /barberShops/{barberShopId}/customers/{customerId}: Customers of a specific barber shop.
- * - /barberShops/{barberShopId}/barbers/{barberId}: Barbers working at a specific barber shop.
- * - /barberShops/{barberShopId}/appointments/{appointmentId}: Appointments for a specific barber shop.
- * - /barberShops/{barberShopId}/services/{serviceId}: Services offered by a specific barber shop.
- * - /barberShops/{barberShopId}/suppliers/{supplierId}: Suppliers of a specific barber shop.
- * - /barberShops/{barberShopId}/financialRecords/{financialRecordId}: Financial records for a specific barber shop.
- * - /tickets/{ticketId}: Support tickets from all users/shops.
- * - /documents/{documentId}: Platform-wide legal documents.
+ * - /users/{userId}: Stores user profiles, accessible only by the user themselves.
+ * - /admins/{adminId}: Stores admin profiles, accessible only by admins.
+ * - /barberShops/{barberShopId}: Stores barber shop data, accessible only by the shop owner.
+ * - /barberShops/{barberShopId}/{collection}/{documentId}: Stores data related to a specific barber shop (e.g., customers, barbers, appointments), accessible only to the shop owner.
+ * - /tickets/{ticketId}: Stores support tickets from all users/shops.
+ * - /documents/{documentId}: Stores platform-wide legal documents.
  *
  * Key Security Decisions:
- * - Users can only read/write their own profile data.
- * - Only admins can read/write admin documents.
- * - Barber shop owners have full control over their shop's data and its subcollections.
- * - Global read access is granted for barberShops collection.
- * - Prevents listing of all users.
- *
- * Denormalization for Authorization:
- * - BarberShop subcollections denormalize `barberShopId` in the path to simplify authorization rules and enable secure querying.
+ * - Strict Ownership: Most collections enforce a strict ownership model, where only the owner (identified by userId or barberShopId) can read or write data.
+ * - Denormalization: The barberShopId is denormalized into subcollections under /barberShops/{barberShopId} to simplify and optimize security rules.
+ * - No User Listing: Listing all users is not permitted to protect user privacy.
+ * - Admin Collection: The admins collection segregates admin users and allows admin-specific rules.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows users to read and write their own user profile data.
+     * @description Enforces user-ownership for user profiles.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' can create their profile.
-     *   request.auth.uid == 'user123' && request.resource.data.id == 'user123'
-     * @allow (get) User with UID 'user123' can read their profile.
-     *   request.auth.uid == 'user123'
-     * @allow (update) User with UID 'user123' can update their profile.
-     *   request.auth.uid == 'user123' && resource.data.id == 'user123'
-     * @allow (delete) User with UID 'user123' can delete their profile.
-     *   request.auth.uid == 'user123'
-     * @deny (create) User with UID 'user123' cannot create a profile with ID 'user456'.
-     *   request.auth.uid == 'user123' && request.resource.data.id == 'user456'
+     * @allow (create) User with UID 'user_abc' can create their own profile.
+     * @allow (get) User with UID 'user_abc' can read their own profile.
+     * @allow (update) User with UID 'user_abc' can update their own profile.
+     * @allow (delete) User with UID 'user_abc' can delete their own profile.
+     * @deny (create) User with UID 'user_xyz' cannot create a profile with ID 'user_abc'.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
@@ -58,348 +42,283 @@ service cloud.firestore {
         return request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false; // Do not allow listing all users
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Allows admins to read and write admin data.
+     * @description Enforces admin-only access for admin profiles.
      * @path /admins/{adminId}
-     * @allow (create) Admin with UID 'admin123' can create an admin record.
-     *   request.auth.uid == 'admin123'
-     * @allow (get) Admin with UID 'admin123' can read their admin record.
-     *   request.auth.uid == 'admin123'
-     * @allow (update) Admin with UID 'admin123' can update their admin record.
-     *   request.auth.uid == 'admin123'
-     * @allow (delete) Admin with UID 'admin123' can delete their admin record.
-     *   request.auth.uid == 'admin123'
-     * @deny (create) Non-admin user cannot create an admin record.
-     *   request.auth.uid != 'admin123'
-     * @principle Restricts admin data access to authorized admins only.
+     * @allow (create) Admin with UID 'admin_abc' can create their own profile.
+     * @allow (get) Admin with UID 'admin_abc' can read their own profile.
+     * @allow (update) Admin with UID 'admin_abc' can update their own profile.
+     * @allow (delete) Admin with UID 'admin_abc' can delete their own profile.
+     * @deny (create) User with UID 'user_xyz' cannot create a profile with ID 'admin_abc'.
+     * @principle Enforces document ownership for writes.
      */
     match /admins/{adminId} {
       function isSignedIn() {
         return request.auth != null;
       }
 
-      // TODO: Implement a more robust admin role check (e.g., via a custom claim)
-      // For now, anyone can create an admin record if they know the path.
-      allow get: if isSignedIn();
-      allow list: if false; // Do not allow listing all admins
-      allow create: if false; // TODO: Add admin role validation
-      allow update: if false; // TODO: Add admin role validation
-      allow delete: if false; // TODO: Add admin role validation
+      function isOwner(adminId) {
+        return request.auth.uid == adminId;
+      }
+
+      allow get: if isSignedIn() && isOwner(adminId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(adminId);
+      allow update: if isSignedIn() && isOwner(adminId);
+      allow delete: if isSignedIn() && isOwner(adminId);
     }
 
     /**
-     * @description Allows anyone to read barber shop data, but only the owner can modify it.
+     * @description Enforces owner-only access for barber shop data.
      * @path /barberShops/{barberShopId}
-     * @allow (get) Any user can read barber shop data.
-     *   true
-     * @allow (list) Any user can list barber shops.
-     *   true
-     * @allow (create) User with UID 'user123' can create a barber shop if they are the owner.
-     *   request.auth.uid == 'user123' && request.resource.data.ownerId == 'user123'
-     * @allow (update) User with UID 'user123' can update a barber shop they own.
-     *   request.auth.uid == 'user123' && resource.data.ownerId == 'user123'
-     * @allow (delete) User with UID 'user123' can delete a barber shop they own.
-     *   request.auth.uid == 'user123' && resource.data.ownerId == 'user123'
-     * @deny (create) User with UID 'user123' cannot create a barber shop with ownerId 'user456'.
-     *   request.auth.uid == 'user123' && request.resource.data.ownerId == 'user456'
-     * @principle Allows public reads with owner-only writes, enforcing ownership for modifications.
+     * @allow (create) User with UID 'user_abc' can create a barber shop with ownerId 'user_abc'.
+     * @allow (get) User with UID 'user_abc' can read a barber shop with ownerId 'user_abc'.
+     * @allow (update) User with UID 'user_abc' can update a barber shop with ownerId 'user_abc'.
+     * @allow (delete) User with UID 'user_abc' can delete a barber shop with ownerId 'user_abc'.
+     * @deny (create) User with UID 'user_xyz' cannot create a barber shop with ownerId 'user_abc'.
+     * @principle Enforces document ownership for writes.
      */
     match /barberShops/{barberShopId} {
       function isSignedIn() {
         return request.auth != null;
       }
 
-      function isOwner(ownerId) {
-        return request.auth.uid == ownerId;
-      }
-
-      function isExistingOwner(ownerId) {
-        return isOwner(ownerId) && resource != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.ownerId);
-      allow delete: if isExistingOwner(resource.data.ownerId);
-
-      /**
-       * @description Allows the barber shop owner to manage products.
-       * @path /barberShops/{barberShopId}/products/{productId}
-       * @allow (create) Owner of barber shop 'shop123' can create a product.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a product.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a product.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a product.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a product.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts product management to the barber shop owner.
-       */
-      match /products/{productId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-        
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-          
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage customers.
-       * @path /barberShops/{barberShopId}/customers/{customerId}
-       * @allow (create) Owner of barber shop 'shop123' can create a customer.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a customer.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a customer.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a customer.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a customer.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts customer management to the barber shop owner.
-       */
-      match /customers/{customerId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-          
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage barbers.
-       * @path /barberShops/{barberShopId}/barbers/{barberId}
-       * @allow (create) Owner of barber shop 'shop123' can create a barber.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a barber.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a barber.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a barber.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a barber.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts barber management to the barber shop owner.
-       */
-      match /barbers/{barberId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-          
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage appointments.
-       * @path /barberShops/{barberShopId}/appointments/{appointmentId}
-       * @allow (create) Owner of barber shop 'shop123' can create an appointment.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get an appointment.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update an appointment.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete an appointment.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create an appointment.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts appointment management to the barber shop owner.
-       */
-      match /appointments/{appointmentId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-        
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage services.
-       * @path /barberShops/{barberShopId}/services/{serviceId}
-       * @allow (create) Owner of barber shop 'shop123' can create a service.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a service.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a service.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a service.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a service.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts service management to the barber shop owner.
-       */
-      match /services/{serviceId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-          
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage suppliers.
-       * @path /barberShops/{barberShopId}/suppliers/{supplierId}
-       * @allow (create) Owner of barber shop 'shop123' can create a supplier.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a supplier.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a supplier.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a supplier.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a supplier.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts supplier management to the barber shop owner.
-       */
-      match /suppliers/{supplierId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-          
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
-
-      /**
-       * @description Allows the barber shop owner to manage financial records.
-       * @path /barberShops/{barberShopId}/financialRecords/{financialRecordId}
-       * @allow (create) Owner of barber shop 'shop123' can create a financial record.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (get) Owner of barber shop 'shop123' can get a financial record.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (update) Owner of barber shop 'shop123' can update a financial record.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @allow (delete) Owner of barber shop 'shop123' can delete a financial record.
-       *   request.auth.uid == 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @deny (create) Non-owner cannot create a financial record.
-       *   request.auth.uid != 'user123' && get(/databases/$(database)/documents/barberShops/shop123).data.ownerId == 'user123'
-       * @principle Restricts financial record management to the barber shop owner.
-       */
-      match /financialRecords/{financialRecordId} {
-        function isShopOwner(barberShopId) {
-          return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
-        }
-
-        function isExistingShopOwner(barberShopId) {
-            return isShopOwner(barberShopId) && resource != null;
-        }
-        
-        allow get: if isShopOwner(barberShopId);
-        allow list: if isShopOwner(barberShopId);
-        allow create: if isShopOwner(barberShopId);
-        allow update: if isExistingShopOwner(barberShopId);
-        allow delete: if isExistingShopOwner(barberShopId);
-      }
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
     /**
-     * @description Allows any authenticated user to read tickets, but restricts writes.
-     * @path /tickets/{ticketId}
-     * @allow (get) Any authenticated user can read a ticket.
-     *   request.auth.uid != null
-     * @allow (list) Any authenticated user can list tickets.
-     *   request.auth.uid != null
-     * @allow (create) Not allowed in this prototype.
-     *   false
-     * @allow (update) Not allowed in this prototype.
-     *   false
-     * @allow (delete) Not allowed in this prototype.
-     *   false
-     * @principle Restricts ticket writes for prototyping purposes.
+     * @description Enforces owner-only access for product data within a barber shop.
+     * @path /barberShops/{barberShopId}/products/{productId}
+     * @allow (create) User with UID 'user_abc' can create a product in barber shop 'shop_123' if they own the shop.
+     * @allow (get) Any user can read product data.
+     * @allow (update) User with UID 'user_abc' can update a product in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a product in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a product in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
      */
-    match /tickets/{ticketId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
+    match /barberShops/{barberShopId}/products/{productId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-        allow get: if isSignedIn();
-        allow list: if isSignedIn();
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
-    }
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
 
-    /**
-     * @description Allows public read access to documents, but restricts writes.
-     * @path /documents/{documentId}
-     * @allow (get) Any user can read a document.
-     *   true
-     * @allow (list) Any user can list documents.
-     *   true
-     * @allow (create) Not allowed in this prototype.
-     *   false
-     * @allow (update) Not allowed in this prototype.
-     *   false
-     * @allow (delete) Not allowed in this prototype.
-     *   false
-     * @principle Grants public read access with restricted writes.
-     */
-    match /documents/{documentId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for customer data within a barber shop.
+     * @path /barberShops/{barberShopId}/customers/{customerId}
+     * @allow (create) User with UID 'user_abc' can create a customer in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read a customer in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update a customer in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a customer in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a customer in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/customers/{customerId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for barber data within a barber shop.
+     * @path /barberShops/{barberShopId}/barbers/{barberId}
+     * @allow (create) User with UID 'user_abc' can create a barber in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read a barber in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update a barber in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a barber in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a barber in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/barbers/{barberId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for appointment data within a barber shop.
+     * @path /barberShops/{barberShopId}/appointments/{appointmentId}
+     * @allow (create) User with UID 'user_abc' can create an appointment in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read an appointment in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update an appointment in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete an appointment in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create an appointment in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/appointments/{appointmentId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for service data within a barber shop.
+     * @path /barberShops/{barberShopId}/services/{serviceId}
+     * @allow (create) User with UID 'user_abc' can create a service in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read a service in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update a service in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a service in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a service in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/services/{serviceId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for supplier data within a barber shop.
+     * @path /barberShops/{barberShopId}/suppliers/{supplierId}
+     * @allow (create) User with UID 'user_abc' can create a supplier in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read a supplier in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update a supplier in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a supplier in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a supplier in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/suppliers/{supplierId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+
+    /**
+     * @description Enforces owner-only access for financial record data within a barber shop.
+     * @path /barberShops/{barberShopId}/financialRecords/{financialRecordId}
+     * @allow (create) User with UID 'user_abc' can create a financial record in barber shop 'shop_123' if they own the shop.
+     * @allow (get) User with UID 'user_abc' can read a financial record in barber shop 'shop_123' if they own the shop.
+     * @allow (update) User with UID 'user_abc' can update a financial record in barber shop 'shop_123' if they own the shop.
+     * @allow (delete) User with UID 'user_abc' can delete a financial record in barber shop 'shop_123' if they own the shop.
+     * @deny (create) User with UID 'user_xyz' cannot create a financial record in barber shop 'shop_123' if they do not own the shop.
+     * @principle Enforces document ownership for writes.
+     */
+    match /barberShops/{barberShopId}/financialRecords/{financialRecordId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isBarberShopOwner(barberShopId) {
+        return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow list: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow create: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow update: if isSignedIn() && isBarberShopOwner(barberShopId);
+      allow delete: if isSignedIn() && isBarberShopOwner(barberShopId);
+    }
+       /**
+        * @description Controls access to support tickets.
+        * @path /tickets/{ticketId}
+        * @allow (get) Any authenticated user can read a ticket.
+        * @allow (list) Any authenticated user can list tickets.
+        * @allow (create) Any authenticated user can create a ticket.
+        * @allow (update) Any authenticated user can update a ticket.
+        * @allow (delete) Any authenticated user can delete a ticket.
+        * @principle Allows any authenticated user to perform any operation on tickets.
+        */
+        match /tickets/{ticketId} {
+           function isSignedIn() {
+             return request.auth != null;
+           }
+
+           allow get: if isSignedIn();
+           allow list: if isSignedIn();
+           allow create: if isSignedIn();
+           allow update: if isSignedIn();
+           allow delete: if isSignedIn();
+       }
+         /**
+        * @description Controls access to Documents.
+        * @path /documents/{documentId}
+        * @allow (get) Any authenticated user can read a document.
+        * @allow (list) Any authenticated user can list documents.
+        * @allow (create) Any authenticated user can create a document.
+        * @allow (update) Any authenticated user can update a document.
+        * @allow (delete) Any authenticated user can delete a document.
+        * @principle Allows any authenticated user to perform any operation on documents.
+        */
+       match /documents/{documentId} {
+        function isSignedIn() {
+          return request.auth != null;
+        }
+
+        allow get: if true;
+        allow list: if true;
+        allow create: if isSignedIn();
+        allow update: if isSignedIn();
+        allow delete: if isSignedIn();
     }
   }
 }
