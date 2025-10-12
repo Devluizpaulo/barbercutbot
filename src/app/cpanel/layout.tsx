@@ -49,28 +49,37 @@ export default function CPanelLayout({
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // Se o carregamento do usuário terminou
-      if (!isUserLoading) {
-        // Se não há usuário, redireciona para a página de login do cpanel,
-        // a menos que ele já esteja na página de login ou de cadastro.
-        if (!user) {
-          if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
-              router.push('/cpanel/login');
-          }
-          return;
-        }
+      // Don't do anything while the user state is loading.
+      if (isUserLoading) {
+        return;
+      }
 
-        // Se há um usuário, verificar se ele é admin
+      // If loading is finished and there's no user, redirect to login.
+      // Allow access to login/signup pages.
+      if (!user) {
+        if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
+            router.push('/cpanel/login');
+        }
+        return;
+      }
+
+      // If a user is logged in, check if they are an admin.
+      try {
         const adminDocRef = doc(firestore, 'admins', user.uid);
         const adminDoc = await getDoc(adminDocRef);
 
         if (!adminDoc.exists()) {
-           // Se não é admin, redireciona para o dashboard das lojas
+           // If they are NOT an admin, redirect them away from cpanel.
            router.push('/dashboard/shops');
-        } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
-           // Se é admin e está na página de login/signup, redireciona para o cpanel
+        }
+        // If they are an admin, they can stay. If they are on login/signup, push them to the dashboard.
+         else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
            router.push('/cpanel');
         }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        // On error, a safe default is to redirect away from admin area.
+        router.push('/login');
       }
     };
     

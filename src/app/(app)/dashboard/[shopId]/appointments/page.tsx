@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -42,7 +41,7 @@ import { AddAppointmentForm } from './add-appointment-form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { CalendarView } from './calendar-view';
+import { CalendarView } from '../calendar-view';
 import { CashierDialog } from '../cashier-dialog';
 
 export default function AppointmentsPage() {

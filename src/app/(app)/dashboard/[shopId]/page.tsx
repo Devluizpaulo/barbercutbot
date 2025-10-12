@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react";
@@ -27,7 +26,7 @@ import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
 import { CashierDialog } from "./cashier-dialog";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, Timestamp } from "firebase/firestore";
+import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
