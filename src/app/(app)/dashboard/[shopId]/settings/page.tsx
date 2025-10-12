@@ -319,7 +319,7 @@ export default function SettingsPage() {
   const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Plano Gratuito';
   const nextBillingDate = shop?.subscription?.currentPeriodEnd ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy') : 'N/A';
 
-  const paymentMethodLabels = {
+  const paymentMethodLabels: { [key in z.infer<typeof paymentSettingsFormSchema>['paymentMethods'][number]['method']]: string } = {
     money: 'Dinheiro',
     pix: 'PIX',
     debit: 'Cartão de Débito',
@@ -344,7 +344,7 @@ export default function SettingsPage() {
             <TabsTrigger value="hours"><Clock className="mr-2" /> Horários</TabsTrigger>
             <TabsTrigger value="integrations"><Bot className="mr-2" /> Automação</TabsTrigger>
             <TabsTrigger value="payments"><Wallet className="mr-2" /> Recebimentos</TabsTrigger>
-            <TabsTrigger value="billing"><CreditCard className="mr-2" /> Faturamento</TabsTrigger>
+            <TabsTrigger value="billing"><CreditCard className="mr-2" /> Conta</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -884,7 +884,7 @@ export default function SettingsPage() {
         <TabsContent value="billing">
             <Card>
                 <CardHeader>
-                    <CardTitle>Faturamento e Assinatura</CardTitle>
+                    <CardTitle>Conta e Assinatura</CardTitle>
                     <CardDescription>
                         Gerencie seu plano e visualize seu histórico de faturas.
                     </CardDescription>
