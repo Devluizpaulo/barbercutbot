@@ -96,7 +96,7 @@ export default function IncomePage() {
   return (
      <>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
                     Receitas
@@ -105,14 +105,14 @@ export default function IncomePage() {
                     Acompanhe todas as entradas de dinheiro do seu negócio.
                 </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
                 <PeriodNavigator 
                   period={period}
                   onPeriodChange={handlePeriodChange}
                   dateOffset={dateOffset}
                   onDateOffsetChange={setDateOffset}
                 />
-                <div className="relative flex-1 max-w-sm hidden md:block">
+                <div className="relative flex-1 min-w-[200px] md:min-w-[320px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Buscar receita..." 
