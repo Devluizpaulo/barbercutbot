@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, Image as ImageIcon } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, Image as ImageIcon, Instagram, Facebook, Globe, AtSign } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
@@ -46,6 +46,11 @@ const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
   logo: z.string().url("URL da logo inválida.").optional().or(z.literal('')),
   document: z.string().optional(),
+  contactPerson: z.string().optional(),
+  phone: z.string().optional(),
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
+  website: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
   number: z.string().optional(),
@@ -101,6 +106,11 @@ export default function SettingsPage() {
             name: '',
             logo: '',
             document: '',
+            contactPerson: '',
+            phone: '',
+            instagram: '',
+            facebook: '',
+            website: '',
             cep: '',
             address: '',
             number: '',
@@ -161,14 +171,19 @@ export default function SettingsPage() {
                 name: shop.name || '',
                 logo: shop.logo || '',
                 document: shop.document || '',
+                contactPerson: shop.contactPerson || '',
+                phone: shop.phone || '',
+                instagram: shop.instagram || '',
+                facebook: shop.facebook || '',
+                website: shop.website || '',
                 cep: shop.cep || '',
                 address: shop.address || '',
                 number: shop.number || '',
                 complement: shop.complement || '',
                 neighborhood: shop.neighborhood || '',
                 city: shop.city || '',
-                whatsapp: shop.whatsapp || { instanceId: '', numeroConectado: '' },
-                bot: shop.bot || { provider: 'groq', modelo: 'openai/gpt-oss-120b', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
+                whatsapp: shop.whatsapp || { instanceId: shopId, numeroConectado: '' },
+                bot: shop.bot || { provider: 'groq', modelo: 'llama-3.1-70b-versatile', temperatura: 0.7, ativo: true, promptPersonalizado: '' },
             });
              if (shop.workingHours) {
                 const currentHours = workingHoursForm.getValues('hours').map(daySetting => {
@@ -183,14 +198,18 @@ export default function SettingsPage() {
                 });
             }
         }
-    }, [shop, profileForm, workingHoursForm, paymentForm, replace]);
+    }, [shop, profileForm, workingHoursForm, paymentForm, replace, shopId]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
-        // Sanitize optional fields to prevent 'undefined' values
         const sanitizedValues = {
             ...values,
             logo: values.logo || '',
             document: values.document || '',
+            contactPerson: values.contactPerson || '',
+            phone: values.phone || '',
+            instagram: values.instagram || '',
+            facebook: values.facebook || '',
+            website: values.website || '',
             cep: values.cep || '',
             address: values.address || '',
             number: values.number || '',
@@ -374,6 +393,92 @@ export default function SettingsPage() {
                                         </FormItem>
                                     )}
                                 />
+                                
+                                <div className="space-y-4 pt-4 border-t">
+                                     <h3 className="text-lg font-medium">Contato e Redes Sociais</h3>
+                                     <FormField
+                                        control={profileForm.control}
+                                        name="contactPerson"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label>Nome do Responsável</Label>
+                                                 <div className="relative">
+                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <FormControl>
+                                                        <Input placeholder="Ex: João da Silva" {...field} value={field.value || ''} className="pl-10" />
+                                                    </FormControl>
+                                                 </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={profileForm.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <Label>Telefone Comercial</Label>
+                                                <div className="relative">
+                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <FormControl>
+                                                        <Input placeholder="(11) 99999-8888" {...field} value={field.value || ''} className="pl-10" />
+                                                    </FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="instagram"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Label>Instagram</Label>
+                                                    <div className="relative">
+                                                        <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <FormControl>
+                                                            <Input placeholder="@seu-negocio" {...field} value={field.value || ''} className="pl-10" />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="facebook"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Label>Facebook</Label>
+                                                    <div className="relative">
+                                                        <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <FormControl>
+                                                            <Input placeholder="/seu-negocio" {...field} value={field.value || ''} className="pl-10" />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="website"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Label>Website</Label>
+                                                    <div className="relative">
+                                                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <FormControl>
+                                                            <Input placeholder="www.seunegocio.com.br" {...field} value={field.value || ''} className="pl-10" />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                     </div>
+                                </div>
                                 
                                 <div className="space-y-4 pt-4 border-t">
                                     <h3 className="text-lg font-medium">Endereço</h3>

@@ -23,6 +23,10 @@ export type BarberShop = {
   phone?: string;
   email?: string;
   document?: string;
+  contactPerson?: string;
+  instagram?: string;
+  facebook?: string;
+  website?: string;
   status?: 'active' | 'inactive';
   workingHours?: WorkingHour[];
   createdAt?: Timestamp;
@@ -177,6 +181,7 @@ export type Document = {
 };
 
     
+
 
 
 
