@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Search } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, Timestamp } from 'firebase/firestore';
+import { collection, doc, Timestamp, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { TransactionsTable } from '../transactions-table';
@@ -21,11 +21,11 @@ import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { AddTransactionForm } from '../add-transaction-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PeriodNavigator, type Period } from '../period-navigator';
+import { calculateInterval } from '@/lib/date-utils';
 
-type Period = 'today' | 'week' | 'month' | 'year';
 
 export default function IncomePage() {
   const [selectedTransaction, setSelectedTransaction] = useState<FinancialRecord | undefined>(undefined);
@@ -33,13 +33,22 @@ export default function IncomePage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [period, setPeriod] = useState<Period>('month');
+  const [dateOffset, setDateOffset] = useState(0);
+
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
 
-  const transactionsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'financialRecords') : null, [firestore, shopId, user]);
+  const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
+
+  const transactionsQuery = useMemoFirebase(() => user ? query(
+    collection(firestore, 'barberShops', shopId, 'financialRecords'),
+    where('date', '>=', start),
+    where('date', '<=', end)
+  ) : null, [firestore, shopId, user, start, end]);
+
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
   const toDate = (timestamp: Timestamp | Date | string): Date => {
@@ -54,29 +63,6 @@ export default function IncomePage() {
     
     let filtered = transactions.filter(t => t.type === 'income');
 
-    const now = new Date();
-    let interval: { start: Date; end: Date };
-
-    switch (period) {
-      case 'today':
-        interval = { start: startOfDay(now), end: endOfDay(now) };
-        break;
-      case 'week':
-        interval = { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
-        break;
-      case 'month':
-        interval = { start: startOfMonth(now), end: endOfMonth(now) };
-        break;
-      case 'year':
-        interval = { start: startOfYear(now), end: endOfYear(now) };
-        break;
-    }
-    
-    filtered = filtered.filter(t => {
-      const transactionDate = toDate(t.date);
-      return isWithinInterval(transactionDate, interval);
-    });
-
     if (!searchTerm) return filtered;
 
     const lowercasedTerm = searchTerm.toLowerCase();
@@ -84,7 +70,7 @@ export default function IncomePage() {
       t.description.toLowerCase().includes(lowercasedTerm) ||
       t.category.toLowerCase().includes(lowercasedTerm)
     );
-  }, [transactions, searchTerm, period]);
+  }, [transactions, searchTerm]);
   
   const totalIncome = useMemo(() => {
     return incomeRecords.reduce((acc, record) => acc + record.amount, 0)
@@ -100,6 +86,12 @@ export default function IncomePage() {
     });
     setTransactionToDelete(null);
   }
+  
+  const handlePeriodChange = (newPeriod: Period) => {
+    setPeriod(newPeriod);
+    setDateOffset(0);
+  };
+
 
   return (
      <>
@@ -114,15 +106,13 @@ export default function IncomePage() {
                 </p>
             </div>
             <div className="flex items-center gap-4">
-                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="hidden sm:block">
-                  <TabsList>
-                    <TabsTrigger value="today">Hoje</TabsTrigger>
-                    <TabsTrigger value="week">Semana</TabsTrigger>
-                    <TabsTrigger value="month">Mês</TabsTrigger>
-                    <TabsTrigger value="year">Ano</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <div className="relative flex-1 max-w-sm">
+                <PeriodNavigator 
+                  period={period}
+                  onPeriodChange={handlePeriodChange}
+                  dateOffset={dateOffset}
+                  onDateOffsetChange={setDateOffset}
+                />
+                <div className="relative flex-1 max-w-sm hidden md:block">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Buscar receita..." 
