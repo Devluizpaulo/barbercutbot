@@ -147,17 +147,6 @@ export type Customer = {
   createdAt: Timestamp;
 };
 
-export type TeamMember = {
-  id: string;
-  barberShopId: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  role: string;
-  createdAt: Timestamp;
-};
-
 export type BarberServiceCommission = {
     serviceId: string;
     commissionType?: 'fixed' | 'percentage';
@@ -184,6 +173,18 @@ export type Barber = {
   neighborhood?: string;
   city?: string;
   state?: string;
+  createdAt: Timestamp;
+};
+
+export type TeamMember = {
+  id: string;
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  role: string; // This will be the ID of a role in BarberShop.roles
+  userId?: string; // Link to the main User document if they have a login
   createdAt: Timestamp;
 };
 
@@ -230,6 +231,7 @@ export type FinancialRecord = {
   category: string;
   paymentMethod?: string;
   isRecurring?: boolean;
+  appointmentId?: string;
   operatorId?: string; // ID of the CashierOperator
   createdAt: Timestamp;
 };
