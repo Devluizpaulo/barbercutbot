@@ -22,6 +22,12 @@ export type PaymentMethod = {
   rate?: number; // Taxa em porcentagem
 };
 
+export type CashierSettings = {
+  requirePassword?: boolean;
+  // Futuramente, pode ter uma lista de operadores IDs
+  // operatorIds?: string[];
+};
+
 export type BarberShop = {
   id: string;
   name: string;
@@ -44,6 +50,8 @@ export type BarberShop = {
   status?: 'active' | 'inactive';
   workingHours?: WorkingHour[];
   holidays?: Holiday[];
+  paymentSettings?: PaymentMethod[];
+  cashierSettings?: CashierSettings;
   createdAt?: Timestamp;
   subscription?: {
     plan: 'free' | 'pro';
@@ -51,7 +59,6 @@ export type BarberShop = {
     mercadoPagoId?: string;
     currentPeriodEnd?: Timestamp;
   },
-  paymentSettings?: PaymentMethod[];
   whatsapp?: {
     instanceId: string;
     status?: string;

@@ -22,11 +22,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle, Palette } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone, Wallet, Calendar as CalendarIcon, Trash2, PlusCircle, Palette, Lock } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Holiday, WorkingHour } from '@/lib/types';
+import type { BarberShop, Holiday, WorkingHour, CashierSettings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
@@ -99,6 +99,10 @@ const paymentSettingsFormSchema = z.object({
         enabled: z.boolean(),
         rate: z.coerce.number().min(0).optional(),
     }))
+});
+
+const cashierFormSchema = z.object({
+  requirePassword: z.boolean().default(false),
 });
 
 
@@ -175,6 +179,13 @@ export default function SettingsPage() {
                 { method: 'credit', enabled: false, rate: 4.5 },
             ]
         }
+    });
+    
+    const cashierForm = useForm<z.infer<typeof cashierFormSchema>>({
+      resolver: zodResolver(cashierFormSchema),
+      defaultValues: {
+        requirePassword: false,
+      }
     });
 
     
@@ -277,8 +288,12 @@ export default function SettingsPage() {
                 });
                 replacePaymentMethods(currentMethods);
             }
+
+            if (shop.cashierSettings) {
+                cashierForm.reset(shop.cashierSettings);
+            }
         }
-    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, replace, replacePaymentMethods, shopId, replaceHolidays]);
+    }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, cashierForm, replace, replacePaymentMethods, shopId, replaceHolidays]);
 
     const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
         const sanitizedValues = {
@@ -371,6 +386,11 @@ export default function SettingsPage() {
         toast({ title: 'Recebimentos atualizados!', description: 'As formas de pagamento foram salvas.' });
     }
 
+    const onCashierSubmit = (values: z.infer<typeof cashierFormSchema>) => {
+        setDocumentNonBlocking(shopRef, { cashierSettings: values }, { merge: true });
+        toast({ title: 'Configurações do Caixa atualizadas!', description: 'As preferências do caixa foram salvas.' });
+    };
+
 
     const handleManageSubscription = async () => {
         setIsBillingLoading(true);
@@ -422,12 +442,13 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
             <TabsTrigger value="profile" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><User className="mr-2 text-primary data-[state=active]:text-inherit" /> Perfil</TabsTrigger>
             <TabsTrigger value="address" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><MapPin className="mr-2 text-primary data-[state=active]:text-inherit" /> Endereço</TabsTrigger>
             <TabsTrigger value="hours" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Clock className="mr-2 text-primary data-[state=active]:text-inherit" /> Horários</TabsTrigger>
             <TabsTrigger value="integrations" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"><Bot className="mr-2 text-primary data-[state=active]:text-inherit" /> Automação</TabsTrigger>
             <TabsTrigger value="payments" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Wallet className="mr-2 text-primary data-[state=active]:text-inherit" /> Recebimentos</TabsTrigger>
+            <TabsTrigger value="cashier" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><Lock className="mr-2 text-primary data-[state=active]:text-inherit" /> Caixa</TabsTrigger>
             <TabsTrigger value="billing" className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"><CreditCard className="mr-2 text-primary data-[state=active]:text-inherit" /> Conta</TabsTrigger>
         </TabsList>
 
@@ -1075,6 +1096,59 @@ export default function SettingsPage() {
                                      {paymentSettingsForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Salvar Recebimentos
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
+        </TabsContent>
+
+        <TabsContent value="cashier">
+            <Form {...cashierForm}>
+                <form onSubmit={cashierForm.handleSubmit(onCashierSubmit)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Configurações do Caixa</CardTitle>
+                            <CardDescription>
+                                Defina regras de segurança e gerencie os operadores do caixa.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={cashierForm.control}
+                                name="requirePassword"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                    <FormLabel className="text-base">Exigir Senha</FormLabel>
+                                    <FormDescription>
+                                        Requer senha para abrir ou fechar o caixa. (Funcionalidade em breve)
+                                    </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                             <div className="space-y-4 pt-4 border-t">
+                                <h3 className="text-lg font-medium">Operadores de Caixa</h3>
+                                <p className="text-sm text-muted-foreground">Adicione e gerencie quem pode operar o caixa. (Em desenvolvimento)</p>
+                                <div className="border rounded-lg p-4 text-center text-muted-foreground">
+                                    <p>Funcionalidade de gerenciamento de operadores em breve.</p>
+                                </div>
+                             </div>
+                        </CardContent>
+                         <CardFooter>
+                            <div className="flex justify-end w-full">
+                                <Button type="submit" disabled={cashierForm.formState.isSubmitting}>
+                                    {cashierForm.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Salvar Configurações do Caixa
                                 </Button>
                             </div>
                         </CardFooter>
