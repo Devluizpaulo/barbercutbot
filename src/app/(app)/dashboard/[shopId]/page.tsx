@@ -308,7 +308,11 @@ export default function ShopDashboardPage() {
         </Card>
       </div>
     </div>
-    <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
+    <CashierDialog 
+      open={isCashierOpen} 
+      onOpenChange={setIsCashierOpen} 
+      shopId={shopId} 
+    />
     </>
   )
 }

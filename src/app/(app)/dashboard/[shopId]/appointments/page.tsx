@@ -47,7 +47,7 @@ import { CashierDialog } from '../cashier-dialog';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
-  const [isCashierOpen, setCashierOpen] = useState(false);
+  const [isCashierOpen, setIsCashierOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
@@ -180,7 +180,7 @@ export default function AppointmentsPage() {
             </div>
         </header>
 
-        <div className="flex-1 -mt-8 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8">
+        <div className="flex-1 -mt-8 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
             <CalendarView 
                 appointments={appointments || []}
                 barbers={barbers || []}
@@ -192,15 +192,19 @@ export default function AppointmentsPage() {
             />
         </div>
       </div>
-      <CashierDialog open={isCashierOpen} onOpenChange={setCashierOpen} shopId={shopId} />
-        <Button
-            onClick={() => setCashierOpen(true)}
-            className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
-            size="icon"
-        >
-            <Store className="h-8 w-8" />
-            <span className="sr-only">Abrir Caixa</span>
-        </Button>
+      <CashierDialog 
+        open={isCashierOpen} 
+        onOpenChange={setIsCashierOpen} 
+        shopId={shopId} 
+       />
+      <Button
+          onClick={() => setIsCashierOpen(true)}
+          className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+          size="icon"
+      >
+          <Store className="h-8 w-8" />
+          <span className="sr-only">Abrir Caixa</span>
+      </Button>
     </>
   );
 }
