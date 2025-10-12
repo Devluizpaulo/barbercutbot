@@ -783,6 +783,7 @@ export default function SettingsPage() {
                                                             selected={field.value}
                                                             onSelect={field.onChange}
                                                             initialFocus
+                                                            locale={ptBR}
                                                         />
                                                     </PopoverContent>
                                                 </Popover>
