@@ -165,6 +165,11 @@ Volte sempre!
                     <p className="text-2xl font-bold">R${(appointment.totalPrice || 0).toFixed(2)}</p>
                  </div>
              </div>
+             
+             <Separator className="my-4" />
+             <p className="text-center text-xs text-muted-foreground">
+                Este é um cupom não fiscal, válido apenas para controle interno.
+             </p>
         </div>
 
         <DialogFooter className="sm:justify-start gap-2">
