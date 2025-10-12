@@ -1,71 +1,56 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper Functions
+
+    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
-
-    // Checks if the user is a platform administrator via custom claims
-    function isAdmin() {
-      return request.auth.token.admin == true;
-    }
-
-    // Checks if the user making the request is the owner of the document
+    
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Checks if the user making the request is the owner of the parent BarberShop
-    function ownsBarberShop(barberShopId) {
+    function isAdmin() {
+      // Check for the custom claim 'admin' on the auth token.
+      // This is more secure and efficient than reading a document.
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    function isOwnerOfBarberShop(barberShopId) {
       return isAuthenticated() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
     }
 
-    // Admin God Mode: Admins can read and write anything
+    // This is a "catch-all" rule for administrators.
+    // If the user is an admin, they can do anything.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
     
-    // User Profiles
+    // User can only read and write their own profile
     match /users/{userId} {
-      // Users can read and write their own profile
-      // Admins can also do this via the global rule above
       allow read, write: if isOwner(userId);
     }
     
-    // Barber Shops and their subcollections
+    // Barber Shops can be created by any authenticated user.
+    // Only the owner can read, update, or delete their own shop.
     match /barberShops/{barberShopId} {
-      // Any authenticated user can create a new shop
       allow create: if isAuthenticated();
+      allow read, update, delete: if isOwnerOfBarberShop(barberShopId);
       
-      // Only the owner can read, update, or delete their shop
-      allow read, update, delete: if ownsBarberShop(barberShopId);
-
-      // Rule for all subcollections within a barberShop
+      // Anyone who owns the parent barber shop can read/write to subcollections.
       match /{subcollection}/{docId} {
-        // Only the owner of the parent shop can access its subcollection documents
-        allow read, write: if ownsBarberShop(barberShopId);
+        allow read, write: if isOwnerOfBarberShop(barberShopId);
       }
     }
-    
-    // Global collections accessible by admins (via global rule) or specific logic
-    
-    // Support Tickets
+
+    // Tickets can be read by their creator or by an admin.
+    // Admins can write to any ticket.
     match /tickets/{ticketId} {
-      // Users can create tickets
-      allow create: if isAuthenticated();
-      // Users can read/update their own tickets. Owner is checked via field in document.
-      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-    
-    // Public Documents
-    match /documents/{documentId} {
-      // Everyone can read published documents
-      allow read: if resource.data.status == 'Publicado';
-      // Only admins can write
-      allow write: if isAdmin();
+      allow read: if isOwner(resource.data.userId);
+      allow write: if isAdmin(); // Admin can update/close tickets
+      allow create: if isAuthenticated(); // Any user can create
     }
   }
 }
