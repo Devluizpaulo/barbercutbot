@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -44,7 +43,6 @@ import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { nationalHolidays } from '@/lib/holidays';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
@@ -202,6 +200,45 @@ export default function SettingsPage() {
     });
 
     useEffect(() => {
+        const fetchAndSetHolidays = async () => {
+            try {
+                const year = new Date().getFullYear();
+                const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
+                const nationalHolidays: { date: string; name: string }[] = await response.json();
+                
+                const formattedHolidays = nationalHolidays.map(h => ({
+                    date: parse(h.date, 'yyyy-MM-dd', new Date()),
+                    description: h.name,
+                    isClosed: true, // Default to closed
+                    openingTime: '09:00',
+                    closingTime: '17:00',
+                }));
+
+                const savedHolidays = shop?.holidays?.map(h => ({...h, date: toDate(h.date)})) || [];
+                const savedDates = new Set(savedHolidays.map(h => format(h.date, 'yyyy-MM-dd')));
+
+                // Add national holidays only if they are not already saved
+                const combinedHolidays = [...savedHolidays];
+                formattedHolidays.forEach(nh => {
+                    if (!savedDates.has(format(nh.date, 'yyyy-MM-dd'))) {
+                        combinedHolidays.push(nh);
+                    }
+                });
+
+                // Sort by date
+                combinedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+                
+                replaceHolidays(combinedHolidays);
+
+            } catch (error) {
+                console.error("Failed to fetch national holidays:", error);
+                // Fallback to saved holidays if API fails
+                if (shop?.holidays) {
+                    replaceHolidays(shop.holidays.map(h => ({...h, date: toDate(h.date)})));
+                }
+            }
+        };
+
         if (shop) {
             profileForm.reset({
                 name: shop.name || '',
@@ -229,18 +266,9 @@ export default function SettingsPage() {
                 });
                 replace(currentHours);
             }
-             if (shop.holidays) {
-                replaceHolidays(shop.holidays.map(h => ({...h, date: toDate(h.date)})));
-            } else {
-                const defaultHolidays = nationalHolidays.map(h => ({
-                    date: parse(h.date, 'yyyy-MM-dd', new Date()),
-                    description: h.description,
-                    isClosed: true,
-                    openingTime: '09:00',
-                    closingTime: '17:00'
-                }));
-                replaceHolidays(defaultHolidays);
-            }
+             
+            fetchAndSetHolidays();
+
              if (shop.paymentSettings) {
                 const currentMethods = paymentSettingsForm.getValues('paymentMethods').map(pm => {
                     const savedMethod = shop.paymentSettings?.find(spm => spm.method === pm.method);
