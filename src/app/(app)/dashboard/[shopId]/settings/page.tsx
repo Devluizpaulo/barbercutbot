@@ -23,13 +23,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, Image as ImageIcon, Instagram, Facebook, Globe, AtSign } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, ImageIcon, Instagram, Facebook, Globe, AtSign, Phone } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -374,7 +374,7 @@ export default function SettingsPage() {
                                                 </FormControl>
                                             </div>
                                             <FormDescription>
-                                                Insira a URL de uma imagem. Em breve, você poderá fazer o upload do seu computador.
+                                                Insira a URL de uma imagem. No futuro, você poderá fazer o upload do seu computador.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -877,6 +877,7 @@ export default function SettingsPage() {
                                  <div className="flex justify-end">
                                     <Button type="submit" disabled={isSavingPayment}>
                                         {isSavingPayment && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                                        <Save className="mr-2 h-4 w-4" />
                                         Salvar Credenciais
                                     </Button>
                                 </div>
@@ -890,3 +891,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
