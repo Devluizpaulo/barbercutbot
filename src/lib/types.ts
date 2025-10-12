@@ -13,6 +13,7 @@ export type BarberShop = {
   id: string;
   name: string;
   ownerId: string;
+  logo?: string;
   address?: string;
   number?: string;
   complement?: string;
@@ -176,5 +177,6 @@ export type Document = {
 };
 
     
+
 
 

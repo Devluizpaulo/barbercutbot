@@ -23,13 +23,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key } from 'lucide-react';
+import { CreditCard, Save, MapPin, Search, LoaderCircle, User, Clock, Shield, Bot, MessageCircle, Smartphone, Building2, Hash, Key, Image as ImageIcon } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +44,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
+  logo: z.string().url("URL da logo inválida.").optional().or(z.literal('')),
   document: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
@@ -98,6 +99,7 @@ export default function SettingsPage() {
         resolver: zodResolver(profileFormSchema),
         defaultValues: {
             name: '',
+            logo: '',
             document: '',
             cep: '',
             address: '',
@@ -157,6 +159,7 @@ export default function SettingsPage() {
         if (shop) {
             profileForm.reset({
                 name: shop.name || '',
+                logo: shop.logo || '',
                 document: shop.document || '',
                 address: shop.address || '',
                 whatsapp: shop.whatsapp || { instanceId: '', numeroConectado: '' },
@@ -181,6 +184,7 @@ export default function SettingsPage() {
         // Sanitize optional fields to prevent 'undefined' values
         const sanitizedValues = {
             ...values,
+            logo: values.logo || '',
             document: values.document || '',
             cep: values.cep || '',
             address: values.address || '',
@@ -252,7 +256,7 @@ export default function SettingsPage() {
         setTimeout(() => {
             toast({
                 title: "Credenciais Salvas!",
-                description: "Suas credenciais do Mercado Pago foram atualizadas.",
+                description: "Suas credenciais do Mercado Pago foram atualizadas com sucesso.",
             });
             setIsSavingPayment(false);
         }, 1000);
@@ -329,6 +333,22 @@ export default function SettingsPage() {
                                             <FormControl>
                                                 <Input placeholder="Ex: Barbearia Corte Clássico" {...field} />
                                             </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="logo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Label>URL da Logo</Label>
+                                            <div className="relative">
+                                                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <FormControl>
+                                                    <Input placeholder="https://exemplo.com/logo.png" {...field} value={field.value || ''} className="pl-10"/>
+                                                </FormControl>
+                                            </div>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -548,7 +568,7 @@ export default function SettingsPage() {
                                 render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                    <FormLabel className="text-base">Robô Ativo</FormLabel>
+                                    <Label className="text-base">Robô Ativo</Label>
                                     <FormDescription>
                                         Ative para que o assistente de IA responda no WhatsApp.
                                     </FormDescription>
