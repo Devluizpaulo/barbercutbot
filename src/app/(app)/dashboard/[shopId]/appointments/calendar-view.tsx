@@ -54,9 +54,11 @@ export function CalendarView({
   const getAppointmentDetails = (appointment: Appointment) => {
     const service = services.find(s => appointment.serviceIds.includes(s.id));
     const customer = customers.find(c => c.id === appointment.customerId);
+    const barber = barbers.find(b => b.id === appointment.barberId);
     return {
       service,
-      customer
+      customer,
+      barber,
     };
   };
 
@@ -100,8 +102,8 @@ export function CalendarView({
             ))}
             
             {!isLoading && dailyAppointments.map(appointment => {
-                const { service, customer } = getAppointmentDetails(appointment);
-                if (!service || !customer) return null;
+                const { service, customer, barber } = getAppointmentDetails(appointment);
+                if (!service || !customer || !barber) return null;
 
                 const barberIndex = filteredBarbers.findIndex(b => b.id === appointment.barberId);
                 if (barberIndex === -1) return null;
@@ -113,20 +115,19 @@ export function CalendarView({
                 const startRow = (startHour - 8) * 4 + (startMinute / 15) + 2;
                 const durationInIntervals = Math.ceil(service.duration / 15);
                 
-                const eventColor = getEventColor(service.name);
+                const eventColor = barber.color || getEventColor(barber.firstName);
 
                 return (
                     <li key={appointment.id} className="relative mt-px flex" style={{ gridRow: `${startRow} / span ${durationInIntervals}`, gridColumnStart: barberIndex + 1 }}>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <div className={cn(
-                                    "absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg p-2 text-xs leading-5",
-                                    eventColor.bg,
-                                    eventColor.border
-                                )}>
-                                    <p className="font-semibold text-primary/80">{service.name}</p>
-                                    <p className="text-primary/70">{customer.firstName}</p>
-                                    <p className="text-primary/70">{format(startTime, 'HH:mm')} - {format(addMinutes(startTime, service.duration), 'HH:mm')}</p>
+                                <div 
+                                    className="absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg p-2 text-xs leading-5 text-white border-l-4"
+                                    style={{ backgroundColor: `${eventColor}40`, borderColor: eventColor }} // 40 is for opacity
+                                >
+                                    <p className="font-semibold text-white/90">{service.name}</p>
+                                    <p className="text-white/80">{customer.firstName}</p>
+                                    <p className="text-white/80">{format(startTime, 'HH:mm')} - {format(addMinutes(startTime, service.duration), 'HH:mm')}</p>
                                 </div>
                             </PopoverTrigger>
                             <PopoverContent className="w-80">
@@ -138,7 +139,7 @@ export function CalendarView({
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <Scissors className="h-4 w-4" />
-                                        <span>com {barbers.find(b => b.id === appointment.barberId)?.firstName}</span>
+                                        <span>com {barber.firstName}</span>
                                     </div>
                                     <Button className="w-full" size="sm" onClick={() => {
                                         // TODO: Implement edit functionality

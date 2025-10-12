@@ -1,5 +1,4 @@
 
-
 import { Timestamp } from 'firebase/firestore';
 
 export type WorkingHour = {
@@ -116,6 +115,7 @@ export type Barber = {
   email?: string;
   bio?: string;
   avatar?: string;
+  color?: string;
   services?: BarberServiceCommission[];
   createdAt: Timestamp;
 };
@@ -192,6 +192,7 @@ export type Document = {
 };
 
     
+
 
 
 

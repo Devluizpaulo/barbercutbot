@@ -15,6 +15,7 @@ import {
   Percent,
   Scissors,
   Save,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +41,27 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DialogFooter } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+
+const availableColors = [
+    '#e11d48', // rose
+    '#f97316', // orange
+    '#eab308', // yellow
+    '#84cc16', // lime
+    '#22c55e', // green
+    '#10b981', // emerald
+    '#14b8a6', // teal
+    '#06b6d4', // cyan
+    '#0ea5e9', // sky
+    '#3b82f6', // blue
+    '#6366f1', // indigo
+    '#8b5cf6', // violet
+    '#a855f7', // purple
+    '#d946ef', // fuchsia
+    '#ec4899', // pink
+];
 
 const commissionSchema = z.object({
     serviceId: z.string(),
@@ -54,6 +76,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   bio: z.string().optional(),
   avatar: z.string().url('URL inválida.').optional().or(z.literal('')),
+  color: z.string().optional(),
   services: z.array(commissionSchema),
 });
 
@@ -85,6 +108,7 @@ export function AddBarberForm({
           phone: initialData.phone || '',
           bio: initialData.bio || '',
           avatar: initialData.avatar || '',
+          color: initialData.color || '',
           services: initialData.services || [],
         }
       : {
@@ -94,6 +118,7 @@ export function AddBarberForm({
           phone: '',
           bio: '',
           avatar: '',
+          color: availableColors[0],
           services: [],
         },
   });
@@ -108,6 +133,7 @@ export function AddBarberForm({
   const { isSubmitting } = form.formState;
   const avatarUrl = form.watch('avatar');
   const firstName = form.watch('firstName');
+  const barberColor = form.watch('color');
 
   const onSubmit = async (values: AddBarberFormValues) => {
     try {
@@ -163,27 +189,71 @@ export function AddBarberForm({
               )}
             </AvatarFallback>
           </Avatar>
-          <FormField
-            control={form.control}
-            name="avatar"
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>URL da Foto</FormLabel>
-                <div className="relative">
-                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <FormControl>
-                    <Input
-                      placeholder="https://exemplo.com/foto.jpg"
-                      {...field}
-                      className="pl-10"
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="flex-1 space-y-4">
+            <FormField
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>URL da Foto</FormLabel>
+                    <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                        <Input
+                        placeholder="https://exemplo.com/foto.jpg"
+                        {...field}
+                        className="pl-10"
+                        value={field.value || ''}
+                        />
+                    </FormControl>
+                    </div>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cor do Profissional</FormLabel>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant="outline"
+                                className={cn("w-full justify-start text-left font-normal")}
+                                >
+                                <div className="flex w-full items-center gap-2">
+                                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: barberColor }}/>
+                                    <span>{barberColor}</span>
+                                </div>
+                                <Palette className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2">
+                            <div className="grid grid-cols-5 gap-2">
+                                {availableColors.map(color => (
+                                    <Button
+                                        key={color}
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => form.setValue('color', color)}
+                                    >
+                                        <div className={cn("h-5 w-5 rounded-full", form.getValues('color') === color && "ring-2 ring-ring ring-offset-2 ring-offset-background")} style={{ backgroundColor: color }} />
+                                    </Button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
