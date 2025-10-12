@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import DashboardLayout from '@/app/(app)/dashboard/layout';
+import DashboardLayout from './dashboard/layout';
 
 export default function AppLayout({
   children,
@@ -28,15 +28,6 @@ export default function AppLayout({
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
-  }
-  
-  if (user.role === 'admin') {
-      router.push('/cpanel');
-      return (
-         <div className="flex min-h-screen items-center justify-center bg-background">
-            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      )
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;

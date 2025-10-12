@@ -79,7 +79,7 @@ export default function CPanelDashboardLayout({
     if (isUserLoading) return; 
 
     if (!user || user.role !== 'admin') {
-      router.push('/cpanel/login');
+      router.push('/login/cpanel');
     }
   }, [user, isUserLoading, router]);
 
@@ -88,7 +88,7 @@ export default function CPanelDashboardLayout({
     if (auth) {
         await signOut(auth);
     }
-    router.push('/cpanel/login');
+    router.push('/login/cpanel');
   };
   
   if (isUserLoading || !user || user.role !== 'admin') {
