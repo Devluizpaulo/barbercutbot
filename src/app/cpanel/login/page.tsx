@@ -18,8 +18,9 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 
 export default function CpanelLoginPage() {
@@ -27,16 +28,28 @@ export default function CpanelLoginPage() {
   const { toast } = useToast();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const checkIsAdmin = async (userId: string): Promise<boolean> => {
+    if (!firestore) return false;
+    const adminDocRef = doc(firestore, 'admins', userId);
+    const adminDoc = await getDoc(adminDocRef);
+    return adminDoc.exists();
+  };
+
   useEffect(() => {
-    if (!isUserLoading && user) {
-        if (user.email === 'admin@flowcutspro.com') {
+    const checkUser = async () => {
+      if (!isUserLoading && user) {
+        const isAdmin = await checkIsAdmin(user.uid);
+        if (isAdmin) {
             router.push('/cpanel');
         }
-    }
+      }
+    };
+    checkUser();
   }, [user, isUserLoading, router]);
 
 
@@ -46,23 +59,28 @@ export default function CpanelLoginPage() {
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const loggedInUser = userCredential.user;
+
+        const isAdmin = await checkIsAdmin(loggedInUser.uid);
+
         toast({
           title: 'Login bem-sucedido!',
-          description: 'Redirecionando para o painel de controle.',
+          description: isAdmin ? 'Redirecionando para o painel de controle.' : 'Redirecionando para sua loja.',
         });
         
-        if (userCredential.user.email === 'admin@flowcutspro.com') {
+        if (isAdmin) {
             router.push('/cpanel');
         } else {
+            // If a non-admin logs in through the cpanel page, send them to their shops.
+            // Or show an error if you want to restrict this page strictly to admins.
             router.push('/dashboard/shops');
         }
+
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let description = 'Ocorreu um erro ao tentar fazer login.';
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-            description = 'Credenciais de administrador inválidas.';
-        } else if (error.code === 'auth/wrong-password') {
-            description = 'Senha incorreta para o administrador.';
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            description = 'Credenciais inválidas. Verifique seu e-mail e senha.';
         }
         toast({
           variant: 'destructive',
@@ -74,7 +92,7 @@ export default function CpanelLoginPage() {
     }
   };
 
-  if (isUserLoading || (!isUserLoading && user && user.email === 'admin@flowcutspro.com')) {
+  if (isUserLoading || (!isUserLoading && user)) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-secondary">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
