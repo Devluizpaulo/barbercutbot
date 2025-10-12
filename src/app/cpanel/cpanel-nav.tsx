@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -14,7 +15,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
-import { Button } from '@/components/ui/button';
 import {
   Home,
   Users,
@@ -23,7 +23,6 @@ import {
   FileText,
   Settings,
   Shield,
-  LifeBuoy,
 } from 'lucide-react';
 import { UserNav } from '@/components/user-nav';
 
@@ -53,7 +52,7 @@ export function CPanelNav() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
+              <Link href={item.href}>
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   icon={<item.icon />}
