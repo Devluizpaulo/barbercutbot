@@ -63,14 +63,14 @@ Firewall:
 ```bash
 # Abrir Cloud Shell (ícone >_ no topo)
 
-# Permitir Evolution API (porta 8080)
+# Permitir Evolution API (porta 8081)
 gcloud compute firewall-rules create allow-evolution-free \
   --project=studio-343774762-16da7 \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
   --action=ALLOW \
-  --rules=tcp:8080 \
+  --rules=tcp:8081 \
   --source-ranges=0.0.0.0/0 \
   --description="Evolution API - Free Tier"
 
@@ -163,14 +163,14 @@ version: '3.9'
 services:
   # Evolution API - Otimizado para Free Tier
   evolution-api:
-    image: atendai/evolution-api:v2.1.1
+    image: atendai/evolution-api:v2.2.2
     container_name: evolution_api
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       # URLs
-      - SERVER_URL=http://${MY_IP}:8080
+      - SERVER_URL=http://${MY_IP}:8081
       
       # Banco SQLite (mais leve que PostgreSQL)
       - DATABASE_PROVIDER=
@@ -305,7 +305,7 @@ docker stats --no-stream
 
 **Evolution API:**
 ```
-http://SEU_IP:8080
+http://SEU_IP:8081
 ```
 
 **N8N:**
@@ -418,14 +418,14 @@ sudo apt update && sudo apt upgrade -y
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
-sudo ufw allow 8080/tcp
+sudo ufw allow 8081/tcp
 sudo ufw allow 5678/tcp
 sudo ufw enable
 ```
 
 ---
 
-## 🔄 Backup Básico
+## 💾 Backup Básico
 
 ```bash
 # Criar script de backup
@@ -478,7 +478,7 @@ crontab -e
 ## 🎯 Checklist de Deploy
 
 - [ ] VM e2-micro criada em **us-west1**
-- [ ] Firewall configurado (portas 8080, 5678)
+- [ ] Firewall configurado (portas 8081, 5678)
 - [ ] Docker e Docker Compose instalados
 - [ ] Swap de 1GB configurado
 - [ ] docker-compose.yml criado com IP correto
@@ -567,7 +567,7 @@ sudo journalctl --vacuum-time=3d
 - N8N rodando 24/7 **GRÁTIS**
 - 2-3 instâncias WhatsApp suportadas
 - 30 GB de armazenamento
-- IP público fixo
+- Backup automático  
 
 **💰 Custo Total: R$ 0,00/mês**
 

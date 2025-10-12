@@ -148,7 +148,7 @@ free -h
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
-sudo ufw allow 8080/tcp  # Evolution API
+sudo ufw allow 8081/tcp  # Evolution API
 sudo ufw allow 5678/tcp  # N8N
 sudo ufw allow 80/tcp    # HTTP (futuro)
 sudo ufw allow 443/tcp   # HTTPS (futuro)
@@ -176,14 +176,17 @@ echo "Seu IP: $MY_IP"
 
 ```bash
 cat > .env <<EOF
+# =============================================
+# CONFIGURAÇÃO PRODUÇÃO - GCP FREE TIER
+# Gerado em: $(date)
+# =============================================
+
 # URLs
-SERVER_URL=http://${MY_IP}:8080
+SERVER_URL=http://${MY_IP}:8081
 WEBHOOK_URL=http://${MY_IP}:5678
 
 # Evolution API
 AUTHENTICATION_API_KEY=$(openssl rand -base64 32)
-
-# Database
 DATABASE_PROVIDER=
 DATABASE_CONNECTION_CLIENT_NAME=evolution_prod
 DATABASE_SAVE_DATA_INSTANCE=true
@@ -196,37 +199,55 @@ DATABASE_SAVE_DATA_CHATS=false
 CONFIG_SESSION_PHONE_CLIENT=Evolution
 CONFIG_SESSION_PHONE_NAME=Chrome
 
-# Webhook
+# Webhook N8N
 WEBHOOK_GLOBAL_URL=http://n8n:5678/webhook/whatsapp
 WEBHOOK_GLOBAL_ENABLED=true
 WEBHOOK_EVENTS_MESSAGES_UPSERT=true
 WEBHOOK_EVENTS_CONNECTION_UPDATE=true
+WEBHOOK_EVENTS_MESSAGES_SET=false
+WEBHOOK_EVENTS_MESSAGES_UPDATE=false
+WEBHOOK_EVENTS_MESSAGES_DELETE=false
+WEBHOOK_EVENTS_SEND_MESSAGE=false
+WEBHOOK_EVENTS_CONTACTS_SET=false
+WEBHOOK_EVENTS_CONTACTS_UPSERT=false
+WEBHOOK_EVENTS_CONTACTS_UPDATE=false
+WEBHOOK_EVENTS_PRESENCE_UPDATE=false
+WEBHOOK_EVENTS_CHATS_SET=false
+WEBHOOK_EVENTS_CHATS_UPSERT=false
+WEBHOOK_EVENTS_CHATS_UPDATE=false
+WEBHOOK_EVENTS_CHATS_DELETE=false
+WEBHOOK_EVENTS_GROUPS_UPSERT=false
+WEBHOOK_EVENTS_GROUPS_UPDATE=false
+WEBHOOK_EVENTS_GROUP_PARTICIPANTS_UPDATE=false
+WEBHOOK_EVENTS_CALL=false
 
-# Logs
+# Logs (mínimos para economizar recursos)
 LOG_LEVEL=ERROR
 LOG_COLOR=false
 LOG_BAILEYS=error
 
 # CORS
 CORS_ORIGIN=*
+CORS_METHODS=GET,POST,PUT,DELETE
+CORS_CREDENTIALS=true
 
 # N8N
-N8N_HOST=0.0.0.0
-N8N_PORT=5678
-N8N_PROTOCOL=http
 N8N_BASIC_AUTH_ACTIVE=true
 N8N_BASIC_AUTH_USER=admin
 N8N_BASIC_AUTH_PASSWORD=$(openssl rand -base64 16)
+N8N_HOST=0.0.0.0
+N8N_PORT=5678
+N8N_PROTOCOL=http
 GENERIC_TIMEZONE=America/Sao_Paulo
 TZ=America/Sao_Paulo
-N8N_ENCRYPTION_KEY=$(openssl rand -base64 32)
+N8N_ENCRYPTION_KEY=n8n_$(date +%s | sha256sum | base64 | head -c 32)
 EXECUTIONS_DATA_SAVE_ON_ERROR=all
 EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
 EXECUTIONS_DATA_PRUNE=true
 EXECUTIONS_DATA_MAX_AGE=168
 EOF
 
-# Mostrar senha do N8N
+# Mostrar credenciais N8N
 echo "=========================================="
 echo "CREDENCIAIS N8N (ANOTE!):"
 echo "Usuário: admin"
@@ -241,12 +262,15 @@ cat > docker-compose.yml <<'EOF'
 version: '3.9'
 
 services:
+  # =============================================
+  # EVOLUTION API - Otimizado para 1GB RAM
+  # =============================================
   evolution-api:
-    image: atendai/evolution-api:v2.1.1
+    image: atendai/evolution-api:v2.2.2
     container_name: evolution_api
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8080"
     env_file:
       - .env
     volumes:
@@ -254,6 +278,7 @@ services:
       - ./logs:/evolution/logs
     networks:
       - saas
+    # Limites de recursos (importante!)
     mem_limit: 512m
     mem_reservation: 256m
     cpus: 0.5
@@ -262,7 +287,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
+  # =============================================
+  # N8N - Otimizado para 1GB RAM
+  # =============================================
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
@@ -275,16 +304,25 @@ services:
       - n8n_data:/home/node/.n8n
     networks:
       - saas
+    # Limites de recursos (importante!)
     mem_limit: 400m
     mem_reservation: 200m
     cpus: 0.5
     depends_on:
       evolution-api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5678"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   evolution_data:
+    driver: local
   n8n_data:
+    driver: local
 
 networks:
   saas:
@@ -317,7 +355,7 @@ Após o deploy, acesse:
 
 ### Evolution API
 ```
-http://SEU_IP:8080
+http://SEU_IP:8081
 ```
 
 ### N8N Automation
@@ -548,10 +586,10 @@ sudo swapon /swapfile2
 sudo ufw status
 
 # Verificar se porta está aberta
-sudo netstat -tulpn | grep -E '8080|5678'
+sudo netstat -tulpn | grep -E '8081|5678'
 
 # Testar internamente
-curl http://localhost:8080
+curl http://localhost:8081
 curl http://localhost:5678
 ```
 
@@ -578,7 +616,7 @@ ls -t backup-*.tar.gz | tail -n +6 | xargs rm
 
 ### 1. Conectar WhatsApp
 
-1. Acesse Evolution API: `http://SEU_IP:8080`
+1. Acesse Evolution API: `http://SEU_IP:8081`
 2. Clique em "Create Instance"
 3. Nome: `minha_barbearia`
 4. Integration: `WHATSAPP-BAILEYS`
@@ -633,11 +671,11 @@ Se tiver um domínio:
 - [ ] SSH funcionando
 - [ ] Docker e Docker Compose instalados
 - [ ] Swap configurado (1GB)
-- [ ] Firewall configurado (portas 22, 8080, 5678)
+- [ ] Firewall configurado (portas 22, 8081, 5678)
 - [ ] Estrutura de diretórios criada
 - [ ] Arquivo .env configurado
 - [ ] docker-compose.yml criado
-- [ ] Containers rodando
+- [ ] Containers iniciados e funcionando
 - [ ] Evolution API acessível
 - [ ] N8N acessível
 - [ ] Scripts auxiliares funcionando
@@ -711,4 +749,3 @@ Parabéns! Você agora tem:
 - Entre em contato: seu-email@exemplo.com
 
 **Bom negócio! 🎯**
-

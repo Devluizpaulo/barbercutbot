@@ -6,13 +6,13 @@
 
 ### Evolution API:
 ```
-http://34.182.111.255:8080/manager
+http://34.182.111.255:8081/manager
 ```
 
 ### N8N:
 ```
 http://34.182.111.255:5678
-Login: admin / Admin2024Free!
+Login: admin / n8n_admin_2024
 ```
 
 ### Firebase:
@@ -46,4 +46,3 @@ docker-compose restart
 ---
 
 **90% do tempo você só precisa do navegador!** 🌐
-

@@ -544,4 +544,3 @@ Vou criar:
 4. ✅ Regras de segurança prontas
 
 **Quer que eu crie tudo isso agora?** 🎯
-

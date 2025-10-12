@@ -179,7 +179,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "apikey", "value": "gcp_free_key_2024"},
+            {"name": "apikey", "value": "evolution_api_key_2024"},
             {"name": "Content-Type", "value": "application/json"}
           ]
         },
@@ -253,4 +253,3 @@
   "settings": {},
   "tags": ["whatsapp", "groq", "multi-tenant", "completo"]
 }
-

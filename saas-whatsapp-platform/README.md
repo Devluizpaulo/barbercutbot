@@ -14,7 +14,7 @@ Sistema multi-tenant de automação WhatsApp com IA para barbearias.
 
 ```
 VM GCP (34.182.111.255)
-├── Evolution API v1.7.4 :8080  ✅
+├── Evolution API v2.2.2 :8081  ✅ (Atualizado para v2)
 ├── N8N :5678  ✅
 └── SQLite (leve)
 
@@ -32,8 +32,8 @@ Groq IA
 
 | Serviço | URL | Credenciais |
 |---------|-----|-------------|
-| **Evolution API** | http://34.182.111.255:8080/manager | API Key: gcp_free_key_2024 |
-| **N8N** | http://34.182.111.255:5678 | admin / Admin2024Free! |
+| **Evolution API** | http://34.182.111.255:8081/manager | API Key: evolution_api_key_2024 |
+| **N8N** | http://34.182.111.255:5678 | admin / n8n_admin_2024 |
 | **Firebase Console** | [Link](https://console.firebase.google.com/project/studio-343774762-16da7) | Conta Google |
 | **Firestore** | [Link](https://console.firebase.google.com/project/studio-343774762-16da7/firestore) | Conta Google |
 
@@ -87,7 +87,7 @@ saas-whatsapp-platform/
 ### **Sistema Já Rodando:**
 ```
 ✅ VM GCP configurada
-✅ Evolution API v1.7.4
+✅ Evolution API v2.2.2
 ✅ N8N com Groq IA
 ✅ Firebase integrado
 ✅ Custo: R$ 0,00/mês
@@ -95,7 +95,7 @@ saas-whatsapp-platform/
 
 ### **Adicionar Nova Barbearia (10 min):**
 
-1. **Evolution:** http://34.182.111.255:8080/manager
+1. **Evolution:** http://34.182.111.255:8081/manager
    - Create instance `barbershop_XXX`
 
 2. **Firestore:** Criar documento `barberShops/barbershop_XXX`
@@ -109,12 +109,12 @@ saas-whatsapp-platform/
 ## 🤖 Funcionalidades
 
 - ✅ **Atendimento com IA** (Groq - Llama 3.1-70b)
+- ✅ **Agendamentos automáticos com IA** (Consulta Firestore em tempo real)
 - ✅ **Multi-tenant** (múltiplas barbearias)
-- ✅ **Agendamentos automáticos**
-- ✅ **Salva no Firestore**
+- ✅ **Salva no Firestore** (Clientes, Conversas, Agendamentos)
 - ✅ **Cria clientes automaticamente**
-- ⏳ **Dashboard Next.js** (futuro)
-- ⏳ **Lembretes automáticos** (futuro)
+- ⏳ **Dashboard Next.js** (em desenvolvimento)
+- ⏳ **Lembretes automáticos** (próximo passo)
 
 ---
 
