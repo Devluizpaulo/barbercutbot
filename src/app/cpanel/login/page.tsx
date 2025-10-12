@@ -44,10 +44,14 @@ export default function CpanelLoginPage() {
 
         const userDocRef = doc(firestore, 'users', loggedInUser.uid);
         const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+            throw new Error('User profile not found.');
+        }
+
         const userData = userDoc.data() as UserProfile;
-
         const isAdmin = userData?.role === 'admin';
-
+        
         toast({
           title: 'Login bem-sucedido!',
           description: isAdmin ? 'Redirecionando para o painel de controle.' : 'Redirecionando para sua loja.',
@@ -80,12 +84,14 @@ export default function CpanelLoginPage() {
       if (isUserLoading) return;
       
       if (user) {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        const userData = userDoc.data() as UserProfile;
-        
-        if (userData?.role === 'admin') {
-            router.push('/cpanel');
+        try {
+            const userDocRef = doc(firestore, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+                router.push('/cpanel');
+            }
+        } catch (error) {
+            console.error("Error checking user role on mount:", error);
         }
       }
     };
@@ -218,5 +224,3 @@ export default function CpanelLoginPage() {
     </div>
   );
 }
-
-    

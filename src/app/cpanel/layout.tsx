@@ -64,6 +64,12 @@ export default function CPanelLayout({
       try {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+            router.push('/login');
+            return;
+        }
+
         const userData = userDoc.data() as UserProfile;
 
         if (userData?.role !== 'admin') {
@@ -88,7 +94,7 @@ export default function CPanelLayout({
     router.push('/cpanel/login');
   };
   
-  if (isUserLoading || (!user && pathname !== '/cpanel/login' && pathname !== '/cpanel/signup')) {
+  if (isUserLoading || (!user && (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup'))) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -189,5 +195,3 @@ export default function CPanelLayout({
     </SidebarProvider>
   );
 }
-
-    

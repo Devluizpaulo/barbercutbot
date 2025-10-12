@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -10,6 +11,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarSeparator,
   SidebarProvider,
   SidebarTrigger,
@@ -32,10 +36,8 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { useAuth, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import type { BarberShop } from '@/lib/types';
 import { Search, Bell, Sun } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
@@ -50,15 +52,8 @@ export default function DashboardLayout({
   const params = useParams();
   const router = useRouter();
   const shopId = params.shopId as string;
-  const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-
-  const shopRef = useMemoFirebase(
-    () => (shopId ? doc(firestore, 'barberShops', shopId) : null),
-    [firestore, shopId]
-  );
-  const { data: shop } = useDoc<BarberShop>(shopRef);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -77,6 +72,22 @@ export default function DashboardLayout({
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!shopId) {
+    return (
+       <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Selecione um Negócio</h2>
+            <p className="text-muted-foreground mb-6">
+                Parece que você ainda não selecionou um negócio para gerenciar.
+            </p>
+            <Button asChild>
+                <Link href="/dashboard/shops">Ir para seleção de lojas</Link>
+            </Button>
+        </div>
       </div>
     );
   }

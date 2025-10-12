@@ -1,0 +1,48 @@
+
+// Helper Functions
+function isAuthenticated() {
+  return request.auth != null;
+}
+
+function getUserData() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+}
+
+function isOwner(userId) {
+  return isAuthenticated() && request.auth.uid == userId;
+}
+
+// Check if user is an admin
+function isAdmin() {
+  return isAuthenticated() && getUserData().role == 'admin';
+}
+
+function ownsBarberShop(barberShopId) {
+  return isAuthenticated() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+}
+
+path /users/{userId} {
+  read: if isOwner(userId) || isAdmin();
+  write: if isOwner(userId) || isAdmin();
+  create: if isAuthenticated();
+}
+
+path /barberShops/{barberShopId} {
+  read: if ownsBarberShop(barberShopId) || isAdmin();
+  list: if isAdmin() || (isAuthenticated() && request.query.where.get('ownerId')[2] == request.auth.uid);
+  create: if isAuthenticated();
+  update, delete: if ownsBarberShop(barberShopId) || isAdmin();
+}
+
+path /barberShops/{barberShopId}/{collection}/{documentId} {
+  read, write: if ownsBarberShop(barberShopId) || isAdmin();
+}
+
+path /tickets/{ticketId} {
+  read, write: if isAuthenticated(); // More specific rules can be added
+}
+
+path /documents/{documentId} {
+  read: if true;
+  write: if isAdmin();
+}
