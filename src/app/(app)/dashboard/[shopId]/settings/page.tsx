@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -106,7 +107,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { PinInput, PinInputField } from '@/components/ui/pin-input';
-import { AddBarberForm } from '../barbers/add-barber-form';
+import { AddTeamMemberForm } from './add-team-member-form';
+import { TeamTable } from './team-table';
+
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -191,7 +194,7 @@ const permissionsFormSchema = z.object({
     viewDashboard: z.boolean().default(true),
     manageAppointments: z.boolean().default(true),
     manageClients: z.boolean().default(true),
-    manageBarbers: z.boolean().default(true),
+    manageTeam: z.boolean().default(true),
     manageServices: z.boolean().default(true),
     viewFinancial: z.boolean().default(true),
     manageSettings: z.boolean().default(true),
@@ -200,7 +203,7 @@ const permissionsFormSchema = z.object({
     viewDashboard: z.boolean().default(false),
     manageAppointments: z.boolean().default(true),
     manageClients: z.boolean().default(false),
-    manageBarbers: z.boolean().default(false),
+    manageTeam: z.boolean().default(false),
     manageServices: z.boolean().default(false),
     viewFinancial: z.boolean().default(false),
     manageSettings: z.boolean().default(false),
@@ -209,7 +212,7 @@ const permissionsFormSchema = z.object({
     viewDashboard: z.boolean().default(false),
     manageAppointments: z.boolean().default(false),
     manageClients: z.boolean().default(false),
-    manageBarbers: z.boolean().default(false),
+    manageTeam: z.boolean().default(false),
     manageServices: z.boolean().default(false),
     viewFinancial: z.boolean().default(true),
     manageSettings: z.boolean().default(false),
@@ -313,7 +316,7 @@ export default function SettingsPage() {
         viewDashboard: true,
         manageAppointments: true,
         manageClients: true,
-        manageBarbers: true,
+        manageTeam: true,
         manageServices: true,
         viewFinancial: true,
         manageSettings: true,
@@ -322,7 +325,7 @@ export default function SettingsPage() {
         viewDashboard: false,
         manageAppointments: true,
         manageClients: false,
-        manageBarbers: false,
+        manageTeam: false,
         manageServices: false,
         viewFinancial: false,
         manageSettings: false,
@@ -331,7 +334,7 @@ export default function SettingsPage() {
         viewDashboard: false,
         manageAppointments: false,
         manageClients: false,
-        manageBarbers: false,
+        manageTeam: false,
         manageServices: false,
         viewFinancial: true,
         manageSettings: false,
@@ -692,7 +695,7 @@ export default function SettingsPage() {
     viewDashboard: 'Ver Visão Geral',
     manageAppointments: 'Gerenciar Agendamentos',
     manageClients: 'Gerenciar Clientes',
-    manageBarbers: 'Gerenciar Barbeiros',
+    manageTeam: 'Gerenciar Equipe',
     manageServices: 'Gerenciar Serviços',
     viewFinancial: 'Ver Financeiro',
     manageSettings: 'Gerenciar Configurações',
@@ -718,30 +721,26 @@ export default function SettingsPage() {
             <User className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Perfil
           </TabsTrigger>
-          <TabsTrigger
-            value="team"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Equipe e Acessos
-          </TabsTrigger>
+           <TabsTrigger value="team">
+                <UsersIcon className="mr-2" /> Equipe e Acessos
+            </TabsTrigger>
           <TabsTrigger
             value="address"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"
+            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
           >
             <MapPin className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Endereço
           </TabsTrigger>
           <TabsTrigger
             value="hours"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"
+            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
           >
             <Clock className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Horários
           </TabsTrigger>
           <TabsTrigger
             value="integrations"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-inherit"
+            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
           >
             <Bot className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
             Automação
@@ -982,7 +981,63 @@ export default function SettingsPage() {
         </TabsContent>
         
         <TabsContent value="team">
-            <AddBarberForm shopId={shopId} />
+            <TeamTable shopId={shopId} />
+        </TabsContent>
+        
+        <TabsContent value="access">
+             <Form {...permissionsForm}>
+                <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Perfis de Acesso</CardTitle>
+                            <CardDescription>
+                                Defina o que cada tipo de usuário pode fazer na plataforma.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {(['manager', 'barber', 'cashier'] as const).map((role) => (
+                                <div key={role} className="space-y-4 rounded-lg border p-4">
+                                    <h4 className="font-semibold capitalize text-lg">{role === 'manager' ? 'Gerente' : (role === 'barber' ? 'Barbeiro' : 'Caixa')}</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {(Object.keys(permissionLabels) as Array<keyof RolePermissions>).map((permission) => (
+                                            <FormField
+                                                key={permission}
+                                                control={permissionsForm.control}
+                                                name={`${role}.${permission}`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                                        <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal text-sm">{permissionLabels[permission]}</FormLabel>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                         <CardFooter>
+                          <div className="flex justify-end w-full">
+                            <Button
+                              type="submit"
+                              disabled={permissionsForm.formState.isSubmitting}
+                            >
+                              {permissionsForm.formState.isSubmitting && (
+                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                              )}
+                              <Save className="mr-2 h-4 w-4" />
+                              Salvar Permissões
+                            </Button>
+                          </div>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
         </TabsContent>
 
         <TabsContent value="address">
@@ -1687,3 +1742,8 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+```
+- src/app/(app)/dashboard/[shopId]/settings/add-team-member-form.tsx
+- src/app/(app)/dashboard/[shopId]/settings/team-table.tsx
+- src/lib/types.ts
