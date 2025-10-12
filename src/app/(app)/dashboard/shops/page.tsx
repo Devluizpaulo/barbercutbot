@@ -1,6 +1,7 @@
+
 'use client';
 
-import { redirect, useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
@@ -9,7 +10,6 @@ import { LoaderCircle } from 'lucide-react';
 export default function DashboardShopsPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
 
   // FIX: The query now filters for shops where ownerId matches the current user's UID.
   // This aligns with the Firestore security rules and prevents permission errors.
