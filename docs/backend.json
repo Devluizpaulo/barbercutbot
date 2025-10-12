@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "BarberShop": {
@@ -30,6 +31,41 @@
           "type": "string",
           "description": "Email address of the barber shop.",
           "format": "email"
+        },
+        "document": {
+            "type": "string",
+            "description": "Official document number (CNPJ/CPF)."
+        },
+        "workingHours": {
+            "type": "array",
+            "description": "Working hours for each day of the week.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "day": { "type": "string" },
+                    "open": { "type": "string" },
+                    "close": { "type": "string" },
+                    "enabled": { "type": "boolean" }
+                }
+            }
+        },
+        "subscription": {
+            "type": "object",
+            "description": "Subscription details for the barber shop.",
+            "properties": {
+                "plan": { "type": "string", "enum": ["free", "pro"] },
+                "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"] },
+                "mercadoPagoId": { "type": "string" },
+                "currentPeriodEnd": { "type": "string", "format": "date-time" }
+            }
+        },
+        "whatsapp": {
+            "type": "object",
+            "description": "Credentials for the Evolution API WhatsApp agent.",
+            "properties": {
+                "instanceUrl": { "type": "string", "format": "uri" },
+                "apiKey": { "type": "string" }
+            }
         }
       },
       "required": [
@@ -80,6 +116,11 @@
         "notes": {
           "type": "string",
           "description": "Additional notes for the appointment."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the appointment.",
+          "enum": ["pending", "confirmed", "completed", "cancelled", "no-show"]
         }
       },
       "required": [
@@ -88,7 +129,8 @@
         "customerId",
         "barberId",
         "startTime",
-        "endTime"
+        "endTime",
+        "status"
       ]
     },
     "Customer": {
@@ -113,9 +155,17 @@
           "type": "string",
           "description": "Last name of the customer."
         },
+        "nickname": {
+          "type": "string",
+          "description": "Nickname for the customer."
+        },
         "phone": {
           "type": "string",
           "description": "Phone number of the customer."
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp number of the customer."
         },
         "email": {
           "type": "string",
@@ -125,6 +175,34 @@
         "notes": {
           "type": "string",
           "description": "Additional notes about the customer."
+        },
+        "cep": {
+          "type": "string",
+          "description": "Postal code (CEP) for the customer's address."
+        },
+        "address": {
+          "type": "string",
+          "description": "Street address of the customer."
+        },
+        "number": {
+          "type": "string",
+          "description": "Address number."
+        },
+        "complement": {
+          "type": "string",
+          "description": "Address complement (e.g., apartment number)."
+        },
+        "neighborhood": {
+          "type": "string",
+          "description": "Neighborhood."
+        },
+        "city": {
+          "type": "string",
+          "description": "City."
+        },
+        "state": {
+          "type": "string",
+          "description": "State or province."
         }
       },
       "required": [
@@ -168,6 +246,11 @@
         "bio": {
           "type": "string",
           "description": "A brief biography of the barber."
+        },
+        "avatar": {
+            "type": "string",
+            "description": "URL for the barber's profile picture.",
+            "format": "uri"
         }
       },
       "required": [
@@ -203,9 +286,37 @@
           "type": "number",
           "description": "Price of the service."
         },
+        "cost": {
+          "type": "number",
+          "description": "Cost of the service for the business."
+        },
         "duration": {
           "type": "number",
           "description": "Duration of the service in minutes."
+        },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL for the service's photo.",
+            "format": "uri"
+        },
+        "partnership": {
+            "type": "object",
+            "description": "Partnership and commission settings for the service.",
+            "properties": {
+                "isCommissionEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates if a commission is enabled for this service."
+                },
+                "commissionType": {
+                    "type": "string",
+                    "enum": ["fixed", "percentage"],
+                    "description": "The type of commission (fixed amount or percentage)."
+                },
+                "commissionValue": {
+                    "type": "number",
+                    "description": "The value of the commission."
+                }
+            }
         }
       },
       "required": [
@@ -215,6 +326,25 @@
         "price",
         "duration"
       ]
+    },
+     "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product for sale at the barber shop.",
+      "properties": {
+        "id": { "type": "string" },
+        "barberShopId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "sku": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "ativo": { "type": "boolean" }
+      },
+      "required": ["id", "barberShopId", "name", "price", "stockQuantity"]
     },
     "FinancialRecord": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -347,6 +477,110 @@
         "lastName",
         "email"
       ]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an administrator user. The document ID is the user's UID.",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the admin was added."
+        }
+      },
+      "required": [
+        "createdAt"
+      ]
+    },
+    "Ticket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Ticket",
+      "type": "object",
+      "description": "Represents a support ticket submitted by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ticket."
+        },
+        "shopId": {
+          "type": "string",
+          "description": "Reference to the BarberShop that created the ticket."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created the ticket."
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject of the support ticket."
+        },
+        "description": {
+          "type": "string",
+          "description": "The detailed description of the issue."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Aberto", "Em Andamento", "Fechado"],
+          "description": "The current status of the ticket."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the ticket was created."
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the last update to the ticket."
+        }
+      },
+      "required": [
+        "id",
+        "shopId",
+        "userId",
+        "subject",
+        "description",
+        "status",
+        "createdAt",
+        "lastUpdatedAt"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents legal documents like Terms of Service.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Rascunho", "Publicado"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -374,6 +608,22 @@
         }
       },
       {
+        "path": "/admins/{adminId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Stores a list of admin user UIDs.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The Firebase UID of the admin user."
+            }
+          ]
+        }
+      },
+      {
         "path": "/barberShops/{barberShopId}",
         "definition": {
           "entityName": "BarberShop",
@@ -386,6 +636,20 @@
               "name": "barberShopId",
               "description": "Unique identifier for the barber shop."
             }
+          ]
+        }
+      },
+      {
+        "path": "/barberShops/{barberShopId}/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores products for a specific barber shop.",
+          "params": [
+            { "name": "barberShopId" },
+            { "name": "productId" }
           ]
         }
       },
@@ -508,8 +772,46 @@
             }
           ]
         }
+      },
+       {
+        "path": "/tickets/{ticketId}",
+        "definition": {
+          "entityName": "Ticket",
+          "schema": {
+            "$ref": "#/backend/entities/Ticket"
+          },
+          "description": "Stores support tickets from all users/shops.",
+          "params": [
+            {
+              "name": "ticketId",
+              "description": "The unique ID of the support ticket."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores platform-wide legal documents.",
+          "params": [
+            {
+              "name": "documentId",
+              "description": "The unique ID of the document."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
+    "reasoning": "The Firestore structure is designed to support a multi-tenant barber shop SaaS application, focusing on data isolation and secure access.  Each barber shop's data is segregated under a collection named 'barberShops', enabling clear separation and targeted security rules. User data is stored under the 'users' collection, with each user document containing their profile information. Barber shops owned by a user are linked via the 'ownerId' field in the barberShops documents. The structure prioritizes authorization independence through path-based ownership and denormalization. Specifically, collections nested under `/barberShops/{barberShopId}` denormalize the `barberShopId` which is required for QAPs (secure list operations).  This removes the need for `get()` calls in security rules and enables atomic operations.\n\nThe key collections and their relationships are structured as follows:\n\n*   `/users/{userId}`: Stores user profiles. This collection uses path-based ownership.\n*   `/barberShops/{barberShopId}`: Stores barber shop data.  The `ownerId` field links back to the user who owns the shop. \n*   `/barberShops/{barberShopId}/products/{productId}`: Stores product data.\n*   `/barberShops/{barberShopId}/customers/{customerId}`: Stores customer data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/barbers/{barberId}`: Stores barber data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/appointments/{appointmentId}`: Stores appointment data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/services/{serviceId}`: Stores service data for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n*   `/barberShops/{barberShopId}/suppliers/{supplierId}`: Stores supplier data for a specific barber shop.\n*   `/barberShops/{barberShopsId}/financialRecords/{financialRecordId}`: Stores financial records for a specific barber shop. The `barberShopId` is implicitly denormalized by the path.\n\nThis design supports the core features of the application, including multi-tenant dashboards, real-time metrics, appointment scheduling, client management, and financial tracking, while maintaining a secure and scalable data structure."
   }
 }
+    
+    
+
+    
+
+
