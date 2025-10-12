@@ -1,7 +1,8 @@
+
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { BarberShop, UserProfile } from "@/lib/types";
 
@@ -15,11 +16,24 @@ const CPanelContext = createContext<CPanelContextType | null>(null);
 
 export function CPanelProvider({ children }: { children: React.ReactNode }) {
     const firestore = useFirestore();
+    const { user } = useUser();
 
-    const shopsQuery = useMemoFirebase(() => collection(firestore, 'barberShops'), [firestore]);
+    // Query for all shops, but only if the user is an admin.
+    const shopsQuery = useMemoFirebase(() => {
+        if (user?.role === 'admin') {
+            return collection(firestore, 'barberShops');
+        }
+        return null;
+    }, [firestore, user]);
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
-    const usersQuery = useMemoFirebase(() => query(collection(firestore, 'users'), where('role', '==', 'owner')), [firestore]);
+    // Query for all owner users, but only if the user is an admin.
+    const usersQuery = useMemoFirebase(() => {
+        if (user?.role === 'admin') {
+            return query(collection(firestore, 'users'), where('role', '==', 'owner'));
+        }
+        return null;
+    }, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
     const value = useMemo(() => ({
