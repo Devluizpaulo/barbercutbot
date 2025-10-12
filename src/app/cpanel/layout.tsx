@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import React, { createContext, useContext, useEffect } from "react";
 import {
   Sidebar,
   SidebarHeader,
@@ -26,15 +27,33 @@ import {
   Store,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { useUser, useAuth, useFirestore } from "@/firebase";
-import { useEffect } from "react";
+import { useUser, useAuth, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { UserNav } from '@/components/user-nav';
 import { Button } from "@/components/ui/button";
-import { doc, getDoc } from "firebase/firestore";
-import type { UserProfile } from "@/lib/types";
+import { doc, getDoc, collection, query, where } from "firebase/firestore";
+import type { UserProfile, BarberShop, Ticket as TicketType } from "@/lib/types";
+
+// 1. Create a Context for CPanel data
+interface CPanelContextType {
+  shops: BarberShop[] | null;
+  users: UserProfile[] | null;
+  tickets: TicketType[] | null;
+  isLoading: boolean;
+}
+
+const CPanelContext = createContext<CPanelContextType>({
+  shops: null,
+  users: null,
+  tickets: null,
+  isLoading: true,
+});
+
+// Custom hook to use the CPanel data
+export const useCPanel = () => useContext(CPanelContext);
+
 
 export default function CPanelLayout({
   children,
@@ -47,6 +66,18 @@ export default function CPanelLayout({
   const auth = useAuth();
   const firestore = useFirestore();
 
+  // --- Data Fetching centralizada no Layout ---
+  const shopsQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'barberShops') : null, [firestore, user]);
+  const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
+
+  const usersQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'users') : null, [firestore, user]);
+  const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
+
+  const ticketsQuery = useMemoFirebase(() => user?.role === 'admin' ? collection(firestore, 'tickets') : null, [firestore, user]);
+  const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
+  
+  const isLoadingData = isLoadingShops || isLoadingUsers || isLoadingTickets;
+
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -55,37 +86,23 @@ export default function CPanelLayout({
       }
 
       if (!user) {
-        if (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup') {
+        if (pathname !== '/cpanel/login') {
             router.push('/cpanel/login');
         }
         return;
       }
-
-      try {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            router.push('/login');
-            return;
-        }
-
-        const userData = userDoc.data() as UserProfile;
-
-        if (userData?.role !== 'admin') {
-           router.push('/dashboard/shops');
-        } else if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
-           router.push('/cpanel');
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        router.push('/login');
+      
+      // We assume the role is now correctly populated on the user object by useUser
+      if (user.role !== 'admin') {
+         router.push('/dashboard/shops');
+      } else if (pathname === '/cpanel/login') {
+         router.push('/cpanel');
       }
     };
     
     checkAdminStatus();
 
-  }, [user, isUserLoading, router, pathname, firestore]);
+  }, [user, isUserLoading, router, pathname]);
 
   const handleLogout = async () => {
     if (auth) {
@@ -94,7 +111,7 @@ export default function CPanelLayout({
     router.push('/cpanel/login');
   };
   
-  if (isUserLoading || (!user && (pathname !== '/cpanel/login' && pathname !== '/cpanel/signup'))) {
+  if (isUserLoading || (!user && pathname !== '/cpanel/login')) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -104,6 +121,14 @@ export default function CPanelLayout({
   
   if (pathname === '/cpanel/login' || pathname === '/cpanel/signup') {
     return <>{children}</>;
+  }
+  
+  if (user?.role !== 'admin') {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
   }
 
 
@@ -117,81 +142,83 @@ export default function CPanelLayout({
   ];
 
   return (
-    <SidebarProvider>
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
-        <div className="flex items-center gap-4">
-          <div className="md:hidden">
-              <SidebarTrigger />
-          </div>
-          <Link
-            href="/cpanel"
-            className="hidden items-center gap-2 text-lg font-semibold md:flex md:text-base"
-          >
-            <Logo />
-          </Link>
-        </div>
-        
-        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-          <div className="relative ml-auto flex-1 md:grow-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar..."
-              className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-            />
-          </div>
-          <UserNav />
-        </div>
-      </header>
-        <main className="flex flex-1">
-          <Sidebar>
-            <SidebarHeader className="p-4 flex items-center justify-between">
+    <CPanelContext.Provider value={{ shops, users, tickets, isLoading: isLoadingData }}>
+        <SidebarProvider>
+        <div className="flex min-h-screen w-full flex-col bg-background">
+          <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+            <div className="flex items-center gap-4">
+              <div className="md:hidden">
+                  <SidebarTrigger />
+              </div>
+              <Link
+                href="/cpanel"
+                className="hidden items-center gap-2 text-lg font-semibold md:flex md:text-base"
+              >
                 <Logo />
-            </SidebarHeader>
-            <SidebarContent>
-              <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <Link href={item.href}>
-                      <SidebarMenuButton
-                        isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/cpanel')}
-                        tooltip={item.label}
-                        className="justify-start"
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarContent>
-            <SidebarSeparator />
-            <SidebarFooter>
-              <SidebarMenu>
-                 <SidebarMenuItem>
-                  <Link href="/dashboard/shops">
-                    <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
-                      <LogOut className="rotate-180" />
-                      <span>Voltar para Lojas</span>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
-                      <LogOut />
-                      <span>Sair</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarFooter>
-          </Sidebar>
-          <div className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
-            {children}
+              </Link>
+            </div>
+            
+            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+              <div className="relative ml-auto flex-1 md:grow-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar..."
+                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+                />
+              </div>
+              <UserNav />
+            </div>
+          </header>
+            <main className="flex flex-1">
+              <Sidebar>
+                <SidebarHeader className="p-4 flex items-center justify-between">
+                    <Logo />
+                </SidebarHeader>
+                <SidebarContent>
+                  <SidebarMenu>
+                    {navItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <Link href={item.href}>
+                          <SidebarMenuButton
+                            isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/cpanel')}
+                            tooltip={item.label}
+                            className="justify-start"
+                          >
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarContent>
+                <SidebarSeparator />
+                <SidebarFooter>
+                  <SidebarMenu>
+                     <SidebarMenuItem>
+                      <Link href="/dashboard/shops">
+                        <SidebarMenuButton tooltip="Voltar para Lojas" className="justify-start">
+                          <LogOut className="rotate-180" />
+                          <span>Voltar para Lojas</span>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip="Sair" className="justify-start" onClick={handleLogout}>
+                          <LogOut />
+                          <span>Sair</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarFooter>
+              </Sidebar>
+              <div className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/30">
+                {children}
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+        </SidebarProvider>
+    </CPanelContext.Provider>
   );
 }

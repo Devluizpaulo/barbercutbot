@@ -33,6 +33,7 @@ import {
   Package,
   TrendingDown,
   TrendingUp,
+  Shield,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
@@ -56,10 +57,12 @@ export default function DashboardLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
+    // This effect handles redirection for non-authenticated users.
+    // It is kept from the original (app) layout.
     if (!isUserLoading && !user) {
-      router.push('/login');
+       router.push('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, pathname]);
 
   const handleLogout = async () => {
     if (auth) {
@@ -68,6 +71,8 @@ export default function DashboardLayout({
     router.push('/login');
   };
   
+  // This loading state covers both user auth check and ensures a user exists
+  // before attempting to render a dashboard.
   if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -76,6 +81,8 @@ export default function DashboardLayout({
     );
   }
 
+  // This check is important for the case where a user lands on `/dashboard`
+  // without a specific shopId.
   if (!shopId) {
     return (
        <div className="flex min-h-screen items-center justify-center bg-background">
@@ -227,6 +234,16 @@ export default function DashboardLayout({
             <SidebarSeparator />
             <SidebarFooter>
               <SidebarMenu>
+                {user?.role === 'admin' && (
+                  <SidebarMenuItem>
+                    <Link href="/cpanel">
+                      <SidebarMenuButton tooltip="Painel Admin" className="justify-start">
+                        <Shield />
+                        <span>Painel Admin</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <Link href={`/dashboard/${shopId}/support`}>
                     <SidebarMenuButton

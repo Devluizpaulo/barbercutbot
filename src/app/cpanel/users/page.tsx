@@ -20,24 +20,15 @@ import { Button } from "@/components/ui/button";
 import { MoreVertical, PlusCircle, Search, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, Timestamp } from "firebase/firestore";
-import type { BarberShop, UserProfile } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { Timestamp } from 'firebase/firestore';
+import { useCPanel } from '../layout'; // Import the new context hook
 
 export default function AdminUsersPage() {
-    const firestore = useFirestore();
-    const { user: adminUser } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
-
-    const usersQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'users') : null, [firestore, adminUser]);
-    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
-
-    const shopsQuery = useMemoFirebase(() => adminUser ? collection(firestore, 'barberShops') : null, [firestore, adminUser]);
-    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
+    const { users, shops, isLoading } = useCPanel(); // Use data from context
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -53,8 +44,6 @@ export default function AdminUsersPage() {
     const getShopByOwnerId = (ownerId: string) => {
         return shops?.find(s => s.ownerId === ownerId);
     }
-    
-    const isLoading = isLoadingUsers || isLoadingShops;
     
     const toDate = (timestamp: Timestamp | Date | string): Date => {
         if (timestamp instanceof Timestamp) {

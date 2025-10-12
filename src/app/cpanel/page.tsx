@@ -2,10 +2,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
-import type { BarberShop, Customer, FinancialRecord, UserProfile } from "@/lib/types";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
-import { getMonth } from 'date-fns';
+import type { BarberShop, UserProfile } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -47,43 +44,22 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, useFirestore } from '@/firebase';
+import { getMonth, format } from 'date-fns';
+import { Timestamp, doc } from 'firebase/firestore';
+import { useCPanel } from './layout'; // Import the new context hook
 
-
-const chartConfig = {
-  shops: {
-    label: "Lojas",
-    color: "hsl(var(--primary))",
-  },
-}
-
-const initialChartData = [
-  { month: "Jan", shops: 0 },
-  { month: "Fev", shops: 0 },
-  { month: "Mar", shops: 0 },
-  { month: "Abr", shops: 0 },
-  { month: "Mai", shops: 0 },
-  { month: "Jun", shops: 0 },
-  { month: "Jul", shops: 0 },
-  { month: "Ago", shops: 0 },
-  { month: "Set", shops: 0 },
-  { month: "Out", shops: 0 },
-  { month: "Nov", shops: 0 },
-  { month: "Dez", shops: 0 },
-];
+const initialChartData = Array.from({ length: 12 }, (_, i) => ({
+  month: format(new Date(2024, i, 1), 'MMM'),
+  shops: 0
+}));
 
 
 export default function AdminDashboard() {
     const { toast } = useToast();
     const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
+    const { shops, users, isLoading } = useCPanel(); // Use data from context
     const firestore = useFirestore();
-    const { user } = useUser();
-
-    const shopsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops') : null, [firestore, user]);
-    const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
-    
-    const usersQuery = useMemoFirebase(() => user ? collection(firestore, 'users') : null, [firestore, user]);
-    const { data: users, isLoading: isLoadingUsers } = useCollection<UserProfile>(usersQuery);
 
     const toDate = (timestamp: Timestamp | Date | string): Date => {
       if (timestamp instanceof Timestamp) {
@@ -93,16 +69,16 @@ export default function AdminDashboard() {
     }
     
     const newShopsChartData = useMemo(() => {
+        if (isLoading || !shops) return initialChartData;
         const data = JSON.parse(JSON.stringify(initialChartData));
-        if (!shops) return data;
         shops.forEach(shop => {
             if (shop.createdAt) {
                 const monthIndex = getMonth(toDate(shop.createdAt));
-                data[monthIndex].shops++;
+                if(data[monthIndex]) data[monthIndex].shops++;
             }
         })
         return data;
-    }, [shops])
+    }, [shops, isLoading])
 
 
     const handleManageBilling = (shopId: string) => {
@@ -124,8 +100,6 @@ export default function AdminDashboard() {
         });
         setShopToDeactivate(null);
     };
-
-    const isLoading = isLoadingShops || isLoadingUsers;
 
   return (
     <>
@@ -208,7 +182,7 @@ export default function AdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                  <ChartContainer config={chartConfig} className="w-full h-[300px]">
+                  <ChartContainer config={{ shops: { label: "Lojas" } }} className="w-full h-[300px]">
                     <BarChart accessibilityLayer data={newShopsChartData}>
                       <CartesianGrid vertical={false} />
                       <XAxis
@@ -228,7 +202,7 @@ export default function AdminDashboard() {
                         cursor={false}
                         content={<ChartTooltipContent indicator="dot" />}
                       />
-                      <Bar dataKey="shops" fill="var(--color-shops)" radius={4} />
+                      <Bar dataKey="shops" fill="var(--color-primary)" radius={4} />
                     </BarChart>
                   </ChartContainer>
                 </CardContent>
