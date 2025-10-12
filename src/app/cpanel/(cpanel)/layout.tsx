@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import { CPanelProvider } from './context'; 
-import { CPanelNav } from '@/app/cpanel/cpanel-nav.tsx';
+import { CPanelProvider } from './context';
+import { CPanelNav } from '@/app/cpanel/cpanel-nav';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
   children,
@@ -38,13 +39,15 @@ export default function CPanelLayout({
   }
 
   return (
-    <CPanelProvider>
-      <div className="flex min-h-screen w-full">
-        <CPanelNav />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-            {children}
-        </main>
-      </div>
-    </CPanelProvider>
+    <SidebarProvider>
+      <CPanelProvider>
+        <div className="flex min-h-screen w-full">
+          <CPanelNav />
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+              {children}
+          </main>
+        </div>
+      </CPanelProvider>
+    </SidebarProvider>
   );
 }
