@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -81,8 +80,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
                 const userWithRole: UserWithRole = {
                     ...firebaseUser,
+                    // The following line is a hack to get the user object to be the same reference
+                    // This is needed because of how React handles object references in state
+                    ...Object.fromEntries(Object.entries(firebaseUser)),
                     role: role,
                 };
+
                 setUserAuthState({ user: userWithRole, isUserLoading: false, userError: null });
 
             } catch (error) {

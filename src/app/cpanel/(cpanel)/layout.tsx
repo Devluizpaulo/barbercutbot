@@ -5,7 +5,7 @@ import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
-import { CPanelNav } from '@/app/cpanel/cpanel-nav';
+import { CPanelNav } from '../cpanel-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
@@ -24,12 +24,14 @@ export default function CPanelLayout({
       return;
     }
     
+    // This check is now more reliable because the role is available
     if (user.role !== 'admin') {
-      router.push('/dashboard/shops');
+      router.push('/dashboard/shops'); // Redirect non-admins away
     }
 
   }, [user, isUserLoading, router]);
 
+  // Show loading screen until user data (including role) is fully loaded.
   if (isUserLoading || !user || user.role !== 'admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
