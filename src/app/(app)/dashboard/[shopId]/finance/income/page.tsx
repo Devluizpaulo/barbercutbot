@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Search } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { TransactionsTable } from '../transactions-table';
@@ -21,12 +21,18 @@ import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { AddTransactionForm } from '../add-transaction-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+type Period = 'today' | 'week' | 'month' | 'year';
 
 export default function IncomePage() {
   const [selectedTransaction, setSelectedTransaction] = useState<FinancialRecord | undefined>(undefined);
   const [transactionToDelete, setTransactionToDelete] = useState<FinancialRecord | null>(null);
   const [isFormOpen, setFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [period, setPeriod] = useState<Period>('month');
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -36,10 +42,40 @@ export default function IncomePage() {
   const transactionsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'financialRecords') : null, [firestore, shopId, user]);
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+
   const incomeRecords = useMemo(() => {
     if (!transactions) return [];
     
     let filtered = transactions.filter(t => t.type === 'income');
+
+    const now = new Date();
+    let interval: { start: Date; end: Date };
+
+    switch (period) {
+      case 'today':
+        interval = { start: startOfDay(now), end: endOfDay(now) };
+        break;
+      case 'week':
+        interval = { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
+        break;
+      case 'month':
+        interval = { start: startOfMonth(now), end: endOfMonth(now) };
+        break;
+      case 'year':
+        interval = { start: startOfYear(now), end: endOfYear(now) };
+        break;
+    }
+    
+    filtered = filtered.filter(t => {
+      const transactionDate = toDate(t.date);
+      return isWithinInterval(transactionDate, interval);
+    });
 
     if (!searchTerm) return filtered;
 
@@ -48,7 +84,7 @@ export default function IncomePage() {
       t.description.toLowerCase().includes(lowercasedTerm) ||
       t.category.toLowerCase().includes(lowercasedTerm)
     );
-  }, [transactions, searchTerm]);
+  }, [transactions, searchTerm, period]);
   
   const totalIncome = useMemo(() => {
     return incomeRecords.reduce((acc, record) => acc + record.amount, 0)
@@ -77,21 +113,31 @@ export default function IncomePage() {
                     Acompanhe todas as entradas de dinheiro do seu negócio.
                 </p>
             </div>
-             <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Buscar receita..." 
-                    className="pl-8" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex items-center gap-4">
+                <Tabs value={period} onValueChange={(value) => setPeriod(value as Period)} className="hidden sm:block">
+                  <TabsList>
+                    <TabsTrigger value="today">Hoje</TabsTrigger>
+                    <TabsTrigger value="week">Semana</TabsTrigger>
+                    <TabsTrigger value="month">Mês</TabsTrigger>
+                    <TabsTrigger value="year">Ano</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Buscar receita..." 
+                        className="pl-8" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
         </div>
         
          <Card>
           <CardHeader>
             <CardTitle>Receita Total</CardTitle>
-            <CardDescription>Soma de todas as receitas encontradas.</CardDescription>
+            <CardDescription>Soma de todas as receitas encontradas no período.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-green-600">R${totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
