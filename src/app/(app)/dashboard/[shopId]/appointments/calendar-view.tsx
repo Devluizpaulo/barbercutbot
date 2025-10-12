@@ -1,17 +1,15 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import { format, startOfDay, addMinutes, isSameDay } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useMemo } from 'react';
+import { format, addMinutes, isSameDay } from 'date-fns';
 import { cn, getEventColor } from '@/lib/utils';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, User, Scissors } from 'lucide-react';
+import { User, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarPicker } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Timestamp } from 'firebase/firestore';
 
 interface CalendarViewProps {
   appointments: Appointment[];
@@ -19,6 +17,8 @@ interface CalendarViewProps {
   customers: Customer[];
   services: Service[];
   isLoading: boolean;
+  selectedDate: Date;
+  selectedBarberId: string | 'all';
 }
 
 const timeSlots = Array.from({ length: 15 * 4 }, (_, i) => {
@@ -27,9 +27,15 @@ const timeSlots = Array.from({ length: 15 * 4 }, (_, i) => {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 });
 
-export function CalendarView({ appointments, barbers, customers, services, isLoading }: CalendarViewProps) {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
+export function CalendarView({ 
+  appointments, 
+  barbers, 
+  customers, 
+  services, 
+  isLoading,
+  selectedDate,
+  selectedBarberId 
+}: CalendarViewProps) {
 
   const toDate = (timestamp: any): Date => {
     if (timestamp?.toDate) return timestamp.toDate();
@@ -54,56 +60,8 @@ export function CalendarView({ appointments, barbers, customers, services, isLoa
     };
   };
 
-  const changeDate = (amount: number) => {
-    setSelectedDate(prev => new Date(prev.setDate(prev.getDate() + amount)));
-  };
-
   return (
-    <div className="flex h-full flex-col bg-card border-t">
-      <header className="flex flex-none items-center justify-between border-b px-6 py-4">
-        <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold hidden md:block">Agenda</h1>
-             <div className="flex items-center gap-2">
-                <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Todos os Barbeiros" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todos os Barbeiros</SelectItem>
-                        {barbers.map(barber => (
-                            <SelectItem key={barber.id} value={barber.id}>{barber.firstName}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-             </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[180px] justify-start text-left font-normal">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(selectedDate, 'PPP', { locale: ptBR })}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarPicker
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-                locale={ptBR}
-              />
-            </PopoverContent>
-          </Popover>
-          <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
+    <div className="flex h-full flex-col bg-card border rounded-lg overflow-hidden">
       <div className="flex flex-auto overflow-auto">
         <div className="grid flex-none grid-cols-1 grid-rows-1">
           <div className="row-end-1 h-7"></div>
@@ -116,7 +74,7 @@ export function CalendarView({ appointments, barbers, customers, services, isLoa
 
         <div className="grid flex-auto grid-cols-1 grid-rows-1">
           <div className="col-start-1 col-end-2 row-start-1 grid divide-x" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length}, minmax(10rem, 1fr))` }}>
-            {filteredBarbers.map(() => <div key={Math.random()} />)}
+            {filteredBarbers.map((barber) => <div key={barber.id} />)}
           </div>
           <div className="col-start-1 col-end-2 row-start-1 grid grid-cols-1" style={{ gridTemplateRows: '1.75rem repeat(56, minmax(0, 1fr))' }}>
             <div className="row-end-1 h-7"></div>
@@ -127,7 +85,7 @@ export function CalendarView({ appointments, barbers, customers, services, isLoa
           <ol className="col-start-1 col-end-2 row-start-1 grid" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length}, minmax(10rem, 1fr))`, gridTemplateRows: `1.75rem repeat(${timeSlots.length}, minmax(0, 1fr))` }}>
             <li className="relative col-span-full flex items-center justify-between border-b px-6">
               {filteredBarbers.map(barber => (
-                <div key={barber.id} className="text-center font-semibold text-sm">
+                <div key={barber.id} className="text-center font-semibold text-sm w-full">
                   {barber.firstName} {barber.lastName}
                 </div>
               ))}
@@ -154,7 +112,6 @@ export function CalendarView({ appointments, barbers, customers, services, isLoa
 
                 const startRow = (startHour - 8) * 4 + (startMinute / 15) + 2;
                 const durationInIntervals = Math.ceil(service.duration / 15);
-                const endRow = startRow + durationInIntervals;
                 
                 const eventColor = getEventColor(service.name);
 

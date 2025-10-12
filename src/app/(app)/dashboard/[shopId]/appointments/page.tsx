@@ -4,10 +4,28 @@
 import { useState } from 'react';
 import {
   PlusCircle,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import {
   Dialog,
@@ -28,6 +46,8 @@ import { CalendarView } from './calendar-view';
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
 
   const params = useParams();
   const shopId = params.shopId as string;
@@ -60,6 +80,10 @@ export default function AppointmentsPage() {
   const handleFormSuccess = () => {
     setFormOpen(false);
     setSelectedAppointment(undefined);
+  };
+
+  const changeDate = (amount: number) => {
+    setSelectedDate(prev => new Date(prev.setDate(prev.getDate() + amount)));
   };
 
   return (
@@ -108,18 +132,61 @@ export default function AppointmentsPage() {
             </DialogContent>
           </Dialog>
         </div>
+        
+        <header className="flex flex-none flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
+            <div className="flex items-center gap-4">
+                <h2 className="text-xl font-semibold hidden md:block">Agenda</h2>
+                <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Todos os Barbeiros" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Barbeiros</SelectItem>
+                        {barbers?.map(barber => (
+                            <SelectItem key={barber.id} value={barber.id}>{barber.firstName}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(selectedDate, 'PPP', { locale: ptBR })}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => date && setSelectedDate(date)}
+                        initialFocus
+                        locale={ptBR}
+                    />
+                    </PopoverContent>
+                </Popover>
+                <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </header>
 
-        <div className="flex-1 overflow-auto -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8">
+        <div className="flex-1 -mt-8 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8">
             <CalendarView 
                 appointments={appointments || []}
                 barbers={barbers || []}
                 customers={customers || []}
                 services={services || []}
                 isLoading={isLoading}
+                selectedDate={selectedDate}
+                selectedBarberId={selectedBarberId}
             />
         </div>
       </div>
     </>
   );
 }
-
