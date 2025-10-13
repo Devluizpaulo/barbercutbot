@@ -51,7 +51,7 @@ export const checkAdminExists = functions.https.onCall(async (data: any, context
  * Cria o primeiro usuário administrador.
  * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = functions.httpsou.onCall(async (data: { email: string, password: string, firstName: string, lastName: string }, context: functions.https.CallableContext) => {
+export const setupAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string }, context: functions.https.CallableContext) => {
     const { email, password, firstName, lastName } = data;
 
     const usersRef = db.collection('users');
@@ -95,7 +95,7 @@ export const setupAdminUser = functions.httpsou.onCall(async (data: { email: str
 /**
  * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string, role: string }, context: functions.httpsa.CallableContext) => {
+export const createAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string, role: string }, context: functions.https.CallableContext) => {
     if (!await isAdmin(context.auth?.uid)) {
         throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
     }
