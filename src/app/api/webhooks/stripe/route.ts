@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { doc, updateDoc, Timestamp, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, Timestamp } from 'firebase-admin/firestore';
 import { firestore } from '@/firebase/server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -56,29 +56,45 @@ export async function POST(req: Request) {
 
     case 'invoice.payment_succeeded':
       const invoice = event.data.object as Stripe.Invoice;
-      if (invoice.billing_reason === 'subscription_cycle') {
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-        const shopRef = doc(firestore, 'barberShops', invoice.metadata?.shopId);
+      if (invoice.billing_reason === 'subscription_cycle' && invoice.subscription) {
+        const subscriptionId = invoice.subscription as string;
+        const customerId = invoice.customer as string;
+
+        const customer = await stripe.customers.retrieve(customerId);
+        if (customer.deleted) break;
+
+        const shopId = customer.metadata.shopId;
+        if (!shopId) break;
+        
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const shopRef = doc(firestore, 'barberShops', shopId);
         
         await updateDoc(shopRef, {
             'subscription.status': 'active',
             'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
         });
 
-        console.log(`✅ Subscription renewal successful for shop ${invoice.metadata?.shopId}.`);
+        console.log(`✅ Subscription renewal successful for shop ${shopId}.`);
       }
       break;
 
     case 'invoice.payment_failed':
       const failedInvoice = event.data.object as Stripe.Invoice;
-      if (failedInvoice.billing_reason === 'subscription_cycle') {
-        const shopRef = doc(firestore, 'barberShops', failedInvoice.metadata?.shopId);
+      if (failedInvoice.billing_reason === 'subscription_cycle' && failedInvoice.subscription) {
+        const customerId = failedInvoice.customer as string;
+        const customer = await stripe.customers.retrieve(customerId);
+        if (customer.deleted) break;
+
+        const shopId = customer.metadata.shopId;
+        if (!shopId) break;
+
+        const shopRef = doc(firestore, 'barberShops', shopId);
         
         await updateDoc(shopRef, {
             'subscription.status': 'past_due',
         });
 
-        console.warn(`🔔 Subscription payment failed for shop ${failedInvoice.metadata?.shopId}. Status set to past_due.`);
+        console.warn(`🔔 Subscription payment failed for shop ${shopId}. Status set to past_due.`);
       }
       break;
     
