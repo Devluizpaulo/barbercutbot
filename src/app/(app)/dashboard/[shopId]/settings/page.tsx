@@ -76,7 +76,6 @@ import {
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { createPayment } from '@/ai/flows/create-payment-flow';
 import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Textarea } from '@/components/ui/textarea';
@@ -355,7 +354,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (shop) {
-      // Profile Form
       profileForm.reset({
         name: shop.name || '',
         logo: shop.logo || '',
@@ -382,61 +380,22 @@ export default function SettingsPage() {
         },
       });
 
-      // Working Hours Form
       if (shop.workingHours) {
         replace(shop.workingHours);
       }
-
-      // Holidays Form
+      
       if (shop.holidays) {
-        const fetchAndSetHolidays = async () => {
-          try {
-            const year = new Date().getFullYear();
-            const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
-            if (!response.ok) throw new Error('Failed to fetch holidays');
-            const nationalHolidays: { date: string; name: string }[] = await response.json();
-            
-            const formattedHolidays = nationalHolidays.map((h) => ({
-              date: parse(h.date, 'yyyy-MM-dd', new Date()),
-              description: h.name,
-              isClosed: true,
-              openingTime: '09:00',
-              closingTime: '17:00',
-            }));
-
-            const savedHolidays = shop.holidays?.map((h) => ({ ...h, date: toDate(h.date) })) || [];
-            const savedDates = new Set(savedHolidays.map((h) => format(h.date, 'yyyy-MM-dd')));
-
-            const combinedHolidays = [...savedHolidays];
-            formattedHolidays.forEach((nh) => {
-              if (!savedDates.has(format(nh.date, 'yyyy-MM-dd'))) {
-                combinedHolidays.push(nh);
-              }
-            });
-
-            combinedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-            replaceHolidays(combinedHolidays);
-          } catch (error) {
-            console.error('Failed to fetch national holidays:', error);
-            if (shop.holidays) {
-              replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
-            }
-          }
-        };
-        fetchAndSetHolidays();
+         replaceHolidays(shop.holidays.map((h: Holiday) => ({ ...h, date: toDate(h.date) })));
       }
       
-      // Payment Settings Form
       if (shop.paymentSettings) {
         replacePaymentMethods(shop.paymentSettings);
       }
       
-      // Cashier Form
       if (shop.cashierSettings) {
         cashierForm.reset(shop.cashierSettings as any);
       }
       
-      // Permissions Form
       if (shop.roles) {
         permissionsForm.reset({ roles: shop.roles });
       } else {
@@ -629,34 +588,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleManageSubscription = async (plan: Plan) => {
-    setIsBillingLoading(true);
-    try {
-      const { checkoutUrl } = await createPayment({
-        shopId: shopId,
-        planId: plan.id,
-        shopName: shop?.name || 'FlowCuts Pro',
-        price: plan.price,
-      });
-
-      if (checkoutUrl) {
-        router.push(checkoutUrl);
-      } else {
-        throw new Error('URL de checkout não foi retornada.');
-      }
-    } catch (error) {
-      console.error('Erro ao criar preferência de pagamento:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao gerar pagamento',
-        description:
-          'Não foi possível iniciar o processo de assinatura. Tente novamente mais tarde.',
-      });
-      setIsBillingLoading(false);
-    }
-  };
-
-  const currentPlan = PLANS.find(p => p.id === (shop?.subscription?.plan || 'free')) || PLANS.find(p => p.id === 'lite')!;
+  const currentPlan = PLANS.find(p => p.id === (shop?.subscription?.plan || 'lite')) || PLANS[0];
+  
   const nextBillingDate = shop?.subscription?.currentPeriodEnd
     ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy', {
         locale: ptBR,
@@ -742,9 +675,10 @@ export default function SettingsPage() {
                        {currentPlan.id === plan.id ? (
                            <Button className="w-full" disabled>Plano Atual</Button>
                        ) : (
-                           <Button className="w-full" onClick={() => handleManageSubscription(plan)} disabled={isBillingLoading}>
-                              {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                              {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}
+                           <Button asChild className="w-full" disabled={!plan.preapprovalPlanId || plan.preapprovalPlanId.startsWith('SUBSTITUIR')}>
+                               <a href={`https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=${plan.preapprovalPlanId}`} target="_blank" rel="noopener noreferrer">
+                                 {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}
+                               </a>
                            </Button>
                        )}
                     </CardFooter>

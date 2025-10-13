@@ -88,7 +88,7 @@ export type BarberShop = {
   roles?: Role[];
   createdAt?: Timestamp;
   subscription?: {
-    plan: 'free' | 'pro';
+    plan: 'free' | 'lite' | 'business' | 'pro';
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
     mercadoPagoId?: string;
     currentPeriodEnd?: Timestamp;

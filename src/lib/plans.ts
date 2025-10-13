@@ -1,13 +1,15 @@
 
 export interface Plan {
-    id: 'free' | 'lite' | 'business' | 'pro';
+    id: 'lite' | 'business' | 'pro';
     name: string;
     description: string;
     price: number;
     features: string[];
     isFeatured?: boolean;
+    preapprovalPlanId?: string; // ID do plano de assinatura do Mercado Pago
 }
 
+// ATENÇÃO: Substitua os valores de preapprovalPlanId pelos IDs reais gerados no seu painel do Mercado Pago.
 export const PLANS: Plan[] = [
     {
         id: 'lite',
@@ -20,8 +22,8 @@ export const PLANS: Plan[] = [
             'Controle de Caixa Simplificado',
             'Perfil de Divulgação Online',
             'Suporte via Ticket',
-            'Assistente IA (Opcional)',
-        ]
+        ],
+        preapprovalPlanId: '2b790d6143164a769b2aae7da183ca07' // ID de exemplo que você forneceu.
     },
     {
         id: 'business',
@@ -36,7 +38,8 @@ export const PLANS: Plan[] = [
             'Relatórios de Desempenho',
             'Gestão de Equipe e Comissões',
             'Assistente IA (Opcional)',
-        ]
+        ],
+        preapprovalPlanId: 'SUBSTITUIR_PELO_ID_DO_PLANO_BUSINESS' // ID fictício
     },
     {
         id: 'pro',
@@ -49,6 +52,7 @@ export const PLANS: Plan[] = [
             'Lembretes de Agendamento Automáticos',
             'Campanhas de Marketing (em breve)',
             'Suporte Prioritário',
-        ]
+        ],
+        preapprovalPlanId: 'SUBSTITUIR_PELO_ID_DO_PLANO_PRO' // ID fictício
     }
 ];
