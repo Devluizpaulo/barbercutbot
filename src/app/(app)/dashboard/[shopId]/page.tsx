@@ -110,14 +110,16 @@ export default function ShopDashboardPage() {
     let totalServices = 0;
 
     filteredData.appointments.forEach((appt: Appointment) => {
-        appt.items.forEach(item => {
-            if(serviceCounts[item.serviceId]) {
-                serviceCounts[item.serviceId]++;
-            } else {
-                serviceCounts[item.serviceId] = 1;
-            }
-            totalServices++;
-        });
+        if (appt.items) {
+            appt.items.forEach(item => {
+                if(serviceCounts[item.serviceId]) {
+                    serviceCounts[item.serviceId]++;
+                } else {
+                    serviceCounts[item.serviceId] = 1;
+                }
+                totalServices++;
+            });
+        }
     });
 
     if (totalServices === 0) return { name: 'N/A', percentage: 0 };
@@ -142,7 +144,7 @@ export default function ShopDashboardPage() {
     financialRecords?.forEach(t => {
         const transactionDate = toDate(t.date);
         const monthIndex = getMonth(transactionDate);
-        if (t.type === 'income') {
+        if (t.type === 'income' && revenueData[monthIndex]) {
             revenueData[monthIndex].revenue += t.amount;
         }
     });

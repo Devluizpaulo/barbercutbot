@@ -7,7 +7,7 @@ import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
 import { CPanelNav } from '@/components/cpanel-nav';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
   children,
@@ -47,10 +47,14 @@ export default function CPanelLayout({
     <SidebarProvider>
       <CPanelProvider>
         <div className="flex min-h-screen w-full">
-          <CPanelNav />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-              {children}
-          </main>
+          <Sidebar>
+            <CPanelNav />
+          </Sidebar>
+          <SidebarInset>
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                {children}
+            </main>
+          </SidebarInset>
         </div>
       </CPanelProvider>
     </SidebarProvider>

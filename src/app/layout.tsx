@@ -19,8 +19,8 @@ const playfair_display = Playfair_Display({
 
 
 export const metadata: Metadata = {
-  title: "FlowCuts Pro",
-  description: "A solução completa para gerenciar sua barbearia.",
+  title: "IA FlowCuts Pro",
+  description: "A solução completa para gerenciar sua barbearia com o poder da IA.",
 };
 
 export default function RootLayout({
