@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,8 +17,9 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Shield, AlertTriangle, CheckCircle, Eye, EyeOff, Crown, Zap } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // This is a placeholder function, as the real `checkAdminExists` is now on the server.
@@ -107,7 +107,7 @@ export default function SetupPage() {
       });
 
       // Now, sign in the newly created admin user on the client
-      await auth.signInWithEmailAndPassword(email, password);
+      await signInWithEmailAndPassword(auth, email, password);
 
       toast({
         title: '✅ Administrador criado!',

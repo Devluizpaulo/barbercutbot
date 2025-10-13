@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRef } from 'react';
@@ -15,13 +14,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
-import type { Customer, BarberShop, SaleItem } from '@/lib/types';
+import type { Appointment, Service, Barber, Customer, BarberShop, SaleItem } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, Share2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection } from '@/firebase';
+import { doc, Timestamp, collection, setDoc } from 'firebase/firestore';
 
 interface ReceiptDialogProps {
   open: boolean;

@@ -1,18 +1,28 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { CallableRequest } from 'firebase-functions/v2/https';
-import { DocumentSnapshot } from 'firebase-functions/v1/firestore';
-import { EventContext } from 'firebase-functions/v1';
 
 // Initialize the Admin SDK
 admin.initializeApp();
+
+/**
+ * Callable Cloud Function to check if an admin user exists.
+ * This can be called by an unauthenticated user for the setup page.
+ */
+export const checkAdminExists = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+    const usersRef = admin.firestore().collection('users');
+    const adminQuery = usersRef.where('role', '==', 'admin').limit(1);
+    const adminSnapshot = await adminQuery.get();
+    return { adminExists: !adminSnapshot.empty };
+});
+
 
 /**
  * Callable Cloud Function to create the very first admin user.
  * This function can be called by an unauthenticated user, but it will
  * only succeed if NO admin user currently exists in the database.
  */
-export const setupAdminUser = functions.https.onCall(async (data, context) => {
+export const setupAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const { email, password, firstName, lastName } = data;
 
     // --- Security Check: Ensure no admin already exists ---
@@ -148,7 +158,7 @@ export const createAdminUser = functions.https.onCall(async (data: any, context:
  */
 export const onUserCreateSetRole = functions.firestore
   .document('users/{userId}')
-  .onCreate(async (snapshot: DocumentSnapshot, context: EventContext) => {
+  .onCreate(async (snapshot: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const userData = snapshot.data();
     const userId = context.params.userId;
 

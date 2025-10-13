@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
@@ -29,10 +28,10 @@ export function CPanelProvider({ children }: { children: React.ReactNode }) {
     }, [firestore, user]); // Depend on the user object to re-evaluate when role is available
     const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(shopsQuery);
 
-    // Query for all non-owner users, only if the user is an admin.
+    // Query for all users, only if the user is an admin.
     const usersQuery = useMemoFirebase(() => {
         if (user?.role === 'admin') {
-            return collection(firestore, 'users');
+             return collection(firestore, 'users');
         }
         return null;
     }, [firestore, user]);
