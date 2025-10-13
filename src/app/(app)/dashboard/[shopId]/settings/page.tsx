@@ -449,7 +449,7 @@ export default function SettingsPage() {
       }
 
       if (shop.cashierSettings) {
-        cashierForm.reset(shop.cashierSettings);
+        cashierForm.reset(shop.cashierSettings as any);
       }
        if (shop.roles) {
         permissionsForm.reset({ roles: shop.roles });
@@ -1849,7 +1849,7 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
             <div className="flex justify-center p-4">
-              <PinInput onComplete={(value) => setCurrentPin(value)}>
+              <PinInput onComplete={(value) => setCurrentPin(value)} maxLength={4}>
                   <PinInputField />
                   <PinInputField />
                   <PinInputField />
@@ -1867,5 +1867,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

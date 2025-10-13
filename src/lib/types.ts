@@ -286,5 +286,3 @@ export type Document = {
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
 };
-
-    

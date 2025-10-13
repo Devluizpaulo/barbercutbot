@@ -52,13 +52,9 @@ export function CalendarView({
   }, [appointments, selectedDate]);
 
   const getAppointmentDetails = (appointment: Appointment) => {
-    const service = services.find(s => appointment.serviceIds.includes(s.id));
     const customer = customers.find(c => c.id === appointment.customerId);
-    const barber = barbers.find(b => b.id === appointment.barberId);
     return {
-      service,
       customer,
-      barber,
     };
   };
 
@@ -102,10 +98,18 @@ export function CalendarView({
             ))}
             
             {!isLoading && dailyAppointments.map(appointment => {
-                const { service, customer, barber } = getAppointmentDetails(appointment);
-                if (!service || !customer || !barber) return null;
+                const { customer } = getAppointmentDetails(appointment);
+                if (!customer) return null;
 
-                const barberIndex = filteredBarbers.findIndex(b => b.id === appointment.barberId);
+                const appointmentBarberIds = new Set(appointment.items.map(item => item.barberId));
+                
+                const barberForColor = barbers.find(b => appointmentBarberIds.has(b.id));
+
+                // Find the first barber in the appointment that is currently being displayed
+                const displayedBarberId = filteredBarbers.find(b => appointmentBarberIds.has(b.id))?.id;
+                if (!displayedBarberId) return null;
+
+                const barberIndex = filteredBarbers.findIndex(b => b.id === displayedBarberId);
                 if (barberIndex === -1) return null;
 
                 const startTime = toDate(appointment.startTime);
@@ -113,9 +117,9 @@ export function CalendarView({
                 const startMinute = startTime.getMinutes();
 
                 const startRow = (startHour - 8) * 4 + (startMinute / 15) + 2;
-                const durationInIntervals = Math.ceil(service.duration / 15);
+                const durationInIntervals = Math.ceil((appointment.totalDuration || 60) / 15);
                 
-                const eventColor = barber.color || getEventColor(barber.firstName);
+                const eventColor = barberForColor?.color || getEventColor(barberForColor?.firstName || 'default');
 
                 return (
                     <li key={appointment.id} className="relative mt-px flex" style={{ gridRow: `${startRow} / span ${durationInIntervals}`, gridColumnStart: barberIndex + 1 }}>
@@ -125,22 +129,24 @@ export function CalendarView({
                                     className="absolute inset-1 flex cursor-pointer flex-col overflow-y-auto rounded-lg p-2 text-xs leading-5 text-white border-l-4"
                                     style={{ backgroundColor: `${eventColor}40`, borderColor: eventColor }} // 40 is for opacity
                                 >
-                                    <p className="font-semibold text-white/90">{service.name}</p>
-                                    <p className="text-white/80">{customer.firstName}</p>
-                                    <p className="text-white/80">{format(startTime, 'HH:mm')} - {format(addMinutes(startTime, service.duration), 'HH:mm')}</p>
+                                    <p className="font-semibold text-white/90">{customer.firstName}</p>
+                                    <p className="text-white/80">{appointment.items.map(i => services.find(s=>s.id === i.serviceId)?.name).join(', ')}</p>
+                                    <p className="text-white/80">{format(startTime, 'HH:mm')} - {format(addMinutes(startTime, appointment.totalDuration || 0), 'HH:mm')}</p>
                                 </div>
                             </PopoverTrigger>
                             <PopoverContent className="w-80">
                                 <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg">{service.name}</h3>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <User className="h-4 w-4" />
-                                        <span>{customer.firstName} {customer.lastName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Scissors className="h-4 w-4" />
-                                        <span>com {barber.firstName}</span>
-                                    </div>
+                                    <h3 className="font-semibold text-lg">{customer.firstName} {customer.lastName}</h3>
+                                     {appointment.items.map((item, index) => {
+                                        const service = services.find(s => s.id === item.serviceId);
+                                        const barber = barbers.find(b => b.id === item.barberId);
+                                        return (
+                                            <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Scissors className="h-4 w-4" />
+                                                <span>{service?.name || 'Serviço'} com {barber?.firstName || 'Barbeiro'}</span>
+                                            </div>
+                                        )
+                                     })}
                                     <Button className="w-full" size="sm" onClick={() => {
                                         // TODO: Implement edit functionality
                                     }}>Editar Agendamento</Button>
