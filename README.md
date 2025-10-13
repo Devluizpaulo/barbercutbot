@@ -7,7 +7,7 @@ Sistema completo de gerenciamento para barbearias com agendamentos, controle fin
 ### **1. Clone o Repositório**
 ```bash
 git clone [seu-repo-url]
-cd Barbearia-SaaS
+cd BarberCutBot-SaaS
 ```
 
 ### **2. Instale as Dependências**
@@ -16,7 +16,7 @@ npm install
 ```
 
 ### **3. Configure as Variáveis de Ambiente**
-Crie um arquivo `.env.local` na raiz do projeto com suas credenciais do Firebase e do Mercado Pago:
+Crie um arquivo `.env.local` na raiz do projeto com suas credenciais do Firebase e da Stripe:
 
 ```env
 # Firebase
@@ -27,9 +27,13 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seu-projeto.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=seu-app-id
 
-# Mercado Pago
-# Obtenha seu Access Token em: https://www.mercadopago.com.br/developers/panel/credentials
-MERCADO_PAGO_ACCESS_TOKEN=SEU_ACCESS_TOKEN_DE_PRODUCAO
+# Stripe
+# Obtenha suas chaves em: https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# URL Base para Webhooks
+NEXT_PUBLIC_BASE_URL=http://localhost:9002
 ```
 
 ### **4. Deploy das Regras do Firestore**
@@ -197,11 +201,11 @@ Todos os acessos e ações administrativas são registrados automaticamente:
 
 ## 🛠️ Tecnologias
 
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 15 (App Router)
 - **Linguagem:** TypeScript
 - **UI:** Shadcn/UI + Tailwind CSS
 - **Backend:** Firebase (Auth + Firestore)
-- **Pagamentos:** Mercado Pago
+- **Pagamentos:** Stripe
 - **Validação:** Zod + React Hook Form
 - **Gráficos:** Recharts
 - **Datas:** date-fns
