@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
-test('admin login flow', async ({ page }) => {
+test('admin login flow', async ({ page }: { page: Page }) => {
   // Navigate to the admin login page
   await page.goto('/cpanel/login');
 

@@ -1849,7 +1849,7 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
             <div className="flex justify-center p-4">
-              <PinInput onComplete={(value) => setCurrentPin(value)} length={4}>
+              <PinInput onComplete={(value) => setCurrentPin(value)}>
                   <PinInputField />
                   <PinInputField />
                   <PinInputField />

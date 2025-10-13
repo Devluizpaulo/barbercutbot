@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 // WARNING: In a real application, retrieve this securely (e.g., from a secret manager).
@@ -43,7 +43,7 @@ const createPaymentFlow = ai.defineFlow(
     inputSchema: CreatePaymentInputSchema,
     outputSchema: CreatePaymentOutputSchema,
   },
-  async (input) => {
+  async (input: CreatePaymentInput) => {
     
     // In a real scenario, you would have more complex logic here,
     // like validating the planId and fetching its details from your database.

@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { CallableRequest } from 'firebase-functions/v2/https';
+import type { UserRecord } from 'firebase-admin/auth';
+import type { CallableRequest } from 'firebase-functions/v2/https';
 
 admin.initializeApp();
 const db = getFirestore();
@@ -131,7 +132,7 @@ export const createAdminUser = functions.https.onCall(async (data: any, context:
  * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
  * Garante que cada usuário tenha um documento correspondente no Firestore.
  */
-exports.onUserCreate = functions.auth.user().onCreate(async (user) => {
+exports.onUserCreate = functions.auth.user().onCreate(async (user: UserRecord) => {
     const userDocRef = db.collection('users').doc(user.uid);
     
     const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
