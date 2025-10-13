@@ -40,8 +40,11 @@ service cloud.firestore {
     // =============================================
     match /users/{userId} {
       // Allows the /setup page to check if an admin exists, even without being authenticated.
-      // This is safe because it ONLY allows a query on the 'role' field.
-      allow list: if request.query.keys.hasOnly(['role']) && request.query.role == 'admin';
+      // This is safe because it ONLY allows a limited query filtering by role == 'admin'.
+      allow list: if request.query.limit <= 10 
+                  && request.query.where != null 
+                  && request.query.where[0][0] == 'role' 
+                  && request.query.where[0][2] == 'admin';
       
       // A user can read or write to their own document.
       allow read, write: if isOwner(userId);
