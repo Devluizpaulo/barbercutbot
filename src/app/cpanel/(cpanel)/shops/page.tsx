@@ -13,13 +13,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Store, MoreVertical, ExternalLink, CreditCard, LoaderCircle } from 'lucide-react';
+import { Search, Store, MoreVertical, ExternalLink, CreditCard, LoaderCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { createStripePortalSession } from '@/ai/flows/create-stripe-portal-session-flow';
+import { cancelStripeSubscription } from '@/ai/flows/cancel-stripe-subscription-flow';
 
 export default function CPanelShopsPage() {
   const { shops, isLoading } = useCPanel();
@@ -46,7 +48,7 @@ export default function CPanelShopsPage() {
   const firestore = useFirestore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
+  const [shopToAction, setShopToAction] = useState<{ shop: BarberShop; action: 'deactivate' | 'cancel_subscription' } | null>(null);
   const [isBillingLoading, setIsBillingLoading] = useState<string | null>(null);
 
   const filteredShops = shops?.filter(shop => 
@@ -89,19 +91,56 @@ export default function CPanelShopsPage() {
     }
   };
 
-  const handleDeactivateShop = (shop: BarberShop | null) => {
-    if (!shop) return;
+  const handleDeactivateShop = (shop: BarberShop) => {
     const shopRef = doc(firestore, 'barberShops', shop.id);
     setDocumentNonBlocking(shopRef, { status: 'inactive' }, { merge: true });
-
     toast({
         title: 'Loja Desativada',
         description: `O negócio "${shop.name}" foi desativado com sucesso.`,
-        variant: 'destructive',
     });
-    setShopToDeactivate(null);
+    setShopToAction(null);
+  };
+  
+  const handleCancelSubscription = async (shop: BarberShop) => {
+    if (!shop.subscription?.stripeSubscriptionId) {
+        toast({ variant: 'destructive', title: 'ID da Assinatura não encontrado' });
+        return;
+    }
+
+    try {
+        await cancelStripeSubscription({ stripeSubscriptionId: shop.subscription.stripeSubscriptionId });
+        
+        const shopRef = doc(firestore, 'barberShops', shop.id);
+        await setDocumentNonBlocking(shopRef, { 
+            status: 'inactive',
+            'subscription.status': 'canceled' 
+        }, { merge: true });
+
+        toast({
+            title: 'Assinatura Cancelada!',
+            description: `A assinatura da loja "${shop.name}" foi cancelada e a loja foi desativada.`,
+        });
+
+    } catch (error: any) {
+        console.error("Error canceling subscription:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao Cancelar',
+            description: 'Não foi possível cancelar a assinatura na Stripe. Verifique o painel da Stripe.',
+        });
+    } finally {
+        setShopToAction(null);
+    }
   };
 
+  const handleActionConfirm = () => {
+    if (!shopToAction) return;
+    if (shopToAction.action === 'deactivate') {
+        handleDeactivateShop(shopToAction.shop);
+    } else if (shopToAction.action === 'cancel_subscription') {
+        handleCancelSubscription(shopToAction.shop);
+    }
+  };
 
   return (
     <>
@@ -164,7 +203,8 @@ export default function CPanelShopsPage() {
                         variant={'secondary'}
                         className={cn(
                             shop.subscription?.status === 'active' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                            shop.subscription?.status === 'past_due' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                            shop.subscription?.status === 'past_due' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+                            shop.subscription?.status === 'canceled' && 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
                         )}
                     >
                         {shop.subscription?.status || 'N/A'}
@@ -188,11 +228,19 @@ export default function CPanelShopsPage() {
                                 {isBillingLoading === shop.id ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/> : <CreditCard className="mr-2 h-4 w-4" />}
                                 Gerenciar Fatura
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                className="text-red-500"
-                                onClick={() => setShopToDeactivate(shop)}
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setShopToAction({ shop, action: 'cancel_subscription'})}
                             >
-                                Desativar
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Cancelar Assinatura
+                            </DropdownMenuItem>
+                             <DropdownMenuItem
+                                onClick={() => setShopToAction({ shop, action: 'deactivate'})}
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                Desativar Loja
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -210,24 +258,29 @@ export default function CPanelShopsPage() {
       </div>
 
        <AlertDialog
-          open={!!shopToDeactivate}
-          onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
+          open={!!shopToAction}
+          onOpenChange={(isOpen) => !isOpen && setShopToAction(null)}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação irá desativar o negócio "{shopToDeactivate?.name}".
-                Isso pode ser revertido, mas bloqueará o acesso do proprietário.
-              </AlertDialogDescription>
+              {shopToAction?.action === 'deactivate' ? (
+                <AlertDialogDescription>
+                    Esta ação irá desativar a loja "{shopToAction.shop.name}". O proprietário não poderá mais acessar o dashboard, mas a assinatura na Stripe **não** será cancelada.
+                </AlertDialogDescription>
+              ) : (
+                 <AlertDialogDescription>
+                    Esta ação irá **cancelar permanentemente** a assinatura da loja "{shopToAction?.shop.name}" na Stripe e desativar o acesso. A ação não pode ser desfeita.
+                </AlertDialogDescription>
+              )}
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel>Voltar</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => handleDeactivateShop(shopToDeactivate)}
+                onClick={handleActionConfirm}
                 className="bg-destructive hover:bg-destructive/90"
               >
-                Sim, desativar
+                Sim, confirmar
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -235,3 +288,4 @@ export default function CPanelShopsPage() {
     </>
   );
 }
+
