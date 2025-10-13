@@ -2,69 +2,43 @@
 
 import { Timestamp } from 'firebase/firestore';
 
-export type WorkingHour = {
-  day: string;
-  open: string;
-  close: string;
-  enabled: boolean;
+// =================================================================
+// USER & AUTHENTICATION TYPES
+// =================================================================
+
+export type UserRole = 'admin' | 'owner' | 'staff';
+
+export type UserProfile = {
+  id: string; // This is the Firebase UID
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole; // Global role in the system
+  createdAt: Timestamp;
 };
 
-export type Holiday = {
-    date: Timestamp | Date | string;
-    description: string;
-    isClosed: boolean;
-    openingTime?: string;
-    closingTime?: string;
-}
-
-export type PaymentMethod = {
-  method: 'money' | 'pix' | 'debit' | 'credit';
-  enabled: boolean;
-  rate?: number; // Taxa em porcentagem
+// Represents a staff member's link to a specific shop.
+// Stored in /barberShops/{shopId}/team/{userId}
+export type TeamMember = {
+  id: string; // Same as UserProfile ID (Firebase UID)
+  barberShopId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  roleId: string; // ID of a role defined in BarberShop.roles
+  joinedAt: Timestamp;
 };
 
-export type CashierOperator = {
-  id: string;
-  name: string;
-  role: 'caixa' | 'gerente';
-  pin?: string; // 4-digit PIN stored securely
-};
 
-export type ChecklistItem = {
-    id: string;
-    label: string;
-    required: boolean;
-};
-
-export type CashierSettings = {
-  requirePassword: boolean;
-  openingChecklist: ChecklistItem[];
-  closingChecklist: ChecklistItem[];
-  operators?: CashierOperator[];
-};
-
-export type RolePermissions = {
-    viewDashboard: boolean;
-    manageAppointments: boolean;
-    manageClients: boolean;
-    manageTeam: boolean;
-    manageServices: boolean;
-    viewFinancial: boolean;
-    manageSettings: boolean;
-}
-
-export type Role = {
-  id: string;
-  name: string;
-  isBuiltIn: boolean;
-  permissions: RolePermissions;
-};
-
+// =================================================================
+// SHOP-SPECIFIC SUB-COLLECTION TYPES
+// =================================================================
 
 export type BarberShop = {
   id: string;
   name: string;
-  ownerId: string;
+  ownerId: string; // The UserProfile ID of the owner
   logo?: string;
   address?: string;
   number?: string;
@@ -85,7 +59,7 @@ export type BarberShop = {
   holidays?: Holiday[];
   paymentSettings?: PaymentMethod[];
   cashierSettings?: CashierSettings;
-  roles?: Role[];
+  roles?: Role[]; // Custom roles for this specific shop
   createdAt?: Timestamp;
   subscription?: {
     plan?: 'free' | 'lite' | 'business' | 'pro';
@@ -179,18 +153,6 @@ export type Barber = {
   createdAt: Timestamp;
 };
 
-export type TeamMember = {
-  id: string;
-  barberShopId: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  role: string; // This will be the ID of a role in BarberShop.roles
-  userId?: string; // Link to the main User document if they have a login
-  createdAt: Timestamp;
-};
-
 export type SaleItem = {
     id: string;
     name: string;
@@ -259,15 +221,26 @@ export type Supplier = {
   createdAt: Timestamp;
 };
 
+// =================================================================
+// SHARED & PLATFORM-WIDE TYPES
+// =================================================================
 
-export type UserProfile = {
-  id: string; // This is the Firebase UID
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: 'owner' | 'admin';
-  createdAt: Timestamp;
-};
+export type AdminLog = {
+    id?: string;
+    type: 'login_success' | 'login_failed' | 'logout' | 'action' | 'security_alert';
+    userId?: string;
+    email: string;
+    action?: string;
+    details?: Record<string, any>;
+    userAgent?: string;
+    timestamp: Timestamp;
+    metadata?: {
+        errorCode?: string;
+        errorMessage?: string;
+        reason?: string;
+    };
+}
+
 
 export type Ticket = {
     id: string;
@@ -287,4 +260,67 @@ export type Document = {
   status: 'Rascunho' | 'Publicado';
   createdAt: Timestamp;
   lastUpdatedAt: Timestamp;
+};
+
+
+// =================================================================
+// CONFIGURATION SUB-TYPES
+// =================================================================
+
+export type WorkingHour = {
+  day: string;
+  open: string;
+  close: string;
+  enabled: boolean;
+};
+
+export type Holiday = {
+    date: Timestamp | Date | string;
+    description: string;
+    isClosed: boolean;
+    openingTime?: string;
+    closingTime?: string;
+}
+
+export type PaymentMethod = {
+  method: 'money' | 'pix' | 'debit' | 'credit';
+  enabled: boolean;
+  rate?: number; // Taxa em porcentagem
+};
+
+export type CashierOperator = {
+  id: string;
+  name: string;
+  role: 'caixa' | 'gerente';
+  pin?: string; // 4-digit PIN stored securely
+};
+
+export type ChecklistItem = {
+    id: string;
+    label: string;
+    required: boolean;
+};
+
+export type CashierSettings = {
+  requirePassword: boolean;
+  openingChecklist: ChecklistItem[];
+  closingChecklist: ChecklistItem[];
+  operators?: CashierOperator[];
+};
+
+export type RolePermissions = {
+    viewDashboard: boolean;
+    manageAppointments: boolean;
+    manageClients: boolean;
+    manageTeam: boolean;
+    manageServices: boolean;
+    viewFinancial: boolean;
+    manageSettings: boolean;
+}
+
+export type Role = {
+  id: string; // e.g., 'manager', 'barber'
+  name: string; // e.g., 'Gerente', 'Barbeiro'
+  isBuiltIn: boolean; // Cannot be deleted if true
+  permissions: RolePermissions;
 };

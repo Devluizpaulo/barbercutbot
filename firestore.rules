@@ -1,25 +1,32 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a multi-tenant security model for a barber shop SaaS application.
- * All data is namespaced under /barberShops/{barberShopId} or /users/{userId}, ensuring data isolation.
+ * @fileoverview Firestore Security Rules for a multi-tenant Barber Shop SaaS application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user profiles and shop-ownership for barber shop data.
+ * Data is isolated at the barber shop level, ensuring that users can only access data related to their own barber shop.
+ * Admins can be granted god-mode access using custom claims.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles; access is restricted to the owning user.
- * - /barberShops/{barberShopId}: Stores barber shop data; access is restricted to the shop owner.
- * - /barberShops/{barberShopId}/[...]: Subcollections inherit ownership from the parent barberShop document.
+ * - /users/{userId}: Stores user profiles. Only the authenticated user can access their own profile.
+ * - /barberShops/{barberShopId}: Stores barber shop data. Only the owner of the barber shop can access it.
+ * - /barberShops/{barberShopId}/{collection}/{documentId}: Stores data related to a specific barber shop (e.g., customers, barbers, appointments). Access is restricted to the owner of the barber shop.
  *
  * Key Security Decisions:
- * - Strict Ownership: Most data is owned either by a user or a barber shop.
- * - No User Listing: Listing all users is disallowed for privacy.
- * - Denormalization: The barberShopId is denormalized in subcollections to avoid costly `get()` calls.
- * - Admin Override: Users with the 'admin' custom claim have full access (use with caution!).
+ * - User listing is disallowed for privacy.
+ * - All write operations on barber shop-related data require the user to be the owner of the barber shop.
+ * - `list` operations for subcollections under a shop are restricted to shop owners.
+ * - Custom claims are used to grant admin privileges.
+ *
+ * Denormalization for Authorization:
+ *  - All subcollections of `barberShops/{barberShopId}` include the `barberShopId` in the document path,
+ *    removing the need for extra `get()` calls in security rules to verify shop ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by an authenticated user.
+     * @description Checks if the request is authenticated.
      */
     function isSignedIn() {
       return request.auth != null;
@@ -29,224 +36,213 @@ service cloud.firestore {
      * @description Checks if the authenticated user's UID matches the provided userId.
      */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the authenticated user owns the barber shop.
+     * @description Checks if the authenticated user is the owner of the barber shop.
      */
     function isBarberShopOwner(barberShopId) {
-      return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+      return get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
     }
 
     /**
-     * @description Combines ownership check with existence check for update/delete operations.
+     * @description Checks if the authenticated user is an existing owner of the document.
+     * @principle Ensures that only existing owners can update or delete the document.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Checks if the authenticated user is an admin.
-     * @note Checks the 'role' field in the user's Firestore document.
+     * @description Checks if the user has admin privileges via custom claims.
      */
     function isAdmin() {
-        return isSignedIn() && 
-               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-   /**
-     * @description Rules for the /users/{userId} collection.
-     * @path /users/{userId}
-     * @allow (create) - Authenticated user creates their own profile.
-     * @allow (get, update, delete) - Authenticated user accesses their own profile.
-     * @deny (create) - User attempts to create a profile with an ID that doesn't match their UID.
-     * @deny (get, update, delete) - User attempts to access another user's profile.
-     * @principle Enforces user-ownership for profile data.
-     */
-    match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      // Permite list queries limitadas (máximo 10) para verificação de admin na página setup
-      // Isso é seguro porque a query só retorna se houver admin, não expõe dados sensíveis
-      allow list: if request.query.limit <= 10 || isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id || isAdmin();
-      allow delete: if isExistingOwner(userId) || isAdmin();
+        return request.auth.token.admin == true;
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId} collection.
+     * @description Rule for /users/{userId} documents.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user123' can create their own profile.
+     * @deny (create) User with UID 'user123' cannot create a profile for another user.
+     * @allow (get, update, delete) User with UID 'user123' can get, update, and delete their own profile.
+     * @deny (get, update, delete) User with UID 'user123' cannot get, update, or delete another user's profile.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rule for /barberShops/{barberShopId} documents.
      * @path /barberShops/{barberShopId}
-     * @allow (create) - Authenticated user creates a new barber shop, asserting ownership via ownerId.
-     * @allow (get, update, delete) - Owner of the barber shop can access and modify it.
-     * @deny (create, update, delete) - Non-owner attempts to modify a barber shop.
-     * @principle Enforces barber shop ownership.
+     * @allow (create) User with UID 'user123' can create a barber shop with ownerId 'user123'.
+     * @deny (create) User with UID 'user123' cannot create a barber shop with ownerId 'user456'.
+     * @allow (get, update, delete) User with UID 'user123' can get, update, and delete a barber shop they own.
+     * @deny (get, update, delete) User with UID 'user123' cannot get, update, or delete a barber shop owned by another user.
+     * @principle Enforces document ownership for writes.
      */
     match /barberShops/{barberShopId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow list: if isAdmin();
+      allow list: if false;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isBarberShopOwner(barberShopId) && resource != null || isAdmin();
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/products/{productId} collection.
+     * @description Rule for /barberShops/{barberShopId}/products/{productId} documents.
      * @path /barberShops/{barberShopId}/products/{productId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage products.
-     * @allow (get, list) - Any logged in user can view product details.
-     * @deny (create, update, delete) - Non-owners cannot modify products.
-     * @principle Inherits barber shop ownership for product management.
+     * @allow (create) Owner of barberShop 'shop123' can create a product.
+     * @deny (create) User not the owner of 'shop123' cannot create a product.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a product.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a product.
+     * @principle Enforces shop ownership for product management.
      */
     match /barberShops/{barberShopId}/products/{productId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/customers/{customerId} collection.
+     * @description Rule for /barberShops/{barberShopId}/customers/{customerId} documents.
      * @path /barberShops/{barberShopId}/customers/{customerId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage customers.
-     * @allow (get, list) - Any logged in user can view customer details.
-     * @deny (create, update, delete) - Non-owners cannot modify customers.
-     * @principle Inherits barber shop ownership for customer management.
+     * @allow (create) Owner of barberShop 'shop123' can create a customer.
+     * @deny (create) User not the owner of 'shop123' cannot create a customer.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a customer.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a customer.
+     * @principle Enforces shop ownership for customer management.
      */
     match /barberShops/{barberShopId}/customers/{customerId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/barbers/{barberId} collection.
+     * @description Rule for /barberShops/{barberShopId}/barbers/{barberId} documents.
      * @path /barberShops/{barberShopId}/barbers/{barberId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage barbers.
-     * @allow (get, list) - Any logged in user can view barber details.
-     * @deny (create, update, delete) - Non-owners cannot modify barbers.
-     * @principle Inherits barber shop ownership for barber management.
+     * @allow (create) Owner of barberShop 'shop123' can create a barber.
+     * @deny (create) User not the owner of 'shop123' cannot create a barber.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a barber.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a barber.
+     * @principle Enforces shop ownership for barber management.
      */
     match /barberShops/{barberShopId}/barbers/{barberId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/appointments/{appointmentId} collection.
+     * @description Rule for /barberShops/{barberShopId}/appointments/{appointmentId} documents.
      * @path /barberShops/{barberShopId}/appointments/{appointmentId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage appointments.
-     * @allow (get, list) - Any logged in user can view appointment details.
-     * @deny (create, update, delete) - Non-owners cannot modify appointments.
-     * @principle Inherits barber shop ownership for appointment management.
+     * @allow (create) Owner of barberShop 'shop123' can create an appointment.
+     * @deny (create) User not the owner of 'shop123' cannot create an appointment.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete an appointment.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete an appointment.
+     * @principle Enforces shop ownership for appointment management.
      */
     match /barberShops/{barberShopId}/appointments/{appointmentId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/services/{serviceId} collection.
+     * @description Rule for /barberShops/{barberShopId}/services/{serviceId} documents.
      * @path /barberShops/{barberShopId}/services/{serviceId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage services.
-     * @allow (get, list) - Any logged in user can view service details.
-     * @deny (create, update, delete) - Non-owners cannot modify services.
-     * @principle Inherits barber shop ownership for service management.
+     * @allow (create) Owner of barberShop 'shop123' can create a service.
+     * @deny (create) User not the owner of 'shop123' cannot create a service.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a service.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a service.
+     * @principle Enforces shop ownership for service management.
      */
     match /barberShops/{barberShopId}/services/{serviceId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/suppliers/{supplierId} collection.
+     * @description Rule for /barberShops/{barberShopId}/suppliers/{supplierId} documents.
      * @path /barberShops/{barberShopId}/suppliers/{supplierId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage suppliers.
-     * @allow (get, list) - Any logged in user can view supplier details.
-     * @deny (create, update, delete) - Non-owners cannot modify suppliers.
-     * @principle Inherits barber shop ownership for supplier management.
+     * @allow (create) Owner of barberShop 'shop123' can create a supplier.
+     * @deny (create) User not the owner of 'shop123' cannot create a supplier.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a supplier.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a supplier.
      */
     match /barberShops/{barberShopId}/suppliers/{supplierId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /barberShops/{barberShopId}/financialRecords/{financialRecordId} collection.
+     * @description Rule for /barberShops/{barberShopId}/financialRecords/{financialRecordId} documents.
      * @path /barberShops/{barberShopId}/financialRecords/{financialRecordId}
-     * @allow (create, update, delete) - Only the barber shop owner can manage financial records.
-     * @allow (get, list) - Any logged in user can view financial record details.
-     * @deny (create, update, delete) - Non-owners cannot modify financial records.
-     * @principle Inherits barber shop ownership for financial record management.
+     * @allow (create) Owner of barberShop 'shop123' can create a financial record.
+     * @deny (create) User not the owner of 'shop123' cannot create a financial record.
+     * @allow (get, update, delete) Owner of barberShop 'shop123' can get, update, and delete a financial record.
+     * @deny (get, update, delete) User not the owner of 'shop123' cannot get, update, or delete a financial record.
+     * @principle Enforces shop ownership for financial record management.
      */
     match /barberShops/{barberShopId}/financialRecords/{financialRecordId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
       allow list: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow create: if isBarberShopOwner(barberShopId);
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow create: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow update: if isBarberShopOwner(barberShopId) || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
     }
 
     /**
-     * @description Rules for the /tickets/{ticketId} collection.
+     * @description Rule for /tickets/{ticketId} documents.
+     *  Since the ticket collection is global, only admins can manage them.
      * @path /tickets/{ticketId}
-     * @allow (get, list) - Admin can view all tickets. Shop owner can view their own shop tickets.
-     * @allow (create) - Any signed-in user can create a ticket, subject to data validation.
-     * @allow (update, delete) - Only admin can update/delete tickets.
-     * @deny (create) - Deny if the shopId or userId doesn't match the request.
-     * @principle Allows users to create tickets, but restricts modification to admins and shop access to the shop owner.
+     * @allow (get, list, create, update, delete) Admins can manage any ticket.
+     * @deny (get, list, create, update, delete) Non-admins cannot manage tickets.
+     * @principle Restricts ticket access to administrators only.
      */
     match /tickets/{ticketId} {
       allow get: if isAdmin();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.shopId == get(/databases/$(database)/documents/barberShops/$(request.resource.data.shopId)).data.id && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Rules for the /documents/{documentId} collection.
+     * @description Rule for /documents/{documentId} documents.
+     *  Since the document collection is global, only admins can manage them.
      * @path /documents/{documentId}
-     * @allow (get, list) - Publicly readable documents.
-     * @allow (create, update, delete) - Only admin can create, update, or delete documents.
-     * @principle Allows public read access to documents, but restricts modification to admins.
+     * @allow (get, list, create, update, delete) Admins can manage any document.
+     * @deny (get, list, create, update, delete) Non-admins cannot manage documents.
+     * @principle Restricts document access to administrators only.
      */
     match /documents/{documentId} {
-      allow get: if true;
-      allow list: if true;
+      allow get: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
-    }
-
-    /**
-     * @description Rules for the /adminLogs/{logId} collection.
-     * @path /adminLogs/{logId}
-     * @allow (create) - Any authenticated user can create logs (needed for login attempts).
-     * @allow (read) - Only admins can read logs.
-     * @deny (update, delete) - Logs are immutable for audit purposes.
-     * @principle Admin logs are write-once, read-only for admins.
-     */
-    match /adminLogs/{logId} {
-      allow create: if isSignedIn();
-      allow read: if isAdmin();
-      allow update, delete: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
