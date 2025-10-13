@@ -1,4 +1,4 @@
-# 💈 FlowCuts Pro - SaaS de Gerenciamento de Barbearias
+# 💈 BarberCut Bot - SaaS de Gerenciamento de Barbearias
 
 Sistema completo de gerenciamento para barbearias com agendamentos, controle financeiro, gestão de clientes e muito mais.
 
@@ -56,7 +56,7 @@ Para ter acesso total ao sistema, o primeiro passo é criar um usuário administ
 2.  No menu lateral, vá para **Build > Authentication**.
 3.  Clique na aba **Users** e depois em **Add user**.
 4.  Preencha:
-    - **Email**: `admin@flowcutspro.com` (ou um email de sua preferência).
+    - **Email**: `admin@barbercutbot.com` (ou um email de sua preferência).
     - **Password**: Crie uma senha segura (ex: `SenhaAdmin123!`).
 5.  Clique em **Add user**.
 6.  Na lista de usuários, encontre o que você acabou de criar e **copie o UID** (User ID) dele. Você precisará disso no próximo passo.
@@ -71,7 +71,7 @@ Para ter acesso total ao sistema, o primeiro passo é criar um usuário administ
     - `id` (string): **Cole o UID novamente aqui.**
     - `firstName` (string): `Admin`
     - `lastName` (string): `Sistema`
-    - `email` (string): `admin@flowcutspro.com` (o mesmo email que você usou)
+    - `email` (string): `admin@barbercutbot.com` (o mesmo email que você usou)
     - `role` (string): `admin`  **<-- ⚠️ ESTE É O PASSO MAIS IMPORTANTE!**
     - `createdAt` (timestamp): Escolha a data e hora atuais.
 6.  Clique em **Save**.

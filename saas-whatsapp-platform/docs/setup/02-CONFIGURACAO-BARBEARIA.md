@@ -19,7 +19,7 @@
 
 ## ✅ Passo 2: Criar no Firestore (5 min)
 
-**Acessar:** https://console.firebase.google.com/project/iaflowcutspro/firestore
+**Acessar:** https://console.firebase.google.com/project/barbercutbot/firestore
 
 **Collection:** `barberShops`  
 **Document:** `barbershop_001`

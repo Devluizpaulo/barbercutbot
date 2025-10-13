@@ -17,7 +17,7 @@ Login: admin / n8n_admin_2024
 
 ### Firebase:
 ```
-https://console.firebase.google.com/project/flowcutspro
+https://console.firebase.google.com/project/barbercutbot
 ```
 
 ---
@@ -29,7 +29,7 @@ https://cloud.google.com/sdk/docs/install
 
 ### Conectar:
 ```bash
-gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=flowcutspro
+gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=barbercutbot
 ```
 
 ---

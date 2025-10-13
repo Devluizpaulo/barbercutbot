@@ -21,8 +21,8 @@ Seu servidor já está configurado e funcionando:
 |---------|-----|-------|
 | Evolution Manager | http://34.182.111.255:8080/manager | - |
 | N8N Automation | http://34.182.111.255:5678 | admin / Admin2024Free! |
-| Firebase Console | https://console.firebase.google.com/project/iaflowcutspro | Google |
-| GCP Console | https://console.cloud.google.com/compute/instances?project=iaflowcutspro | Google |
+| Firebase Console | https://console.firebase.google.com/project/barbercutbot | Google |
+| GCP Console | https://console.cloud.google.com/compute/instances?project=barbercutbot | Google |
 
 ---
 
@@ -30,7 +30,7 @@ Seu servidor já está configurado e funcionando:
 
 ### **Conectar na VM:**
 ```bash
-gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=iaflowcutspro
+gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=barbercutbot
 ```
 
 ### **Dentro da VM:**

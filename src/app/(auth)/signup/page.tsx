@@ -76,7 +76,7 @@ export default function SignupPage() {
         return;
     }
     
-    if (email.toLowerCase() === 'admin@flowcutspro.com') {
+    if (email.toLowerCase() === 'admin@barbercutbot.com') {
       toast({
           variant: 'destructive',
           title: 'Cadastro não permitido',
@@ -144,7 +144,7 @@ export default function SignupPage() {
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
       <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+          <Link href="/" aria-label="Página Inicial da BarberCut Bot">
             <Logo />
           </Link>
           <div className="hidden md:flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function SignupPage() {
               <SheetContent side="right">
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b">
-                    <Link href="/" aria-label="Página Inicial da FlowCuts Pro">
+                    <Link href="/" aria-label="Página Inicial da BarberCut Bot">
                       <Logo />
                     </Link>
                   </div>

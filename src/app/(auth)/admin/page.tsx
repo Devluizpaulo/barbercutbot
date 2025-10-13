@@ -156,7 +156,7 @@ export default function AdminLoginPage() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <header className="fixed top-0 left-0 right-0 bg-slate-900/80 backdrop-blur-sm z-20 border-b border-slate-700">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial da IA FlowCuts Pro">
+          <Link href="/" aria-label="Página Inicial da BarberCut Bot">
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function AdminLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@iaflowcutspro.com"
+                    placeholder="admin@barbercutbot.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -257,7 +257,7 @@ export default function AdminLoginPage() {
             Área Segura • Conexão Criptografada
           </p>
           <p className="text-xs text-slate-500 text-center">
-            © {new Date().getFullYear()} IA FlowCuts Pro. Sistema de Administração.
+            © {new Date().getFullYear()} BarberCut Bot. Sistema de Administração.
           </p>
         </div>
       </footer>
