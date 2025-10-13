@@ -5,45 +5,50 @@ export interface Plan {
     description: string;
     price: number;
     features: string[];
+    isFeatured?: boolean;
 }
 
 export const PLANS: Plan[] = [
     {
         id: 'lite',
-        name: 'Plano Lite',
-        description: 'Ideal para negócios individuais e equipes pequenas começando a se organizar.',
-        price: 39.90,
+        name: 'Plano Essencial',
+        description: 'Perfeito para organizar a agenda, clientes e o caixa do dia a dia.',
+        price: 89.90,
         features: [
-            'Até 3 profissionais',
             'Agenda Online Completa',
-            'Cadastro de Clientes',
-            'Controle de Caixa Básico'
+            'Cadastro de Clientes (CRM)',
+            'Controle de Caixa Simplificado',
+            'Perfil de Divulgação Online',
+            'Suporte via Ticket',
+            'Assistente IA (Opcional)',
         ]
     },
     {
         id: 'business',
         name: 'Plano Business',
-        description: 'Para negócios em crescimento que buscam mais controle e automação.',
-        price: 79.90,
+        description: 'Gestão completa com relatórios financeiros e controle de estoque.',
+        price: 139.90,
+        isFeatured: true,
         features: [
-            'Até 10 profissionais',
-            'Tudo do Plano Lite',
-            'Controle Financeiro Completo',
+            'Tudo do Plano Essencial',
+            'Controle Financeiro Avançado',
+            'Gestão de Produtos e Estoque',
             'Relatórios de Desempenho',
-            'Gestão de Produtos',
+            'Gestão de Equipe e Comissões',
+            'Assistente IA (Opcional)',
         ]
     },
     {
         id: 'pro',
         name: 'Plano Pro',
-        description: 'A solução definitiva para escalar seu negócio com o máximo de automação.',
-        price: 129.90,
+        description: 'A solução definitiva com automação total e funcionalidades exclusivas.',
+        price: 189.90,
         features: [
-            'Profissionais Ilimitados',
             'Tudo do Plano Business',
-            'Assistente IA no WhatsApp',
-            'Lembretes Automáticos',
-            'Marketing e Fidelização (em breve)',
+            'Assistente IA no WhatsApp Incluído',
+            'Lembretes de Agendamento Automáticos',
+            'Campanhas de Marketing (em breve)',
+            'Suporte Prioritário',
         ]
     }
 ];

@@ -388,8 +388,7 @@ export default function SettingsPage() {
       }
 
       // Holidays Form
-      const currentHolidays = holidaysForm.getValues('holidays');
-      if (shop.holidays && currentHolidays.length === 0) {
+      if (shop.holidays) {
         const fetchAndSetHolidays = async () => {
           try {
             const year = new Date().getFullYear();
@@ -425,8 +424,6 @@ export default function SettingsPage() {
           }
         };
         fetchAndSetHolidays();
-      } else if(shop.holidays) {
-         replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
       }
       
       // Payment Settings Form
@@ -1852,5 +1849,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
