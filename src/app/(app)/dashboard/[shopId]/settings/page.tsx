@@ -398,9 +398,10 @@ export default function SettingsPage() {
         cashierForm.reset(shop.cashierSettings as any);
       }
       
-      if (shop.roles) {
+       if (shop.roles) {
         permissionsForm.reset({ roles: shop.roles });
       } else {
+        // Define default roles if none exist
         permissionsForm.reset({
           roles: [
             { id: 'manager', name: 'Gerente', isBuiltIn: true, permissions: { viewDashboard: true, manageAppointments: true, manageClients: true, manageTeam: true, manageServices: true, viewFinancial: true, manageSettings: true }},
@@ -627,7 +628,8 @@ export default function SettingsPage() {
     }
   };
 
-  const currentPlan = PLANS.find(p => p.id === (shop?.subscription?.plan || 'lite')) || PLANS[0];
+  const currentPlanId = shop?.subscription?.plan || 'lite';
+  const currentPlan = PLANS.find(p => p.id === currentPlanId) || PLANS[0];
   
   const nextBillingDate = shop?.subscription?.currentPeriodEnd
     ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy', {
@@ -717,7 +719,7 @@ export default function SettingsPage() {
                            <Button 
                               className="w-full"
                               onClick={() => handleCheckout(plan)}
-                              disabled={isBillingLoading || !plan.priceId || plan.priceId.startsWith('price_')}
+                              disabled={isBillingLoading || !plan.priceId || !plan.priceId.startsWith('price_')}
                            >
                               {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                               {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}

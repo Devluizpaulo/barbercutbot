@@ -88,9 +88,11 @@ export type BarberShop = {
   roles?: Role[];
   createdAt?: Timestamp;
   subscription?: {
-    plan: 'free' | 'lite' | 'business' | 'pro';
-    status: 'active' | 'trialing' | 'past_due' | 'canceled';
-    mercadoPagoId?: string;
+    plan?: 'free' | 'lite' | 'business' | 'pro';
+    status?: 'active' | 'trialing' | 'past_due' | 'canceled';
+    stripeSubscriptionId?: string;
+    stripeCustomerId?: string;
+    stripePriceId?: string;
     currentPeriodEnd?: Timestamp;
   },
   whatsapp?: {
