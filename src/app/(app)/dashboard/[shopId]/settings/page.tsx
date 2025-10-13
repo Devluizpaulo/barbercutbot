@@ -60,7 +60,6 @@ import type {
   WorkingHour,
   CashierSettings,
   CashierOperator,
-  RolePermissions,
   Role,
 } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -76,8 +75,7 @@ import {
 import { useEffect, useState } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -89,12 +87,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -153,17 +145,6 @@ const workingHoursFormSchema = z.object({
   ),
 });
 
-const holidaysFormSchema = z.object({
-  holidays: z.array(
-    z.object({
-      date: z.date(),
-      description: z.string().min(1, 'A descrição é obrigatória.'),
-      isClosed: z.boolean(),
-      openingTime: z.string().optional(),
-      closingTime: z.string().optional(),
-    })
-  ),
-});
 
 const paymentSettingsFormSchema = z.object({
   paymentMethods: z.array(
@@ -189,7 +170,8 @@ const cashierFormSchema = z.object({
     .optional(),
 });
 
-const roleSchema = z.object({
+const permissionsFormSchema = z.object({
+  roles: z.array(z.object({
     id: z.string(),
     name: z.string().min(2, "O nome do perfil é obrigatório."),
     isBuiltIn: z.boolean().default(false),
@@ -202,16 +184,12 @@ const roleSchema = z.object({
         viewFinancial: z.boolean().default(true),
         manageSettings: z.boolean().default(true),
     })
-});
-
-const permissionsFormSchema = z.object({
-  roles: z.array(roleSchema),
+  })),
 });
 
 
 export default function SettingsPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const shopId = params.shopId as string;
   const { user } = useUser();
@@ -273,13 +251,6 @@ export default function SettingsPage() {
     },
   });
 
-  const holidaysForm = useForm<z.infer<typeof holidaysFormSchema>>({
-    resolver: zodResolver(holidaysFormSchema),
-    defaultValues: {
-      holidays: [],
-    },
-  });
-
   const paymentSettingsForm = useForm<z.infer<typeof paymentSettingsFormSchema>>(
     {
       resolver: zodResolver(paymentSettingsFormSchema),
@@ -294,21 +265,6 @@ export default function SettingsPage() {
     }
   );
 
-  const cashierForm = useForm<z.infer<typeof cashierFormSchema>>({
-    resolver: zodResolver(cashierFormSchema),
-    defaultValues: {
-      requirePassword: false,
-      operators: [],
-    },
-  });
-
-  const permissionsForm = useForm<z.infer<typeof permissionsFormSchema>>({
-    resolver: zodResolver(permissionsFormSchema),
-    defaultValues: {
-      roles: [],
-    },
-  });
-
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
       return timestamp.toDate();
@@ -321,36 +277,11 @@ export default function SettingsPage() {
     name: 'hours',
   });
 
-  const {
-    fields: holidayFields,
-    append: appendHoliday,
-    remove: removeHoliday,
-    replace: replaceHolidays,
-  } = useFieldArray({
-    control: holidaysForm.control,
-    name: 'holidays',
-  });
-
   const { fields: paymentMethodFields, replace: replacePaymentMethods } =
     useFieldArray({
       control: paymentSettingsForm.control,
       name: 'paymentMethods',
     });
-
-  const {
-    fields: operatorFields,
-    append: appendOperator,
-    remove: removeOperator,
-    update: updateOperator,
-  } = useFieldArray({
-    control: cashierForm.control,
-    name: 'operators',
-  });
-
-  const { fields: roleFields, append: appendRole, remove: removeRole } = useFieldArray({
-    control: permissionsForm.control,
-    name: "roles"
-  });
 
 
   useEffect(() => {
@@ -385,57 +316,12 @@ export default function SettingsPage() {
         replace(shop.workingHours);
       }
       
-      if (shop.holidays) {
-         replaceHolidays(shop.holidays.map((h: Holiday) => ({ ...h, date: toDate(h.date) })));
-      }
-      
       if (shop.paymentSettings) {
         replacePaymentMethods(shop.paymentSettings);
       }
-      
-      if (shop.cashierSettings) {
-        cashierForm.reset(shop.cashierSettings as any);
-      }
-      
-       if (shop.roles) {
-        permissionsForm.reset({ roles: shop.roles });
-      } else {
-        // Define default roles if none exist
-        permissionsForm.reset({
-          roles: [
-            { id: 'manager', name: 'Gerente', isBuiltIn: true, permissions: { viewDashboard: true, manageAppointments: true, manageClients: true, manageTeam: true, manageServices: true, viewFinancial: true, manageSettings: true }},
-            { id: 'barber', name: 'Barbeiro', isBuiltIn: true, permissions: { viewDashboard: false, manageAppointments: true, manageClients: false, manageTeam: false, manageServices: false, viewFinancial: false, manageSettings: false }},
-            { id: 'cashier', name: 'Caixa', isBuiltIn: true, permissions: { viewDashboard: false, manageAppointments: false, manageClients: false, manageTeam: false, manageServices: false, viewFinancial: true, manageSettings: false }},
-          ]
-        });
-      }
     }
-  }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, cashierForm, permissionsForm, replace, replaceHolidays, replacePaymentMethods, shopId]);
+  }, [shop, profileForm, workingHoursForm, paymentSettingsForm, replace, replacePaymentMethods, shopId]);
   
-  
-  const handleAddNewRole = () => {
-    if (newRoleName.trim() === "") {
-        toast({ variant: "destructive", title: "Nome do perfil inválido." });
-        return;
-    }
-    appendRole({
-        id: newRoleName.toLowerCase().replace(/\s+/g, '-'),
-        name: newRoleName,
-        isBuiltIn: false,
-        permissions: {
-            viewDashboard: false,
-            manageAppointments: false,
-            manageClients: false,
-            manageTeam: false,
-            manageServices: false,
-            viewFinancial: false,
-            manageSettings: false,
-        }
-    });
-    setNewRoleName("");
-    setIsAddingRole(false);
-  };
-
   const handleCheckout = async (plan: Plan) => {
     if (!user || !plan.priceId) {
       toast({
@@ -558,19 +444,6 @@ export default function SettingsPage() {
     });
   };
 
-  const onHolidaysSubmit = (values: z.infer<typeof holidaysFormSchema>) => {
-    if (!shopRef) return;
-    const holidaysToSave = values.holidays.map((h) => ({
-      ...h,
-      date: Timestamp.fromDate(h.date),
-    }));
-    setDocumentNonBlocking(shopRef, { holidays: holidaysToSave }, { merge: true });
-    toast({
-      title: 'Feriados atualizados!',
-      description: 'As datas foram salvas com sucesso.',
-    });
-  };
-
   const onPaymentSettingsSubmit = (
     values: z.infer<typeof paymentSettingsFormSchema>
   ) => {
@@ -586,54 +459,11 @@ export default function SettingsPage() {
     });
   };
 
-  const onCashierSubmit = (values: z.infer<typeof cashierFormSchema>) => {
-    if (!shopRef) return;
-    setDocumentNonBlocking(shopRef, { cashierSettings: values }, { merge: true });
-    toast({
-      title: 'Configurações do Caixa atualizadas!',
-      description: 'As preferências do caixa foram salvas.',
-    });
-  };
-
-  const onPermissionsSubmit = (
-    values: z.infer<typeof permissionsFormSchema>
-  ) => {
-    if (!shopRef) return;
-    setDocumentNonBlocking(shopRef, { roles: values.roles }, { merge: true });
-    toast({
-      title: 'Permissões atualizadas!',
-      description: 'Os perfis de acesso foram salvos.',
-    });
-  };
-
-  const handleSavePin = () => {
-    if (pinOperator && currentPin.length === 4) {
-      const index = operatorFields.findIndex((op) => op.id === pinOperator.id);
-      if (index !== -1) {
-        updateOperator(index, { ...pinOperator, pin: currentPin });
-        toast({
-          title: 'PIN Salvo!',
-          description: `O PIN para ${pinOperator.name} foi definido. Salve as alterações para confirmar.`,
-        });
-      }
-      setPinOperator(null);
-      setCurrentPin('');
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'PIN Inválido',
-        description: 'O PIN deve conter 4 dígitos.',
-      });
-    }
-  };
-
   const currentPlanId = shop?.subscription?.plan || 'lite';
   const currentPlan = PLANS.find(p => p.id === currentPlanId) || PLANS[0];
   
   const nextBillingDate = shop?.subscription?.currentPeriodEnd
-    ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy', {
-        locale: ptBR,
-      })
+    ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy')
     : 'N/A';
 
   const paymentMethodLabels: {
@@ -645,16 +475,6 @@ export default function SettingsPage() {
     pix: 'PIX',
     debit: 'Cartão de Débito',
     credit: 'Cartão de Crédito',
-  };
-
-  const permissionLabels: { [key in keyof RolePermissions]: string } = {
-    viewDashboard: 'Ver Visão Geral',
-    manageAppointments: 'Gerenciar Agendamentos',
-    manageClients: 'Gerenciar Clientes',
-    manageTeam: 'Gerenciar Equipe',
-    manageServices: 'Gerenciar Serviços',
-    viewFinancial: 'Ver Financeiro',
-    manageSettings: 'Gerenciar Configurações',
   };
 
   if (isLoading) {
@@ -679,15 +499,15 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 mb-8">
           <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
           <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
           <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
           <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
           <TabsTrigger value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
-          <TabsTrigger value="cashier"> <Lock className="mr-2" /> Caixa </TabsTrigger>
           <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
         </TabsList>
+
         <TabsContent value="subscription">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {PLANS.map((plan) => (
@@ -1199,148 +1019,6 @@ export default function SettingsPage() {
               </Card>
             </form>
           </Form>
-
-          <Form {...holidaysForm}>
-            <form onSubmit={holidaysForm.handleSubmit(onHolidaysSubmit)}>
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>Feriados e Datas Especiais</CardTitle>
-                  <CardDescription>
-                    Gerencie dias com horários especiais ou em que o
-                    estabelecimento estará fechado.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {holidayFields.map((field, index) => {
-                    const isClosed = holidaysForm.watch(
-                      `holidays.${index}.isClosed`
-                    );
-                    return (
-                      <div
-                        key={field.id}
-                        className="p-4 border rounded-lg space-y-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <FormField
-                              control={holidaysForm.control}
-                              name={`holidays.${index}.description`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Descrição (ex: Natal)"
-                                      {...field}
-                                      className="text-base font-medium border-0 shadow-none p-0 focus-visible:ring-0"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={holidaysForm.control}
-                              name={`holidays.${index}.date`}
-                              render={({ field: dateField }) => (
-                                <p className="text-sm text-muted-foreground">
-                                  {format(dateField.value, 'PPP', {
-                                    locale: ptBR,
-                                  })}
-                                </p>
-                              )}
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeHoliday(index)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t">
-                          <FormField
-                            control={holidaysForm.control}
-                            name={`holidays.${index}.isClosed`}
-                            render={({ field: switchField }) => (
-                              <FormItem className="flex items-center gap-2 space-y-0">
-                                <FormControl>
-                                  <Switch
-                                    checked={switchField.value}
-                                    onCheckedChange={switchField.onChange}
-                                  />
-                                </FormControl>
-                                <FormLabel>{isClosed ? 'Fechado' : 'Aberto'}</FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                          {!isClosed && (
-                            <div className="flex items-center gap-4">
-                              <FormField
-                                control={holidaysForm.control}
-                                name={`holidays.${index}.openingTime`}
-                                render={({ field: inputField }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      <Input type="time" {...inputField} />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                              <span className="text-muted-foreground">às</span>
-                              <FormField
-                                control={holidaysForm.control}
-                                name={`holidays.${index}.closingTime`}
-                                render={({ field: inputField }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      <Input type="time" {...inputField} />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      appendHoliday({
-                        date: new Date(),
-                        description: 'Novo Ponto Facultativo',
-                        isClosed: true,
-                        openingTime: '09:00',
-                        closingTime: '17:00',
-                      })
-                    }
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Adicionar Data
-                  </Button>
-                </CardContent>
-                <CardFooter>
-                  <div className="flex justify-end w-full">
-                    <Button
-                      type="submit"
-                      disabled={holidaysForm.formState.isSubmitting}
-                    >
-                      {holidaysForm.formState.isSubmitting && (
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar Datas
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </form>
-          </Form>
         </TabsContent>
 
         <TabsContent value="integrations">
@@ -1612,109 +1290,8 @@ export default function SettingsPage() {
             </form>
           </Form>
         </TabsContent>
-        
-        <TabsContent value="cashier">
-          <Form {...cashierForm}>
-            <form onSubmit={cashierForm.handleSubmit(onCashierSubmit)}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configurações do Caixa</CardTitle>
-                  <CardDescription>Gerencie a segurança e os operadores do seu caixa.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <FormField
-                    control={cashierForm.control}
-                    name="requirePassword"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Exigir PIN</FormLabel>
-                          <FormDescription>
-                            Exigir um PIN de 4 dígitos para abrir ou fechar o caixa.
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-4">
-                    <Label className="text-base font-medium">Operadores de Caixa</Label>
-                    {operatorFields.map((operator, index) => (
-                      <div key={operator.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1">
-                          <p className="font-medium">{operator.name}</p>
-                          <Badge variant="outline" className="capitalize">{operator.role}</Badge>
-                        </div>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setPinOperator(operator)}>
-                          <Key className="mr-2 h-4 w-4" />
-                          {operator.pin ? 'Alterar PIN' : 'Definir PIN'}
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeOperator(index)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                     <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => appendOperator({ id: crypto.randomUUID(), name: 'Novo Operador', role: 'caixa' })}
-                    >
-                       <PlusCircle className="mr-2 h-4 w-4"/> Adicionar Operador
-                    </Button>
-                  </div>
-                </CardContent>
-                 <CardFooter>
-                  <div className="flex justify-end w-full">
-                    <Button
-                      type="submit"
-                      disabled={cashierForm.formState.isSubmitting}
-                    >
-                      {cashierForm.formState.isSubmitting && (
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar Config. do Caixa
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </form>
-          </Form>
-        </TabsContent>
       </Tabs>
-
-      <Dialog open={!!pinOperator} onOpenChange={(isOpen) => !isOpen && setPinOperator(null)}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader>
-            <DialogTitle>Definir PIN para {pinOperator?.name}</DialogTitle>
-            <DialogDescription>
-                Digite um PIN de 4 dígitos. Este PIN será usado para operações de caixa.
-            </DialogDescription>
-          </DialogHeader>
-            <div className="flex justify-center p-4">
-              <PinInput maxLength={4} onComplete={(value) => setCurrentPin(value)}>
-                  <PinInputField />
-                  <PinInputField />
-                  <PinInputField />
-                  <PinInputField />
-              </PinInput>
-            </div>
-          <DialogFooter>
-             <DialogClose asChild>
-                <Button type="button" variant="secondary">Cancelar</Button>
-             </DialogClose>
-            <Button type="button" onClick={handleSavePin}>Salvar PIN</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
+
