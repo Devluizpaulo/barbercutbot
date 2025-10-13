@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react";
@@ -135,6 +136,8 @@ export default function ShopDashboardPage() {
         month: format(new Date(2024, i, 1), 'MMM', { locale: ptBR }),
         revenue: 0,
     }));
+    
+    if (!financialRecords) return revenueData;
 
     financialRecords?.forEach(t => {
         const transactionDate = toDate(t.date);
@@ -321,5 +324,5 @@ export default function ShopDashboardPage() {
         <span className="sr-only">Abrir Caixa</span>
     </Button>
     </>
-  )
+  );
 }
