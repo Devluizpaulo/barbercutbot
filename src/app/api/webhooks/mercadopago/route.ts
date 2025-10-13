@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { doc, updateDoc } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase'; // Using server-side initialization
+import { firestore } from '@/firebase/server'; // Use server-side admin SDK
 
 // WARNING: In a real application, retrieve this securely (e.g., from a secret manager).
 // Do NOT hardcode credentials.
@@ -9,9 +9,6 @@ const MOCK_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'YOUR_MERCADO
 
 const client = new MercadoPagoConfig({ accessToken: MOCK_ACCESS_TOKEN });
 const payment = new Payment(client);
-
-// Initialize Firestore on the server
-const { firestore } = initializeFirebase();
 
 /**
  * Handles POST requests from Mercado Pago webhooks.
@@ -35,7 +32,7 @@ export async function POST(request: Request) {
         const shopId = paymentDetails.external_reference;
         const planId = paymentDetails.additional_info?.items?.[0]?.id; // e.g., 'pro'
 
-        // Update the BarberShop document in Firestore
+        // Update the BarberShop document in Firestore using Admin SDK
         const shopRef = doc(firestore, 'barberShops', shopId);
 
         await updateDoc(shopRef, {
