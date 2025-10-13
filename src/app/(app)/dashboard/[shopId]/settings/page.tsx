@@ -49,6 +49,7 @@ import {
   Lock,
   Users as UsersIcon,
   Phone,
+  Check,
 } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
@@ -109,6 +110,7 @@ import { PinInput, PinInputField } from '@/components/ui/pin-input';
 import { TeamTable } from './team-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { PLANS, Plan } from '@/lib/plans';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -654,14 +656,14 @@ export default function SettingsPage() {
     }
   };
 
-  const handleManageSubscription = async () => {
+  const handleManageSubscription = async (plan: Plan) => {
     setIsBillingLoading(true);
     try {
       const { checkoutUrl } = await createPayment({
         shopId: shopId,
-        planId: 'pro',
+        planId: plan.id,
         shopName: shop?.name || 'FlowCuts Pro',
-        price: 79.9,
+        price: plan.price,
       });
 
       if (checkoutUrl) {
@@ -681,8 +683,7 @@ export default function SettingsPage() {
     }
   };
 
-  const subscriptionStatus = shop?.subscription?.status || 'free';
-  const planName = shop?.subscription?.plan === 'pro' ? 'Plano Pro' : 'Gratuito';
+  const currentPlan = PLANS.find(p => p.id === (shop?.subscription?.plan || 'free')) || PLANS.find(p => p.id === 'lite')!;
   const nextBillingDate = shop?.subscription?.currentPeriodEnd
     ? format(toDate(shop.subscription.currentPeriodEnd), 'dd/MM/yyyy', {
         locale: ptBR,
@@ -732,58 +733,66 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
-          <TabsTrigger
-            value="profile"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <User className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Perfil
-          </TabsTrigger>
-          <TabsTrigger
-            value="address"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <MapPin className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Endereço
-          </TabsTrigger>
-          <TabsTrigger
-            value="hours"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Clock className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Horários
-          </TabsTrigger>
-          <TabsTrigger
-            value="integrations"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Bot className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Automação
-          </TabsTrigger>
-          <TabsTrigger
-            value="payments"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Wallet
-              className="mr-2 text-primary data-[state=active]:text-inherit"
-            />{' '}
-            Recebimentos
-          </TabsTrigger>
-          <TabsTrigger
-            value="cashier"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Lock className="mr-2 text-primary data-[state=active]:text-inherit" />{' '}
-            Caixa
-          </TabsTrigger>
-          <TabsTrigger
-            value="team"
-            className="data-[state=inactive]:text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <UsersIcon className="mr-2 text-primary data-[state=active]:text-inherit" /> Equipe e Acessos
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-8 mb-8">
+          <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
+          <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
+          <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
+          <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
+          <TabsTrigger value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
+          <TabsTrigger value="cashier"> <Lock className="mr-2" /> Caixa </TabsTrigger>
+          <TabsTrigger value="team"> <UsersIcon className="mr-2" /> Equipe e Acessos </TabsTrigger>
+          <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
         </TabsList>
+        <TabsContent value="subscription">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {PLANS.map((plan) => (
+                <Card key={plan.id} className={cn("flex flex-col", currentPlan.id === plan.id && "border-primary ring-2 ring-primary")}>
+                    <CardHeader>
+                        <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
+                        <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 space-y-6">
+                        <div className="flex items-baseline gap-2">
+                           <span className="text-4xl font-bold">R${plan.price.toFixed(2)}</span>
+                           <span className="text-muted-foreground">/mês</span>
+                        </div>
+                        <ul className="space-y-3">
+                           {plan.features.map((feature, i) => (
+                                <li key={i} className="flex items-center gap-2">
+                                    <Check className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm">{feature}</span>
+                                </li>
+                           ))}
+                        </ul>
+                    </CardContent>
+                    <CardFooter>
+                       {currentPlan.id === plan.id ? (
+                           <Button className="w-full" disabled>Plano Atual</Button>
+                       ) : (
+                           <Button className="w-full" onClick={() => handleManageSubscription(plan)} disabled={isBillingLoading}>
+                              {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                              {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}
+                           </Button>
+                       )}
+                    </CardFooter>
+                </Card>
+            ))}
+          </div>
+           <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Gerenciamento da Assinatura</CardTitle>
+                <CardDescription>
+                  Seu plano atual é o <strong>{currentPlan.name}</strong>.
+                  Sua assinatura está <strong>{shop?.subscription?.status || 'gratuita'}</strong> e será renovada em {nextBillingDate}.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Button variant="outline" disabled>
+                  Cancelar Assinatura
+                </Button>
+              </CardFooter>
+            </Card>
+        </TabsContent>
         <TabsContent value="profile">
           <Card>
             <Form {...profileForm}>
@@ -1849,7 +1858,7 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
             <div className="flex justify-center p-4">
-              <PinInput onComplete={(value) => setCurrentPin(value)} maxLength={4}>
+              <PinInput maxLength={4} onComplete={(value) => setCurrentPin(value)}>
                   <PinInputField />
                   <PinInputField />
                   <PinInputField />

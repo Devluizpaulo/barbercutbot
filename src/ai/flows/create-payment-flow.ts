@@ -22,7 +22,7 @@ const preference = new Preference(client);
 
 const CreatePaymentInputSchema = z.object({
     shopId: z.string().describe('The ID of the barber shop.'),
-    planId: z.string().describe('The ID of the subscription plan.'),
+    planId: z.string().describe('The ID of the subscription plan (e.g., "lite", "business", "pro").'),
     shopName: z.string().describe('The name of the barber shop for the transaction description.'),
     price: z.number().describe('The price of the plan.'),
 });
@@ -45,8 +45,6 @@ const createPaymentFlow = ai.defineFlow(
   },
   async (input: CreatePaymentInput) => {
     
-    // In a real scenario, you would have more complex logic here,
-    // like validating the planId and fetching its details from your database.
     if (!MOCK_ACCESS_TOKEN || MOCK_ACCESS_TOKEN === 'YOUR_MERCADO_PAGO_ACCESS_TOKEN') {
         throw new Error('Mercado Pago Access Token is not configured. Please set the MERCADO_PAGO_ACCESS_TOKEN environment variable.');
     }
@@ -56,7 +54,7 @@ const createPaymentFlow = ai.defineFlow(
         items: [
             {
                 id: input.planId,
-                title: `Assinatura Plano Pro - ${input.shopName}`,
+                title: `Assinatura Plano ${input.planId.charAt(0).toUpperCase() + input.planId.slice(1)} - ${input.shopName}`,
                 quantity: 1,
                 unit_price: input.price,
                 currency_id: 'BRL',
