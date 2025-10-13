@@ -219,18 +219,6 @@ Todos os acessos e ações administrativas são registrados automaticamente:
 
 ---
 
-## 🧪 Testes
-
-```bash
-# Executar testes
-npm run test
-
-# Testes e2e com Playwright
-npm run test:e2e
-```
-
----
-
 ## 📦 Build e Deploy
 
 ### **Build de Produção**
