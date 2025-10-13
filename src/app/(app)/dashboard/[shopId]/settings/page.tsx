@@ -354,51 +354,8 @@ export default function SettingsPage() {
 
 
   useEffect(() => {
-    const fetchAndSetHolidays = async () => {
-      try {
-        const year = new Date().getFullYear();
-        const response = await fetch(
-          `https://brasilapi.com.br/api/feriados/v1/${year}`
-        );
-        const nationalHolidays: { date: string; name: string }[] =
-          await response.json();
-
-        const formattedHolidays = nationalHolidays.map((h) => ({
-          date: parse(h.date, 'yyyy-MM-dd', new Date()),
-          description: h.name,
-          isClosed: true, // Default to closed
-          openingTime: '09:00',
-          closingTime: '17:00',
-        }));
-
-        const savedHolidays =
-          shop?.holidays?.map((h) => ({ ...h, date: toDate(h.date) })) || [];
-        const savedDates = new Set(
-          savedHolidays.map((h) => format(h.date, 'yyyy-MM-dd'))
-        );
-
-        // Add national holidays only if they are not already saved
-        const combinedHolidays = [...savedHolidays];
-        formattedHolidays.forEach((nh) => {
-          if (!savedDates.has(format(nh.date, 'yyyy-MM-dd'))) {
-            combinedHolidays.push(nh);
-          }
-        });
-
-        // Sort by date
-        combinedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-        replaceHolidays(combinedHolidays);
-      } catch (error) {
-        console.error('Failed to fetch national holidays:', error);
-        // Fallback to saved holidays if API fails
-        if (shop?.holidays) {
-          replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
-        }
-      }
-    };
-
     if (shop) {
+      // Profile Form
       profileForm.reset({
         name: shop.name || '',
         logo: shop.logo || '',
@@ -424,39 +381,67 @@ export default function SettingsPage() {
           promptPersonalizado: '',
         },
       });
+
+      // Working Hours Form
       if (shop.workingHours) {
-        const currentHours = workingHoursForm
-          .getValues('hours')
-          .map((daySetting) => {
-            const savedDay = shop.workingHours?.find(
-              (h) => h.day === daySetting.day
-            );
-            return savedDay || daySetting;
-          });
-        replace(currentHours as WorkingHour[]);
+        replace(shop.workingHours);
       }
 
-      fetchAndSetHolidays();
+      // Holidays Form - only fetch national holidays once
+      if (holidaysForm.getValues('holidays').length === 0) {
+        const fetchAndSetHolidays = async () => {
+          try {
+            const year = new Date().getFullYear();
+            const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
+            const nationalHolidays: { date: string; name: string }[] = await response.json();
+            
+            const formattedHolidays = nationalHolidays.map((h) => ({
+              date: parse(h.date, 'yyyy-MM-dd', new Date()),
+              description: h.name,
+              isClosed: true,
+              openingTime: '09:00',
+              closingTime: '17:00',
+            }));
 
+            const savedHolidays = shop.holidays?.map((h) => ({ ...h, date: toDate(h.date) })) || [];
+            const savedDates = new Set(savedHolidays.map((h) => format(h.date, 'yyyy-MM-dd')));
+
+            const combinedHolidays = [...savedHolidays];
+            formattedHolidays.forEach((nh) => {
+              if (!savedDates.has(format(nh.date, 'yyyy-MM-dd'))) {
+                combinedHolidays.push(nh);
+              }
+            });
+
+            combinedHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
+            replaceHolidays(combinedHolidays);
+          } catch (error) {
+            console.error('Failed to fetch national holidays:', error);
+            if (shop.holidays) {
+              replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
+            }
+          }
+        };
+        fetchAndSetHolidays();
+      } else if (shop.holidays) {
+         replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
+      }
+      
+      // Payment Settings Form
       if (shop.paymentSettings) {
-        const currentMethods = paymentSettingsForm
-          .getValues('paymentMethods')
-          .map((pm) => {
-            const savedMethod = shop.paymentSettings?.find(
-              (spm) => spm.method === pm.method
-            );
-            return savedMethod || pm;
-          });
-        replacePaymentMethods(currentMethods);
+        replacePaymentMethods(shop.paymentSettings);
       }
-
+      
+      // Cashier Form
       if (shop.cashierSettings) {
         cashierForm.reset(shop.cashierSettings as any);
       }
-       if (shop.roles) {
+      
+      // Permissions Form
+      if (shop.roles) {
         permissionsForm.reset({ roles: shop.roles });
       } else {
-         permissionsForm.reset({
+        permissionsForm.reset({
           roles: [
             { id: 'manager', name: 'Gerente', isBuiltIn: true, permissions: { viewDashboard: true, manageAppointments: true, manageClients: true, manageTeam: true, manageServices: true, viewFinancial: true, manageSettings: true }},
             { id: 'barber', name: 'Barbeiro', isBuiltIn: true, permissions: { viewDashboard: false, manageAppointments: true, manageClients: false, manageTeam: false, manageServices: false, viewFinancial: false, manageSettings: false }},
@@ -465,19 +450,8 @@ export default function SettingsPage() {
         });
       }
     }
-  }, [
-    shop,
-    profileForm,
-    workingHoursForm,
-    holidaysForm,
-    paymentSettingsForm,
-    cashierForm,
-    permissionsForm,
-    replace,
-    replacePaymentMethods,
-    shopId,
-    replaceHolidays,
-  ]);
+  }, [shop, profileForm, workingHoursForm, holidaysForm, paymentSettingsForm, cashierForm, permissionsForm, replace, replaceHolidays, replacePaymentMethods, shopId]);
+  
   
   const handleAddNewRole = () => {
     if (newRoleName.trim() === "") {
