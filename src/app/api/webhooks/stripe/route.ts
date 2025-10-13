@@ -1,14 +1,23 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { doc, updateDoc, Timestamp } from 'firebase-admin/firestore';
-import { firestore } from '@/firebase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Lazy load Firebase Admin to avoid build-time errors
+let firestore: any = null;
+
+async function getFirestore() {
+  if (!firestore) {
+    const { firestore: fs } = await import('@/firebase/server');
+    firestore = fs;
+  }
+  return firestore;
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2024-06-20',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder';
 
 export async function POST(req: Request) {
   const buf = await req.text();
@@ -40,7 +49,9 @@ export async function POST(req: Request) {
 
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         
-        const shopRef = doc(firestore, 'barberShops', shopId);
+        const db = await getFirestore();
+        const { doc, updateDoc, Timestamp } = await import('firebase-admin/firestore');
+        const shopRef = doc(db, 'barberShops', shopId);
 
         await updateDoc(shopRef, {
             'subscription.status': subscription.status,
@@ -67,7 +78,9 @@ export async function POST(req: Request) {
         if (!shopId) break;
         
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const shopRef = doc(firestore, 'barberShops', shopId);
+        const db = await getFirestore();
+        const { doc, updateDoc, Timestamp } = await import('firebase-admin/firestore');
+        const shopRef = doc(db, 'barberShops', shopId);
         
         await updateDoc(shopRef, {
             'subscription.status': 'active',
@@ -88,7 +101,9 @@ export async function POST(req: Request) {
         const shopId = customer.metadata.shopId;
         if (!shopId) break;
 
-        const shopRef = doc(firestore, 'barberShops', shopId);
+        const db = await getFirestore();
+        const { doc, updateDoc } = await import('firebase-admin/firestore');
+        const shopRef = doc(db, 'barberShops', shopId);
         
         await updateDoc(shopRef, {
             'subscription.status': 'past_due',

@@ -2,13 +2,27 @@
 import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
-import { firebaseConfig } from './config'; // Reuse config for project ID
+import { firebaseConfig } from './config';
 
 // Helper function to get the initialized services
 function getFirebaseAdminServices() {
-  const app = getApps().length > 0 ? getApp() : initializeApp({
-    credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS || {}),
-    projectId: process.env.GCP_PROJECT || firebaseConfig.projectId,
+  if (getApps().length > 0) {
+    const app = getApp();
+    return {
+      app,
+      firestore: getFirestore(app),
+      auth: getAuth(app),
+    };
+  }
+
+  // Initialize Firebase Admin
+  const app = initializeApp({
+    projectId: firebaseConfig.projectId,
+    // Use default credentials in production (Firebase App Hosting)
+    // Use service account in development
+    ...(process.env.NODE_ENV === 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS 
+      ? { credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS) }
+      : {}),
   });
 
   return {
