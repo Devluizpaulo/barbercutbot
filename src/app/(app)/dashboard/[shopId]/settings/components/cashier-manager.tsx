@@ -25,6 +25,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,7 @@ import {
 import type { BarberShop, CashierOperator, ChecklistItem } from '@/lib/types';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { PinInput, PinInputField } from '@/components/ui/pin-input';
+import { PinInput, PinInputGroup, PinInputField, PinInputSlot } from '@/components/ui/pin-input';
 import {
   Select,
   SelectContent,
@@ -250,3 +251,5 @@ export function CashierManager({ shopId, initialData }: CashierManagerProps) {
     </>
   );
 }
+
+    

@@ -138,7 +138,7 @@ export function PermissionsManager({ shopId, initialData }: PermissionsManagerPr
                     <div className="flex items-center gap-2">
                        <Shield className="h-5 w-5" />
                        <h3 className="text-lg font-semibold">{role.name}</h3>
-                       {role.isBuiltIn && <Lock className="h-3 w-3 text-muted-foreground" title="Perfil padrão (não pode ser removido)"/>}
+                       {role.isBuiltIn && <Lock className="h-3 w-3 text-muted-foreground" />}
                     </div>
                      {!role.isBuiltIn && (
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -195,3 +195,5 @@ export function PermissionsManager({ shopId, initialData }: PermissionsManagerPr
     </Dialog>
   );
 }
+
+    

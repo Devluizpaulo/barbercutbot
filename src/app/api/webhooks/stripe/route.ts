@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore, doc, updateDoc, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
 
 // Lazy initialization of Firebase Admin
@@ -53,9 +53,9 @@ export async function POST(req: Request) {
 
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         
-        const shopRef = doc(firestore, 'barberShops', shopId);
+        const shopRef = firestore.doc(`barberShops/${shopId}`);
 
-        await updateDoc(shopRef, {
+        await shopRef.update({
             'subscription.status': subscription.status,
             'subscription.stripeSubscriptionId': subscription.id,
             'subscription.stripeCustomerId': subscription.customer,
@@ -80,9 +80,9 @@ export async function POST(req: Request) {
           break;
         }
         
-        const shopRef = doc(firestore, 'barberShops', subscription.metadata.shopId);
+        const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
         
-        await updateDoc(shopRef, {
+        await shopRef.update({
             'subscription.status': 'active',
             'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
         });
@@ -102,9 +102,9 @@ export async function POST(req: Request) {
           break;
         }
 
-        const shopRef = doc(firestore, 'barberShops', subscription.metadata.shopId);
+        const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
         
-        await updateDoc(shopRef, {
+        await shopRef.update({
             'subscription.status': 'past_due',
         });
 
@@ -119,3 +119,5 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ received: true });
 }
+
+    
