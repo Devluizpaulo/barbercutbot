@@ -351,7 +351,7 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
                                 <Input placeholder="00000-000" {...field} value={field.value || ''} className="pl-10" />
                             </FormControl>
                         </div>
-                        <Button type="button" onClick={handleCepLookup} disabled={isCepLoading}>
+                        <Button type="button" variant="secondary" onClick={handleCepLookup} disabled={isCepLoading}>
                             {isCepLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                             <span className="ml-2 hidden sm:inline">Buscar</span>
                         </Button>
@@ -417,12 +417,9 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
                     render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                         <FormLabel>Bairro</FormLabel>
-                        <div className="relative">
-                            <Map className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <FormControl>
-                            <Input placeholder="Centro" {...field} value={field.value || ''} className="pl-10" />
-                            </FormControl>
-                        </div>
+                        <FormControl>
+                        <Input placeholder="Centro" {...field} value={field.value || ''} />
+                        </FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
@@ -433,12 +430,9 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
                     render={({ field }) => (
                     <FormItem className="sm:col-span-2">
                         <FormLabel>Cidade</FormLabel>
-                         <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <FormControl>
-                            <Input placeholder="São Paulo" {...field} value={field.value || ''} className="pl-10" />
-                            </FormControl>
-                        </div>
+                        <FormControl>
+                        <Input placeholder="São Paulo" {...field} value={field.value || ''} />
+                        </FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
@@ -449,12 +443,9 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Estado</FormLabel>
-                        <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <FormControl>
-                            <Input placeholder="SP" {...field} value={field.value || ''} className="pl-10" />
-                            </FormControl>
-                        </div>
+                        <FormControl>
+                        <Input placeholder="SP" {...field} value={field.value || ''} />
+                        </FormControl>
                         <FormMessage />
                     </FormItem>
                     )}
@@ -475,3 +466,5 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
     </Form>
   );
 }
+
+    

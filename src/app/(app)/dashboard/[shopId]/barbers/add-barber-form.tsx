@@ -687,3 +687,5 @@ export function AddBarberForm({
     </Form>
   );
 }
+
+    
