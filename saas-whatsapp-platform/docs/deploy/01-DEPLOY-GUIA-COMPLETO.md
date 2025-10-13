@@ -21,8 +21,8 @@ Seu servidor já está configurado e funcionando:
 |---------|-----|-------|
 | Evolution Manager | http://34.182.111.255:8080/manager | - |
 | N8N Automation | http://34.182.111.255:5678 | admin / Admin2024Free! |
-| Firebase Console | https://console.firebase.google.com/project/studio-343774762-16da7 | Google |
-| GCP Console | https://console.cloud.google.com/compute/instances?project=studio-343774762-16da7 | Google |
+| Firebase Console | https://console.firebase.google.com/project/flowcutspro | Google |
+| GCP Console | https://console.cloud.google.com/compute/instances?project=flowcutspro | Google |
 
 ---
 
@@ -30,7 +30,7 @@ Seu servidor já está configurado e funcionando:
 
 ### **Conectar na VM:**
 ```bash
-gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=studio-343774762-16da7
+gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=flowcutspro
 ```
 
 ### **Dentro da VM:**
@@ -87,4 +87,3 @@ free -h
 ---
 
 **Documentação completa em `/docs`**
-

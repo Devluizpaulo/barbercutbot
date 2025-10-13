@@ -22,7 +22,7 @@ O Google Cloud oferece uma VM **gratuita permanentemente** com estas especifica�
 ### ✅ **Passo 1: Criar VM Gratuita**
 
 1. **Acesse seu projeto:**
-   - https://console.cloud.google.com/compute/instances?project=studio-343774762-16da7
+   - https://console.cloud.google.com/compute/instances?project=flowcutspro
 
 2. **Clique em "CREATE INSTANCE"**
 
@@ -65,7 +65,7 @@ Firewall:
 
 # Permitir Evolution API (porta 8081)
 gcloud compute firewall-rules create allow-evolution-free \
-  --project=studio-343774762-16da7 \
+  --project=flowcutspro \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
@@ -76,7 +76,7 @@ gcloud compute firewall-rules create allow-evolution-free \
 
 # Permitir N8N (porta 5678)
 gcloud compute firewall-rules create allow-n8n-free \
-  --project=studio-343774762-16da7 \
+  --project=flowcutspro \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
@@ -97,7 +97,7 @@ gcloud compute firewall-rules create allow-n8n-free \
 ```bash
 gcloud compute ssh evolution-api-free \
   --zone=us-west1-b \
-  --project=studio-343774762-16da7
+  --project=flowcutspro
 ```
 
 ---
@@ -367,7 +367,7 @@ docker system prune -a
    ```
 
 3. **Monitorar tráfego:**
-   - https://console.cloud.google.com/networking/networkanalyzer?project=studio-343774762-16da7
+   - https://console.cloud.google.com/networking/networkanalyzer?project=flowcutspro
 
 ---
 
@@ -466,7 +466,7 @@ crontab -e
 | Cenário | Performance |
 |---------|-------------|
 | 1 instância WhatsApp | ✅ Excelente |
-| 2 instâncias WhatsApp | ✅ Bom |
+| 2 instância WhatsApp | ✅ Bom |
 | 3 instâncias WhatsApp | ⚠️ Funciona, mas próximo do limite |
 | 4+ instâncias | ❌ Necessário upgrade |
 | Mensagens/dia | ~500-1000 texto OK |

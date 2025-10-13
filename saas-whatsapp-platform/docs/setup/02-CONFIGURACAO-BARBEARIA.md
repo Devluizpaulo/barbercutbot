@@ -19,7 +19,7 @@
 
 ## ✅ Passo 2: Criar no Firestore (5 min)
 
-**Acessar:** https://console.firebase.google.com/project/studio-343774762-16da7/firestore
+**Acessar:** https://console.firebase.google.com/project/flowcutspro/firestore
 
 **Collection:** `barberShops`  
 **Document:** `barbershop_001`
@@ -57,4 +57,3 @@ Enviar "oi" no WhatsApp → Deve receber resposta da IA!
 ---
 
 **Pronto! Barbearia configurada!** ✅
-

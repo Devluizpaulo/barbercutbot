@@ -26,7 +26,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents:runQuery",
+        "url": "https://firestore.googleapis.com/v1/projects/flowcutspro/databases/(default)/documents:runQuery",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -46,7 +46,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents:runQuery",
+        "url": "https://firestore.googleapis.com/v1/projects/flowcutspro/databases/(default)/documents:runQuery",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -121,7 +121,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents/barberShops/{{$json.barberShopId}}/customers",
+        "url": "https://firestore.googleapis.com/v1/projects/flowcutspro/databases/(default)/documents/barberShops/{{$json.barberShopId}}/customers",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -155,7 +155,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://firestore.googleapis.com/v1/projects/studio-343774762-16da7/databases/(default)/documents/barberShops/{{$json.barberShopId}}/appointments",
+        "url": "https://firestore.googleapis.com/v1/projects/flowcutspro/databases/(default)/documents/barberShops/{{$json.barberShopId}}/appointments",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

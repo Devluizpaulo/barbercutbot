@@ -17,7 +17,7 @@ Login: admin / n8n_admin_2024
 
 ### Firebase:
 ```
-https://console.firebase.google.com/project/studio-343774762-16da7
+https://console.firebase.google.com/project/flowcutspro
 ```
 
 ---
@@ -29,7 +29,7 @@ https://cloud.google.com/sdk/docs/install
 
 ### Conectar:
 ```bash
-gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=studio-343774762-16da7
+gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=flowcutspro
 ```
 
 ---
