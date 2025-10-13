@@ -32,8 +32,7 @@ export function CPanelProvider({ children }: { children: React.ReactNode }) {
     // Query for all non-owner users, only if the user is an admin.
     const usersQuery = useMemoFirebase(() => {
         if (user?.role === 'admin') {
-            // Query for users who are NOT owners (i.e., 'admin', 'support')
-             return query(collection(firestore, 'users'), where('role', '!=', 'owner'));
+            return collection(firestore, 'users');
         }
         return null;
     }, [firestore, user]);

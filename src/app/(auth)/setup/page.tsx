@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,16 +18,28 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Shield, AlertTriangle, CheckCircle, Eye, EyeOff, Crown, Zap } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useAuth } from '@/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
+const checkAdminExistsClient = async () => {
+    try {
+        const functions = getFunctions();
+        const checkAdminFunction = httpsCallable(functions, 'checkAdminExists');
+        const result = await checkAdminFunction();
+        return (result.data as { adminExists: boolean }).adminExists;
+    } catch (error) {
+        console.error("Error checking for admin existence:", error);
+        // In case of a function call error, we assume an admin might exist to be safe.
+        return true; 
+    }
+};
 
 export default function SetupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -39,161 +52,77 @@ export default function SetupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Verifica se já existe algum admin no sistema
   useEffect(() => {
-    const checkForAdmins = async () => {
-      try {
-        const usersRef = collection(firestore, 'users');
-        // Query com limit de 10 para respeitar as regras de segurança
-        const adminQuery = query(
-          usersRef, 
-          where('role', '==', 'admin'),
-          limit(10)
-        );
-        const adminSnapshot = await getDocs(adminQuery);
-        
-        if (!adminSnapshot.empty) {
-          setAdminExists(true);
-          toast({
-            title: 'Sistema já configurado',
-            description: 'Já existe um administrador no sistema.',
-          });
-          // Redireciona após 2 segundos
-          setTimeout(() => {
-            router.push('/admin');
-          }, 2000);
-        }
-      } catch (error) {
-        console.error('Erro ao verificar admins:', error);
-        // Se houver erro de permissão, assume que não há admin (primeira vez)
-        if ((error as any).code === 'permission-denied') {
-          console.log('Sem permissão para verificar admins - primeira configuração');
-        }
-      } finally {
-        setIsCheckingAdmins(false);
+    const runCheck = async () => {
+      const exists = await checkAdminExistsClient();
+      if (exists) {
+        setAdminExists(true);
+        toast({
+          title: 'Sistema já configurado',
+          description: 'Já existe um administrador no sistema.',
+        });
+        setTimeout(() => {
+          router.push('/admin');
+        }, 2000);
       }
+      setIsCheckingAdmins(false);
     };
 
-    checkForAdmins();
-  }, [firestore, router, toast]);
+    runCheck();
+  }, [router, toast]);
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações
     if (!firstName.trim() || !lastName.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Campos obrigatórios',
-        description: 'Por favor, preencha seu nome completo.',
-      });
+      toast({ variant: 'destructive', title: 'Campos obrigatórios', description: 'Por favor, preencha seu nome completo.' });
       return;
     }
-
-    if (!email.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Email obrigatório',
-        description: 'Por favor, informe seu endereço de e-mail.',
-      });
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ variant: 'destructive', title: 'Email inválido', description: 'Por favor, informe um endereço de e-mail válido.' });
       return;
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        variant: 'destructive',
-        title: 'Email inválido',
-        description: 'Por favor, informe um endereço de e-mail válido.',
-      });
-      return;
-    }
-
     if (password.length < 6) {
-      toast({
-        variant: 'destructive',
-        title: 'Senha muito curta',
-        description: 'A senha deve ter pelo menos 6 caracteres.',
-      });
+      toast({ variant: 'destructive', title: 'Senha muito curta', description: 'A senha deve ter pelo menos 6 caracteres.' });
       return;
     }
-
     if (password !== confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Senhas não coincidem',
-        description: 'A senha e a confirmação devem ser iguais.',
-      });
+      toast({ variant: 'destructive', title: 'Senhas não coincidem', description: 'A senha e a confirmação devem ser iguais.' });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Verifica novamente se não foi criado admin durante o processo
-      const usersRef = collection(firestore, 'users');
-      const adminQuery = query(
-        usersRef, 
-        where('role', '==', 'admin'),
-        limit(10)
-      );
-      const adminSnapshot = await getDocs(adminQuery);
+      // Call the Cloud Function to perform the setup
+      const functions = getFunctions();
+      const setupAdminUser = httpsCallable(functions, 'setupAdminUser');
       
-      if (!adminSnapshot.empty) {
-        toast({
-          variant: 'destructive',
-          title: 'Admin já existe',
-          description: 'Um administrador já foi criado. Redirecionando...',
-        });
-        setTimeout(() => router.push('/admin'), 2000);
-        return;
-      }
-
-      // Cria o usuário no Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      // Atualiza o displayName
-      await updateProfile(user, {
-        displayName: `${firstName} ${lastName}`
-      });
-
-      // Cria o documento do usuário no Firestore com role ADMIN
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await setDoc(userDocRef, {
-        id: user.uid,
+      await setupAdminUser({
+        email,
+        password,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: user.email,
-        role: 'admin', // ADMIN role para o primeiro usuário
-        createdAt: serverTimestamp(),
-        isSetupAdmin: true, // Flag especial para identificar o admin inicial
       });
+
+      // Now, sign in the newly created admin user on the client
+      await signInWithEmailAndPassword(auth, email, password);
 
       toast({
         title: '✅ Administrador criado!',
         description: 'Conta de administrador criada com sucesso. Redirecionando para o painel...',
       });
       
-      // Redireciona para o cpanel
-      setTimeout(() => {
-        router.push('/cpanel');
-      }, 1500);
-
+      // The AuthLayout will handle the redirect to /cpanel upon successful login
     } catch (error: any) {
-      console.error("Firebase Error:", error);
+      console.error("Setup Error:", error);
       let title = 'Erro ao criar administrador';
-      let description = 'Ocorreu um erro ao criar a conta. Tente novamente.';
+      let description = error.message || 'Ocorreu um erro. Tente novamente.';
       
-      if (error.code === 'auth/email-already-in-use') {
-        description = 'Este endereço de e-mail já está em uso.';
-      } else if (error.code === 'auth/invalid-email') {
-        description = 'O endereço de e-mail não é válido.';
-      } else if (error.code === 'auth/weak-password') {
-        description = 'A senha é muito fraca. Use uma combinação mais forte.';
-      } else if (error.code === 'auth/network-request-failed') {
-        title = 'Erro de conexão';
-        description = 'Verifique sua conexão com a internet e tente novamente.';
+      if (error.code === 'functions/already-exists') {
+        title = 'Admin já existe';
+        description = 'Um administrador já foi criado. Redirecionando para o login.';
+        setTimeout(() => router.push('/admin'), 2000);
       }
       
       toast({
@@ -450,4 +379,3 @@ export default function SetupPage() {
     </div>
   );
 }
-

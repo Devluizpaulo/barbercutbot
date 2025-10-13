@@ -39,7 +39,7 @@ export default function CPanelTeamPage() {
                 Crie uma nova conta de usuário e atribua um perfil de acesso.
               </DialogDescription>
             </DialogHeader>
-            <AddTeamMemberForm onSuccess={() => setFormOpen(false)} />
+            <AddTeamMemberForm onSuccess={() => setIsFormOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>

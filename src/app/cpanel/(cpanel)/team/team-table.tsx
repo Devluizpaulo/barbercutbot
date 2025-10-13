@@ -104,9 +104,9 @@ export function TeamTable({ isLoading }: TeamTableProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem disabled>
                       <Edit className="mr-2 h-4 w-4"/>
-                      Editar (em breve)
+                      Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"
