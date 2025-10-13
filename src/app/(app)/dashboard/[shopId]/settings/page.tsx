@@ -106,7 +106,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { PinInput, PinInputField } from '@/components/ui/pin-input';
-import { TeamTable } from './team-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PLANS, Plan } from '@/lib/plans';
@@ -680,14 +679,13 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-8 mb-8">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-7 mb-8">
           <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
           <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
           <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
           <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
           <TabsTrigger value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
           <TabsTrigger value="cashier"> <Lock className="mr-2" /> Caixa </TabsTrigger>
-          <TabsTrigger value="team"> <UsersIcon className="mr-2" /> Equipe e Acessos </TabsTrigger>
           <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
         </TabsList>
         <TabsContent value="subscription">
@@ -915,113 +913,6 @@ export default function SettingsPage() {
               </form>
             </Form>
           </Card>
-        </TabsContent>
-        <TabsContent value="team">
-          <Tabs defaultValue="members" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="members">Membros da Equipe</TabsTrigger>
-              <TabsTrigger value="roles">Perfis de Acesso</TabsTrigger>
-            </TabsList>
-            <TabsContent value="members" className="mt-6">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Equipe</CardTitle>
-                      <CardDescription>
-                          Gerencie os membros da sua equipe que terão acesso ao sistema.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <TeamTable shopId={shopId} />
-                  </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="roles" className="mt-6">
-              <Form {...permissionsForm}>
-                <form onSubmit={permissionsForm.handleSubmit(onPermissionsSubmit)}>
-                   <Card>
-                      <CardHeader>
-                          <CardTitle>Perfis de Acesso</CardTitle>
-                          <CardDescription>
-                              Defina o que cada perfil pode fazer no sistema.
-                          </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        {roleFields.map((role, roleIndex) => (
-                           <Card key={role.id}>
-                              <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                  <CardTitle>{role.name}</CardTitle>
-                                  <CardDescription>{role.isBuiltIn ? "Perfil padrão do sistema." : "Perfil personalizado."}</CardDescription>
-                                </div>
-                                {!role.isBuiltIn && (
-                                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRole(roleIndex)}>
-                                    <Trash2 className="h-4 w-4 text-destructive"/>
-                                  </Button>
-                                )}
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {Object.keys(permissionLabels).map(permissionKey => (
-                                    <FormField
-                                        key={permissionKey}
-                                        control={permissionsForm.control}
-                                        name={`roles.${roleIndex}.permissions.${permissionKey as keyof RolePermissions}`}
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                                                <FormControl>
-                                                    <Checkbox
-                                                        checked={field.value}
-                                                        onCheckedChange={field.onChange}
-                                                        disabled={role.isBuiltIn}
-                                                    />
-                                                </FormControl>
-                                                <div className="space-y-1 leading-none">
-                                                    <FormLabel className={cn(role.isBuiltIn && "text-muted-foreground")}>
-                                                        {permissionLabels[permissionKey as keyof RolePermissions]}
-                                                    </FormLabel>
-                                                </div>
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
-                              </CardContent>
-                           </Card>
-                        ))}
-                        {isAddingRole ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={newRoleName}
-                              onChange={(e) => setNewRoleName(e.target.value)}
-                              placeholder="Nome do novo perfil"
-                            />
-                            <Button type="button" onClick={handleAddNewRole}>Salvar</Button>
-                            <Button type="button" variant="ghost" onClick={() => setIsAddingRole(false)}>Cancelar</Button>
-                          </div>
-                        ) : (
-                          <Button type="button" variant="outline" onClick={() => setIsAddingRole(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Adicionar Novo Perfil
-                          </Button>
-                        )}
-                      </CardContent>
-                      <CardFooter>
-                        <div className="flex justify-end w-full">
-                           <Button
-                            type="submit"
-                            disabled={permissionsForm.formState.isSubmitting}
-                          >
-                            {permissionsForm.formState.isSubmitting && (
-                              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar Perfis de Acesso
-                          </Button>
-                        </div>
-                      </CardFooter>
-                   </Card>
-                </form>
-              </Form>
-            </TabsContent>
-          </Tabs>
         </TabsContent>
         <TabsContent value="address">
           <Card>

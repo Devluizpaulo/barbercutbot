@@ -14,7 +14,7 @@ interface FirebaseProviderProps {
   auth: Auth;
 }
 
-type UserWithRole = User & { role?: 'admin' | 'owner' };
+type UserWithRole = User & { role?: 'admin' | 'owner' | 'staff' };
 
 interface UserAuthState {
   user: UserWithRole | null;
@@ -95,7 +95,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             return;
           }
 
-          // If not an admin via claim, check Firestore for 'owner' role.
+          // If not an admin via claim, check Firestore for 'owner' or 'staff' role.
           const userDocRef = doc(firestore, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           
