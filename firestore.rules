@@ -70,6 +70,7 @@ service cloud.firestore {
      * @allow (get) User with UID 'user123' reads their profile at /users/user123.
      * @allow (update) User with UID 'user123' updates their profile at /users/user123.
      * @allow (delete) User with UID 'user123' deletes their profile at /users/user123.
+     * @allow (list) Allows limited queries to check for admin existence (for setup page) or if user is admin.
      * @deny (create) User with UID 'user456' attempts to create a profile at /users/user123.
      * @deny (get) User with UID 'user456' attempts to read the profile at /users/user123.
      * @deny (update) User with UID 'user456' attempts to update the profile at /users/user123.
@@ -78,7 +79,14 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if false;
+      // Allow limited list queries: 
+      // - Admins can list users
+      // - Anyone can query with limit <= 10 and where role == 'admin' (for initial setup verification)
+      allow list: if isAdmin() 
+                  || (request.query.limit <= 10 
+                      && request.query.where != null 
+                      && request.query.where[0][0] == 'role' 
+                      && request.query.where[0][2] == 'admin');
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id || isAdmin();
       allow delete: if isExistingOwner(userId) || isAdmin();
