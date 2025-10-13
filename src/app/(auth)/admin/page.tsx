@@ -230,12 +230,20 @@ export default function AdminLoginPage() {
                 <Shield className="mr-2 h-4 w-4" />
                 Acessar Painel Admin
               </Button>
-              <p className="text-sm text-center text-slate-400">
-                Não é administrador?{' '}
-                <Link href="/login" className="underline hover:text-primary">
-                  Fazer login como usuário
-                </Link>
-              </p>
+              <div className="space-y-2 text-center">
+                <p className="text-sm text-slate-400">
+                  Não é administrador?{' '}
+                  <Link href="/login" className="underline hover:text-primary">
+                    Fazer login como usuário
+                  </Link>
+                </p>
+                <p className="text-xs text-slate-500">
+                  Primeira vez?{' '}
+                  <Link href="/setup" className="underline hover:text-primary">
+                    Configurar sistema
+                  </Link>
+                </p>
+              </div>
             </CardFooter>
           </form>
         </Card>

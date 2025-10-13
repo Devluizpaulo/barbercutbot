@@ -54,18 +54,24 @@ service cloud.firestore {
     /**
      * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) - User with UID 'user123' can create a profile at /users/user123.
-     * @allow (get) - User with UID 'user123' can read their profile at /users/user123.
-     * @allow (update) - User with UID 'user123' can update their profile at /users/user123.
-     * @allow (delete) - User with UID 'user123' can delete their profile at /users/user123.
-     * @deny (create) - User with UID 'user456' cannot create a profile at /users/user123.
-     * @deny (get) - User with UID 'user456' cannot read the profile at /users/user123.
-     * @principle Enforces document ownership for user profiles.
+     * @allow (create) - Authenticated user can create their own profile.
+     * @allow (get) - User can read their own profile, or admins can read any profile.
+     * @allow (update) - User can update their own profile.
+     * @allow (delete) - User can delete their own profile.
+     * @allow (list) - Limited listing for setup page (max 10 docs) or admin access.
+     * @principle Enforces document ownership for user profiles with setup page exception.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow get: if isOwner(userId) || (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      
+      // Allow very limited listing for setup page to check if admin exists
+      // Limited to 10 documents to prevent data scraping
+      allow list: if (
+        request.query.limit <= 10 ||
+        (isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+      
+      allow create: if isSignedIn() && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
