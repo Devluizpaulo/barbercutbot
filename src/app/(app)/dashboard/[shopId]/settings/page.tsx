@@ -387,12 +387,14 @@ export default function SettingsPage() {
         replace(shop.workingHours);
       }
 
-      // Holidays Form - only fetch national holidays once
-      if (holidaysForm.getValues('holidays').length === 0) {
+      // Holidays Form
+      const currentHolidays = holidaysForm.getValues('holidays');
+      if (shop.holidays && currentHolidays.length === 0) {
         const fetchAndSetHolidays = async () => {
           try {
             const year = new Date().getFullYear();
             const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
+            if (!response.ok) throw new Error('Failed to fetch holidays');
             const nationalHolidays: { date: string; name: string }[] = await response.json();
             
             const formattedHolidays = nationalHolidays.map((h) => ({
@@ -423,7 +425,7 @@ export default function SettingsPage() {
           }
         };
         fetchAndSetHolidays();
-      } else if (shop.holidays) {
+      } else if(shop.holidays) {
          replaceHolidays(shop.holidays.map((h) => ({ ...h, date: toDate(h.date) })));
       }
       
@@ -1850,3 +1852,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
