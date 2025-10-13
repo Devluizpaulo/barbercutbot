@@ -41,36 +41,43 @@ Acesse: `http://localhost:3000`
 
 ---
 
-## 🔧 Configuração Inicial do Sistema
+## 🔧 Configuração Inicial: Criando o Primeiro Administrador (Manual)
 
-### **Criar o Primeiro Administrador**
+Para ter acesso total ao sistema, o primeiro passo é criar um usuário administrador manualmente no Firebase. Siga os passos abaixo.
 
-Existem 2 formas de criar o primeiro admin:
+### **Passo 1: Criar Usuário no Firebase Authentication**
 
-#### **Opção A: Interface de Setup (Recomendado) ✨**
+1.  Acesse o **[Firebase Console](https://console.firebase.google.com/)** e vá para o seu projeto.
+2.  No menu lateral, vá para **Build > Authentication**.
+3.  Clique na aba **Users** e depois em **Add user**.
+4.  Preencha:
+    - **Email**: `admin@flowcutspro.com` (ou um email de sua preferência).
+    - **Password**: Crie uma senha segura (ex: `SenhaAdmin123!`).
+5.  Clique em **Add user**.
+6.  Na lista de usuários, encontre o que você acabou de criar e **copie o UID** (User ID) dele. Você precisará disso no próximo passo.
 
-1. Acesse: `http://localhost:3000/setup`
-2. Preencha o formulário com seus dados
-3. Clique em "Criar Administrador"
-4. Pronto! Você será redirecionado para o painel admin
+### **Passo 2: Criar Documento no Firestore com a Role de Admin**
 
-#### **Opção B: Manual via Firebase Console**
+1.  Ainda no Firebase Console, vá para **Build > Firestore Database**.
+2.  Selecione (ou crie) a coleção `users`.
+3.  Clique em **Add document**.
+4.  No campo **Document ID**, **cole o UID** que você copiou do Authentication.
+5.  Adicione os seguintes campos ao documento:
+    - `id` (string): **Cole o UID novamente aqui.**
+    - `firstName` (string): `Admin`
+    - `lastName` (string): `Sistema`
+    - `email` (string): `admin@flowcutspro.com` (o mesmo email que você usou)
+    - `role` (string): `admin`  **<-- ⚠️ ESTE É O PASSO MAIS IMPORTANTE!**
+    - `createdAt` (timestamp): Escolha a data e hora atuais.
+6.  Clique em **Save**.
 
-1. Crie usuário no **Firebase Authentication**
-2. Crie documento na coleção `users` no **Firestore** com:
-   ```json
-   {
-     "id": "[UID do usuário]",
-     "firstName": "Admin",
-     "lastName": "Sistema",
-     "email": "admin@flowcutspro.com",
-     "role": "admin",  // ⚠️ IMPORTANTE!
-     "createdAt": "[timestamp]"
-   }
-   ```
-3. Faça login em `/admin`
+### **Passo 3: Fazer Login**
 
-📖 **Documentação completa:** [docs/PRIMEIRO-ADMIN-SETUP.md](docs/PRIMEIRO-ADMIN-SETUP.md)
+1.  Acesse a página de login administrativo: `http://localhost:3000/admin`
+2.  Use o email e a senha que você acabou de criar.
+3.  Você será redirecionado para o painel de controle (`/cpanel`).
+
+**Pronto!** Agora você tem controle total sobre a plataforma e pode adicionar outros membros da equipe através do painel, se necessário.
 
 ---
 
@@ -82,8 +89,7 @@ src/
 │   ├── (auth)/              # Páginas de autenticação
 │   │   ├── login/           # Login de usuários
 │   │   ├── signup/          # Cadastro de usuários
-│   │   ├── admin/           # Login administrativo
-│   │   └── setup/           # Configuração inicial
+│   │   └── admin/           # Login administrativo
 │   ├── (app)/               # Páginas da aplicação (dashboard)
 │   └── cpanel/              # Painel administrativo
 │       └── (cpanel)/
@@ -162,7 +168,6 @@ Todos os acessos e ações administrativas são registrados automaticamente:
 - `/login` - Login de usuários
 - `/signup` - Cadastro de novos usuários
 - `/admin` - Login administrativo
-- `/setup` - Configuração inicial (só quando não há admins)
 
 ### **Autenticadas (Proprietários)**
 - `/dashboard/shops` - Selecionar loja
@@ -246,20 +251,16 @@ firebase deploy --only hosting
 
 ## 🔍 Solução de Problemas
 
-### **Não consigo criar o primeiro admin**
-- Verifique se as regras do Firestore estão implantadas
-- Tente usar o método manual via Firebase Console
-- Consulte: [docs/PRIMEIRO-ADMIN-SETUP.md](docs/PRIMEIRO-ADMIN-SETUP.md)
-
-### **Erro ao fazer login**
-- Verifique se o usuário tem `role: "admin"` no Firestore
-- Limpe o cache do navegador
-- Verifique o console (F12) para erros
+### **Erro ao fazer login como admin**
+- Verifique no Firestore se o usuário tem o campo `role` com o valor exato de `"admin"` (minúsculas).
+- Verifique se o UID do documento no Firestore corresponde ao UID do usuário no Authentication.
+- Limpe o cache do navegador e tente novamente.
+- Verifique o console do navegador (F12) para erros.
 
 ### **"Permission Denied" no Firestore**
-- Verifique se as regras foram implantadas: `firebase deploy --only firestore:rules`
-- Verifique se o usuário está autenticado
-- Consulte os logs do Firebase Console
+- Verifique se as regras do Firestore foram implantadas: `firebase deploy --only firestore:rules`
+- Verifique se o usuário está autenticado com a conta correta.
+- Consulte os logs do Firebase Console para mais detalhes.
 
 ---
 
@@ -295,18 +296,3 @@ Desenvolvido com ❤️ para transformar o gerenciamento de barbearias.
 **Versão:** 1.0.0  
 **Status:** ✅ Produção  
 **Última atualização:** 12/10/2025
-
----
-
-## ⚡ Quick Start Checklist
-
-- [ ] Clonar repositório
-- [ ] Instalar dependências (`npm install`)
-- [ ] Configurar `.env.local` com credenciais Firebase
-- [ ] Deploy das regras (`firebase deploy --only firestore:rules`)
-- [ ] Iniciar servidor (`npm run dev`)
-- [ ] Acessar `/setup` e criar primeiro admin
-- [ ] Fazer login em `/admin`
-- [ ] Explorar o painel `/cpanel`
-
-🚀 **Pronto para começar!**
