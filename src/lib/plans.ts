@@ -28,7 +28,7 @@ export const PLANS: Plan[] = [
             'Acesso ilimitado para 1 profissional',
             'Suporte por email',
         ],
-        priceId: 'price_...', // <-- COLE AQUI O ID DO PREÇO DO PLANO STARTER
+        priceId: 'price_1SHntO4tLg09x1bm9YRfwz1h', 
         metadata: {
             features: "agenda,crm,servicos,qrcode",
             max_profissionais: "1",
@@ -51,7 +51,7 @@ export const PLANS: Plan[] = [
             'Controle de Produtos e Estoque',
             'Suporte prioritário via chat',
         ],
-        priceId: 'price_...', // <-- COLE AQUI O ID DO PREÇO DO PLANO PRO
+        priceId: 'price_1SHntx4tLg09x1bmxF6aRWvs', 
         metadata: {
             features: "agenda,crm,servicos,qrcode,financeiro,pdv,estoque,equipe",
             max_profissionais: "5",
@@ -73,7 +73,7 @@ export const PLANS: Plan[] = [
             'Campanhas de reativação',
             'Suporte VIP prioritário via WhatsApp',
         ],
-        priceId: 'price_...', // <-- COLE AQUI O ID DO PREÇO DO PLANO PREMIUM
+        priceId: 'price_1SHntc4tLg09x1bmGIw5Aus3', 
         metadata: {
             features: "completo,ia,whatsapp,marketing,automacao",
             max_profissionais: "ilimitado",
@@ -94,7 +94,7 @@ export const PLANS: Plan[] = [
             'Até 2.000 mensagens WhatsApp/mês',
             '100.000 tokens de processamento IA/mês'
         ],
-        priceId: 'price_...', // <-- COLE AQUI O ID DO PREÇO DO ADD-ON DE IA
+        priceId: 'price_1SHo1n4tLg09x1bmlc92xkHS',
         metadata: {
             tipo: "addon",
             max_mensagens_ia: "2000",
