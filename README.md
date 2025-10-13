@@ -15,16 +15,21 @@ cd Barbearia-SaaS
 npm install
 ```
 
-### **3. Configure o Firebase**
-Crie um arquivo `.env.local` na raiz do projeto com suas credenciais do Firebase:
+### **3. Configure as Variáveis de Ambiente**
+Crie um arquivo `.env.local` na raiz do projeto com suas credenciais do Firebase e do Mercado Pago:
 
 ```env
+# Firebase
 NEXT_PUBLIC_FIREBASE_API_KEY=sua-api-key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=seu-projeto-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seu-projeto.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=seu-app-id
+
+# Mercado Pago
+# Obtenha seu Access Token em: https://www.mercadopago.com.br/developers/panel/credentials
+MERCADO_PAGO_ACCESS_TOKEN=SEU_ACCESS_TOKEN_DE_PRODUCAO
 ```
 
 ### **4. Deploy das Regras do Firestore**
@@ -37,7 +42,7 @@ firebase deploy --only firestore:rules
 npm run dev
 ```
 
-Acesse: `http://localhost:3000`
+Acesse: `http://localhost:9002`
 
 ---
 
@@ -73,7 +78,7 @@ Para ter acesso total ao sistema, o primeiro passo é criar um usuário administ
 
 ### **Passo 3: Fazer Login**
 
-1.  Acesse a página de login administrativo: `http://localhost:3000/admin`
+1.  Acesse a página de login administrativo: `http://localhost:9002/admin`
 2.  Use o email e a senha que você acabou de criar.
 3.  Você será redirecionado para o painel de controle (`/cpanel`).
 
@@ -196,6 +201,7 @@ Todos os acessos e ações administrativas são registrados automaticamente:
 - **Linguagem:** TypeScript
 - **UI:** Shadcn/UI + Tailwind CSS
 - **Backend:** Firebase (Auth + Firestore)
+- **Pagamentos:** Mercado Pago
 - **Validação:** Zod + React Hook Form
 - **Gráficos:** Recharts
 - **Datas:** date-fns
