@@ -28,11 +28,10 @@ import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign, CheckSquare, Square, ShoppingCart, Trash2, PlusCircle, Search } from 'lucide-react';
-import { ReceiptDialog } from './receipt-dialog';
+import { ReceiptDialog } from './ReceiptDialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, Timestamp, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -116,8 +115,7 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
       const batch = writeBatch(firestore);
       const recordsRef = collection(firestore, 'barberShops', shopId, 'financialRecords');
       const customer = allCustomers?.find(c => c.id === appointment.customerId);
-      const description = appointment.items.map(i => allServices?.find(s => s.id === i.serviceId)?.name).join(', ') || 'Serviço';
-
+      
       const financialRecordData = {
         barberShopId: shopId,
         date: Timestamp.fromDate(new Date()),

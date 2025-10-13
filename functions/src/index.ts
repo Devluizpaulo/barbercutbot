@@ -10,7 +10,7 @@ admin.initializeApp();
  * Callable Cloud Function to check if any admin user exists.
  * This function can be called by an unauthenticated user.
  */
-export const checkAdminExists = functions.https.onCall(async (data, context) => {
+export const checkAdminExists = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const usersRef = admin.firestore().collection('users');
     const adminQuery = usersRef.where('role', '==', 'admin').limit(1);
     const adminSnapshot = await adminQuery.get();
@@ -23,7 +23,7 @@ export const checkAdminExists = functions.https.onCall(async (data, context) => 
  * This function can be called by an unauthenticated user, but it will
  * only succeed if NO admin user currently exists in the database.
  */
-export const setupAdminUser = functions.https.onCall(async (data, context) => {
+export const setupAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const { email, password, firstName, lastName } = data;
 
     // --- Security Check: Ensure no admin already exists ---
@@ -176,4 +176,3 @@ export const onUserCreateSetRole = functions.firestore
       }
     }
   });
-
