@@ -6,10 +6,11 @@ export interface Plan {
     price: number;
     features: string[];
     isFeatured?: boolean;
-    preapprovalPlanId?: string; // ID do plano de assinatura do Mercado Pago
+    priceId?: string; // Stripe Price ID
 }
 
-// ATENÇÃO: Substitua os valores de preapprovalPlanId pelos IDs reais gerados no seu painel do Mercado Pago.
+// ATENÇÃO: Substitua os valores de priceId pelos IDs reais gerados no seu painel da Stripe.
+// Você pode encontrá-los na seção "Produtos" do seu dashboard.
 export const PLANS: Plan[] = [
     {
         id: 'lite',
@@ -23,7 +24,7 @@ export const PLANS: Plan[] = [
             'Perfil de Divulgação Online',
             'Suporte via Ticket',
         ],
-        preapprovalPlanId: '2b790d6143164a769b2aae7da183ca07' // ID de exemplo que você forneceu.
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
     },
     {
         id: 'business',
@@ -39,7 +40,7 @@ export const PLANS: Plan[] = [
             'Gestão de Equipe e Comissões',
             'Assistente IA (Opcional)',
         ],
-        preapprovalPlanId: 'SUBSTITUIR_PELO_ID_DO_PLANO_BUSINESS' // ID fictício
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
     },
     {
         id: 'pro',
@@ -53,6 +54,6 @@ export const PLANS: Plan[] = [
             'Campanhas de Marketing (em breve)',
             'Suporte Prioritário',
         ],
-        preapprovalPlanId: 'SUBSTITUIR_PELO_ID_DO_PLANO_PRO' // ID fictício
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
     }
 ];

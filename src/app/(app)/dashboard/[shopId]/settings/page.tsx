@@ -51,7 +51,7 @@ import {
   Phone,
   Check,
 } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, Timestamp } from 'firebase/firestore';
 import type {
@@ -110,6 +110,7 @@ import { TeamTable } from './team-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PLANS, Plan } from '@/lib/plans';
+import { createStripeCheckout } from '@/ai/flows/create-stripe-checkout-flow';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -214,6 +215,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const shopId = params.shopId as string;
+  const { user } = useUser();
   const firestore = useFirestore();
   const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
@@ -432,6 +434,43 @@ export default function SettingsPage() {
     });
     setNewRoleName("");
     setIsAddingRole(false);
+  };
+
+  const handleCheckout = async (plan: Plan) => {
+    if (!user || !plan.priceId) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Usuário não autenticado ou ID do plano não encontrado.'
+      });
+      return;
+    }
+    setIsBillingLoading(true);
+    try {
+      const { checkoutUrl } = await createStripeCheckout({
+        shopId: shopId,
+        planId: plan.id,
+        priceId: plan.priceId,
+        userEmail: user.email!,
+        userId: user.uid,
+      });
+
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        throw new Error('URL de checkout não recebida.');
+      }
+
+    } catch (error) {
+      console.error('Error creating Stripe checkout session:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao iniciar pagamento',
+        description: 'Não foi possível criar a sessão de checkout. Tente novamente.',
+      });
+    } finally {
+      setIsBillingLoading(false);
+    }
   };
 
 
@@ -675,10 +714,13 @@ export default function SettingsPage() {
                        {currentPlan.id === plan.id ? (
                            <Button className="w-full" disabled>Plano Atual</Button>
                        ) : (
-                           <Button asChild className="w-full" disabled={!plan.preapprovalPlanId || plan.preapprovalPlanId.startsWith('SUBSTITUIR')}>
-                               <a href={`https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=${plan.preapprovalPlanId}`} target="_blank" rel="noopener noreferrer">
-                                 {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}
-                               </a>
+                           <Button 
+                              className="w-full"
+                              onClick={() => handleCheckout(plan)}
+                              disabled={isBillingLoading || !plan.priceId || plan.priceId.startsWith('price_')}
+                           >
+                              {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                              {currentPlan.price > plan.price ? 'Fazer Downgrade' : 'Fazer Upgrade'}
                            </Button>
                        )}
                     </CardFooter>
@@ -695,7 +737,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardFooter>
                 <Button variant="outline" disabled>
-                  Cancelar Assinatura
+                  Gerenciar no Portal da Stripe (Em breve)
                 </Button>
               </CardFooter>
             </Card>

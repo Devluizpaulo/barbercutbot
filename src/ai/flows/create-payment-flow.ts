@@ -1,87 +1,58 @@
-
-'use server';
-
-/**
- * @fileOverview A Genkit flow for creating a Mercado Pago payment preference.
- *
- * - createPayment - Creates a payment preference and returns a checkout URL.
- * - CreatePaymentInput - The input type for the createPayment function.
- * - CreatePaymentOutput - The return type for the createPayment function.
- */
-
-import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
-
-// WARNING: In a real application, retrieve this securely (e.g., from a secret manager).
-// Do NOT hardcode credentials.
-const MOCK_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'YOUR_MERCADO_PAGO_ACCESS_TOKEN';
-
-const client = new MercadoPagoConfig({ accessToken: MOCK_ACCESS_TOKEN });
-const preference = new Preference(client);
-
-const CreatePaymentInputSchema = z.object({
-    shopId: z.string().describe('The ID of the barber shop.'),
-    planId: z.string().describe('The ID of the subscription plan (e.g., "lite", "business", "pro").'),
-    shopName: z.string().describe('The name of the barber shop for the transaction description.'),
-    price: z.number().describe('The price of the plan.'),
-});
-export type CreatePaymentInput = z.infer<typeof CreatePaymentInputSchema>;
-
-const CreatePaymentOutputSchema = z.object({
-  checkoutUrl: z.string().describe('The URL for the Mercado Pago checkout page.'),
-});
-export type CreatePaymentOutput = z.infer<typeof CreatePaymentOutputSchema>;
-
-export async function createPayment(input: CreatePaymentInput): Promise<CreatePaymentOutput> {
-  return createPaymentFlow(input);
+export interface Plan {
+    id: 'lite' | 'business' | 'pro';
+    name: string;
+    description: string;
+    price: number;
+    features: string[];
+    isFeatured?: boolean;
+    priceId?: string; // Stripe Price ID
 }
 
-const createPaymentFlow = ai.defineFlow(
-  {
-    name: 'createPaymentFlow',
-    inputSchema: CreatePaymentInputSchema,
-    outputSchema: CreatePaymentOutputSchema,
-  },
-  async (input: CreatePaymentInput) => {
-    
-    if (!MOCK_ACCESS_TOKEN || MOCK_ACCESS_TOKEN === 'YOUR_MERCADO_PAGO_ACCESS_TOKEN') {
-        throw new Error('Mercado Pago Access Token is not configured. Please set the MERCADO_PAGO_ACCESS_TOKEN environment variable.');
-    }
-
-
-    const body = {
-        items: [
-            {
-                id: input.planId,
-                title: `Assinatura Plano ${input.planId.charAt(0).toUpperCase() + input.planId.slice(1)} - ${input.shopName}`,
-                quantity: 1,
-                unit_price: input.price,
-                currency_id: 'BRL',
-            },
+// ATENÇÃO: Substitua os valores de priceId pelos IDs reais gerados no seu painel da Stripe.
+// Você pode encontrá-los na seção "Produtos" do seu dashboard.
+export const PLANS: Plan[] = [
+    {
+        id: 'lite',
+        name: 'Plano Essencial',
+        description: 'Perfeito para organizar a agenda, clientes e o caixa do dia a dia.',
+        price: 89.90,
+        features: [
+            'Agenda Online Completa',
+            'Cadastro de Clientes (CRM)',
+            'Controle de Caixa Simplificado',
+            'Perfil de Divulgação Online',
+            'Suporte via Ticket',
         ],
-        back_urls: {
-            success: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=success`,
-            failure: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=failure`,
-            pending: `https://flowcutspro.firebaseapp.com/dashboard/${input.shopId}/settings?payment=pending`,
-        },
-        auto_return: 'approved' as const,
-        external_reference: input.shopId,
-    };
-
-    try {
-        const result = await preference.create({ body });
-        if (!result.init_point) {
-            throw new Error('Mercado Pago did not return an init_point URL.');
-        }
-        
-        return {
-            checkoutUrl: result.init_point,
-        };
-
-    } catch (error: any) {
-        console.error("Error creating Mercado Pago preference: ", error.cause?.message || error.message);
-        throw new Error("Failed to create payment preference with Mercado Pago.");
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
+    },
+    {
+        id: 'business',
+        name: 'Plano Business',
+        description: 'Gestão completa com relatórios financeiros e controle de estoque.',
+        price: 139.90,
+        isFeatured: true,
+        features: [
+            'Tudo do Plano Essencial',
+            'Controle Financeiro Avançado',
+            'Gestão de Produtos e Estoque',
+            'Relatórios de Desempenho',
+            'Gestão de Equipe e Comissões',
+            'Assistente IA (Opcional)',
+        ],
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
+    },
+    {
+        id: 'pro',
+        name: 'Plano Pro',
+        description: 'A solução definitiva com automação total e funcionalidades exclusivas.',
+        price: 189.90,
+        features: [
+            'Tudo do Plano Business',
+            'Assistente IA no WhatsApp Incluído',
+            'Lembretes de Agendamento Automáticos',
+            'Campanhas de Marketing (em breve)',
+            'Suporte Prioritário',
+        ],
+        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
     }
-  }
-);
+];

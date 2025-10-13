@@ -33,7 +33,6 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
-    "@types/mercadopago": "^1.5.11",
     "ai": "^3.2.32",
     "canvg": "^4.0.3",
     "class-variance-authority": "^0.7.0",
@@ -47,7 +46,6 @@
     "input-otp": "^1.2.5",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.400.0",
-    "mercadopago": "^2.0.11",
     "next": "^15.0.3",
     "react": "^18.3.1",
     "react-day-picker": "8.10.1",
@@ -55,6 +53,7 @@
     "react-hook-form": "^7.52.2",
     "react-qr-code": "^2.0.15",
     "recharts": "^2.12.7",
+    "stripe": "^16.5.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
