@@ -48,9 +48,12 @@ service cloud.firestore {
 
     /**
      * @description Checks if the authenticated user is an admin.
+     * @note Checks the 'role' field in the user's Firestore document.
      */
     function isAdmin() {
-        return isSignedIn() && request.auth.token.admin == true;
+        return isSignedIn() && 
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
    /**
@@ -82,10 +85,10 @@ service cloud.firestore {
      */
     match /barberShops/{barberShopId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow list: if false;
+      allow list: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isBarberShopOwner(barberShopId) && resource != null;
-      allow delete: if isBarberShopOwner(barberShopId) && resource != null;
+      allow update: if isBarberShopOwner(barberShopId) && resource != null || isAdmin();
+      allow delete: if isBarberShopOwner(barberShopId) && resource != null || isAdmin();
     }
 
     /**
@@ -230,6 +233,20 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Rules for the /adminLogs/{logId} collection.
+     * @path /adminLogs/{logId}
+     * @allow (create) - Any authenticated user can create logs (needed for login attempts).
+     * @allow (read) - Only admins can read logs.
+     * @deny (update, delete) - Logs are immutable for audit purposes.
+     * @principle Admin logs are write-once, read-only for admins.
+     */
+    match /adminLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }
