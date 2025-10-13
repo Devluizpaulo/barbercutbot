@@ -104,6 +104,7 @@ export default function CPanelShopsPage() {
   const handleCancelSubscription = async (shop: BarberShop) => {
     if (!shop.subscription?.stripeSubscriptionId) {
         toast({ variant: 'destructive', title: 'ID da Assinatura não encontrado' });
+        setShopToAction(null);
         return;
     }
 
@@ -229,18 +230,18 @@ export default function CPanelShopsPage() {
                                 Gerenciar Fatura
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                             <DropdownMenuItem
+                                onClick={() => setShopToAction({ shop, action: 'deactivate'})}
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Desativar Loja
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => setShopToAction({ shop, action: 'cancel_subscription'})}
                             >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Cancelar Assinatura
-                            </DropdownMenuItem>
-                             <DropdownMenuItem
-                                onClick={() => setShopToAction({ shop, action: 'deactivate'})}
-                              >
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                Desativar Loja
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -288,4 +289,3 @@ export default function CPanelShopsPage() {
     </>
   );
 }
-
