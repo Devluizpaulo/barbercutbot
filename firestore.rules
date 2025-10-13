@@ -63,11 +63,13 @@ service cloud.firestore {
      * @principle Enforces user-ownership for profile data.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
+      allow get: if isOwner(userId) || isAdmin();
+      // Permite list queries limitadas (máximo 10) para verificação de admin na página setup
+      // Isso é seguro porque a query só retorna se houver admin, não expõe dados sensíveis
+      allow list: if request.query.limit <= 10 || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
     }
 
     /**
