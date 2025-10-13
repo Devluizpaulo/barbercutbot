@@ -28,7 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign, CheckSquare, Square, ShoppingCart, Trash2, PlusCircle, Search } from 'lucide-react';
-import { ReceiptDialog } from './receipt-dialog';
+import { ReceiptDialog } from './ReceiptDialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, Timestamp, doc, where, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';

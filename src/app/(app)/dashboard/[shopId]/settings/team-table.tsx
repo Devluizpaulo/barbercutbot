@@ -18,12 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -42,6 +36,12 @@ import type { TeamMember } from '@/lib/types';
 import { AddTeamMemberForm } from './add-team-member-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TeamTableProps {
   shopId: string;
