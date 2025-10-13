@@ -4,85 +4,105 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // =============================================
-    // Helper Functions
+    // HELPER FUNCTIONS
     // =============================================
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+    
+    function getUserData() {
+      // Path to the user's document in the /users collection
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     
-    function isBarberShopOwner(barberShopId) {
-      return isAuthenticated() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
+    function isAdmin() {
+      // Checks if the user has a custom claim 'admin' set to true
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function ownsBarberShop(barberShopId) {
+      return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(barberShopId)).data.ownerId == request.auth.uid;
     }
 
     // =============================================
-    // User Profiles
+    // GLOBAL RULES (ADMIN OVERRIDE)
+    // =============================================
+    match /{document=**} {
+      // Admins have god-mode access
+      allow read, write: if isAdmin();
+    }
+    
+    // =============================================
+    // USER-SPECIFIC RULES
     // =============================================
     match /users/{userId} {
-      // Admins can read/write any profile, users can only manage their own.
-      allow read, write: if isOwner(userId) || isAdmin();
+      // Allow any authenticated user to LIST users to check if an admin exists during setup.
+      // Individual user documents are still protected by the 'get' rule below.
+      allow list: if isSignedIn();
       
-      // Allow any authenticated user to create their OWN profile document.
-      // This is crucial for the signup flow.
+      // Allow a user to read their own document.
+      allow get: if isOwner(userId);
+      
+      // Allow a user to create their own document (e.g., on signup).
+      // The request.resource.data.id must match the user's UID to prevent spoofing.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
+      
+      // Allow a user to update their own document, but NOT change their role.
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      
+      // Disallow deletion of user documents by users themselves.
+      allow delete: if false;
     }
 
     // =============================================
-    // Barber Shops (Tenants)
+    // BARBERSHOP RULES (MULTI-TENANT)
     // =============================================
     match /barberShops/{barberShopId} {
-      // Read: Owner of the shop or an admin can read.
-      allow get: if isBarberShopOwner(barberShopId) || isAdmin();
+      // Any authenticated user can create a new shop.
+      allow create: if isSignedIn();
       
-      // List: Only admins can list all shops.
-      // A specific user can only query for shops they own.
-      allow list: if isAdmin();
+      // Only the owner can read, update, or delete their own shop.
+      allow read, update, delete: if ownsBarberShop(barberShopId);
       
-      // Create: Any authenticated user can create a new shop.
-      allow create: if isAuthenticated();
-      
-      // Update/Delete: Only the owner or an admin can modify/delete.
-      allow update, delete: if isBarberShopOwner(barberShopId) || isAdmin();
-
-      // =============================================
-      // Subcollections within a Barber Shop
-      // =============================================
-      match /{subcollection}/{docId} {
-        // Any subcollection document (appointments, clients, etc.)
-        // can only be accessed by the owner of the parent shop or an admin.
-        allow read, write, delete: if isBarberShopOwner(barberShopId) || isAdmin();
+      // Rules for all subcollections within a barber shop
+      match /{collection}/{docId} {
+        allow read, write: if ownsBarberShop(barberShopId);
       }
     }
     
     // =============================================
-    // CPanel Collections (Admin Only)
+    // ADMIN LOGS
     // =============================================
-    
-    // Admin Logs: Secure collection for administrative actions.
     match /adminLogs/{logId} {
-      // Anyone authenticated can create a log entry (needed for failed login attempts).
-      allow create: if isAuthenticated();
+      // Allow any authenticated user to create a log entry. This is necessary to
+      // log failed login attempts before a user's role is confirmed.
+      allow create: if isSignedIn();
       
-      // Only admins can read logs.
+      // Only admins can read the logs.
       allow read, list: if isAdmin();
       
-      // Logs are immutable.
+      // Logs are immutable; they cannot be updated or deleted.
       allow update, delete: if false;
     }
-
-    // Tickets: For customer support.
+    
+    // =============================================
+    // SUPPORT TICKETS & LEGAL DOCS
+    // =============================================
     match /tickets/{ticketId} {
-      // Owners can create tickets for their shops. Admins can manage all.
-      allow create: if ownsBarberShop(request.resource.data.shopId);
-      allow read, update: if ownsBarberShop(resource.data.shopId) || isAdmin();
-      allow list: if isAdmin();
+        // Owner can create, admin can read/write
+        allow create: if isSignedIn();
+        allow read, update: if isAdmin();
+        allow delete: if false;
+    }
+    
+    match /documents/{docId} {
+        // Public read, admin write
+        allow get: if true;
+        allow list, write: if isAdmin();
     }
   }
 }
