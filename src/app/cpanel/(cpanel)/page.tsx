@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useRef } from 'react';
@@ -302,7 +303,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                   {isLoading && <Skeleton className="h-24 w-full" />}
-                  {users?.slice(0, 4).map((user, index) => (
+                  {users && users.slice(0, 4).map((user, index) => (
                       <div className="flex items-start gap-4" key={user.id}>
                           <Avatar className="h-9 w-9">
                               <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>

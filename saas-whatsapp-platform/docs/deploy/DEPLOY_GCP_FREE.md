@@ -22,7 +22,7 @@ O Google Cloud oferece uma VM **gratuita permanentemente** com estas especifica�
 ### ✅ **Passo 1: Criar VM Gratuita**
 
 1. **Acesse seu projeto:**
-   - https://console.cloud.google.com/compute/instances?project=flowcutspro
+   - https://console.cloud.google.com/compute/instances?project=iaflowcutspro
 
 2. **Clique em "CREATE INSTANCE"**
 
@@ -65,7 +65,7 @@ Firewall:
 
 # Permitir Evolution API (porta 8081)
 gcloud compute firewall-rules create allow-evolution-free \
-  --project=flowcutspro \
+  --project=iaflowcutspro \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
@@ -76,7 +76,7 @@ gcloud compute firewall-rules create allow-evolution-free \
 
 # Permitir N8N (porta 5678)
 gcloud compute firewall-rules create allow-n8n-free \
-  --project=flowcutspro \
+  --project=iaflowcutspro \
   --direction=INGRESS \
   --priority=1000 \
   --network=default \
@@ -97,7 +97,7 @@ gcloud compute firewall-rules create allow-n8n-free \
 ```bash
 gcloud compute ssh evolution-api-free \
   --zone=us-west1-b \
-  --project=flowcutspro
+  --project=iaflowcutspro
 ```
 
 ---
@@ -367,7 +367,7 @@ docker system prune -a
    ```
 
 3. **Monitorar tráfego:**
-   - https://console.cloud.google.com/networking/networkanalyzer?project=flowcutspro
+   - https://console.cloud.google.com/networking/networkanalyzer?project=iaflowcutspro
 
 ---
 

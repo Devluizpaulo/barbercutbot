@@ -6,7 +6,7 @@ Sistema multi-tenant de automação WhatsApp com IA para barbearias.
 
 **Servidor:** 34.182.111.255 (GCP Free Tier)  
 **Custo:** R$ 0,00/mês  
-**Projeto ID:** flowcutspro
+**Projeto ID:** iaflowcutspro
 
 ---
 
@@ -18,7 +18,7 @@ VM GCP (34.182.111.255)
 ├── N8N :5678  ✅
 └── SQLite (leve)
 
-Firebase (flowcutspro)
+Firebase (iaflowcutspro)
 ├── Firestore ✅
 └── Auth/Hosting (futuro)
 
@@ -34,8 +34,8 @@ Groq IA
 |---------|-----|-------------|
 | **Evolution API** | http://34.182.111.255:8081/manager | API Key: evolution_api_key_2024 |
 | **N8N** | http://34.182.111.255:5678 | admin / n8n_admin_2024 |
-| **Firebase Console** | [Link](https://console.firebase.google.com/project/flowcutspro) | Conta Google |
-| **Firestore** | [Link](https://console.firebase.google.com/project/flowcutspro/firestore) | Conta Google |
+| **Firebase Console** | [Link](https://console.firebase.google.com/project/iaflowcutspro) | Conta Google |
+| **Firestore** | [Link](https://console.firebase.google.com/project/iaflowcutspro/firestore) | Conta Google |
 
 ---
 
@@ -119,7 +119,7 @@ Para uma visão detalhada do que foi construído e quais são os próximos passo
 
 ### **SSH na VM:**
 ```bash
-gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=flowcutspro
+gcloud compute ssh evolution-saas-free --zone=us-west1-b --project=iaflowcutspro
 ```
 
 ### **Dentro da VM:**
