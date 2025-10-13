@@ -80,7 +80,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {"name": "Authorization", "value": "Bearer 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"},
+            {"name": "Authorization", "value": "Bearer {{$env.GROQ_API_KEY}}"},
             {"name": "Content-Type", "value": "application/json"}
           ]
         },
