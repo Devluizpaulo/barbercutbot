@@ -10,7 +10,7 @@ export interface Plan {
 }
 
 // ATENÇÃO: Substitua os valores de priceId pelos IDs reais gerados no seu painel da Stripe.
-// Você pode encontrá-los na seção "Produtos" do seu dashboard.
+// Você pode encontrá-los na seção "Produtos" do seu dashboard Stripe.
 export const PLANS: Plan[] = [
     {
         id: 'lite',
@@ -24,7 +24,7 @@ export const PLANS: Plan[] = [
             'Perfil de Divulgação Online',
             'Suporte via Ticket',
         ],
-        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
+        priceId: 'price_...' // <-- COLE AQUI O ID DO PREÇO DO PLANO ESSENCIAL (LITE)
     },
     {
         id: 'business',
@@ -40,7 +40,7 @@ export const PLANS: Plan[] = [
             'Gestão de Equipe e Comissões',
             'Assistente IA (Opcional)',
         ],
-        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
+        priceId: 'price_...' // <-- COLE AQUI O ID DO PREÇO DO PLANO BUSINESS
     },
     {
         id: 'pro',
@@ -54,6 +54,6 @@ export const PLANS: Plan[] = [
             'Campanhas de Marketing (em breve)',
             'Suporte Prioritário',
         ],
-        priceId: 'price_1P...' // SUBSTITUA PELO SEU PRICE ID REAL
+        priceId: 'price_...' // <-- COLE AQUI O ID DO PREÇO DO PLANO PRO
     }
 ];
