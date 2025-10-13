@@ -1,178 +1,149 @@
-
-import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import * as functions from 'firebase-functions';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { CallableRequest } from 'firebase-functions/v2/https';
 
-// Initialize the Admin SDK
 admin.initializeApp();
+const db = getFirestore();
+
+// =============================================
+// FUNÇÕES DE VERIFICAÇÃO E SETUP
+// =============================================
 
 /**
- * Callable Cloud Function to check if any admin user exists.
- * This function can be called by an unauthenticated user.
+ * Verifica se já existe um usuário com a role de 'admin'.
+ * Chamada pela página /setup para decidir se o formulário deve ser exibido.
  */
-export const checkAdminExists = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-    const usersRef = admin.firestore().collection('users');
-    const adminQuery = usersRef.where('role', '==', 'admin').limit(1);
-    const adminSnapshot = await adminQuery.get();
-    return { adminExists: !adminSnapshot.empty };
+export const checkAdminExists = functions.https.onCall(async (data: any, context: any) => {
+    const usersRef = db.collection('users');
+    const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
+
+    return { adminExists: !adminQuery.empty };
 });
 
-
 /**
- * Callable Cloud Function to create the very first admin user.
- * This function can be called by an unauthenticated user, but it will
- * only succeed if NO admin user currently exists in the database.
+ * Cria o primeiro usuário administrador.
+ * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
+export const setupAdminUser = functions.https.onCall(async (data: any, context: any) => {
     const { email, password, firstName, lastName } = data;
 
-    // --- Security Check: Ensure no admin already exists ---
-    const usersRef = admin.firestore().collection('users');
-    const adminQuery = usersRef.where('role', '==', 'admin').limit(1);
-    const adminSnapshot = await adminQuery.get();
-
-    if (!adminSnapshot.empty) {
-        throw new functions.https.HttpsError(
-            'already-exists',
-            'An admin user already exists. Setup cannot proceed.'
-        );
+    // Verifica se já existe algum administrador
+    const usersRef = db.collection('users');
+    const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
+    
+    if (!adminQuery.empty) {
+        throw new functions.https.HttpsError('already-exists', 'Um administrador já existe no sistema.');
     }
 
-    // --- Input Validation ---
-    if (!email || !password || !firstName || !lastName) {
-        throw new functions.https.HttpsError(
-            'invalid-argument',
-            'Missing required fields.'
-        );
+    // Cria o usuário no Firebase Authentication
+    let userRecord;
+    try {
+        userRecord = await admin.auth().createUser({
+            email: email,
+            password: password,
+            displayName: `${firstName} ${lastName}`,
+        });
+    } catch (error: any) {
+        throw new functions.https.HttpsError('internal', 'Erro ao criar usuário no Firebase Auth.', error.message);
     }
     
-    if (password.length < 6) {
-        throw new functions.https.HttpsError(
-            'invalid-argument',
-            'Password must be at least 6 characters long.'
-        );
-    }
-
+    // Cria o documento do usuário no Firestore com a role de admin
+    const userDocRef = usersRef.doc(userRecord.uid);
     try {
-        // Create user in Firebase Auth
-        const userRecord = await admin.auth().createUser({
-            email: email,
-            password: password,
-            displayName: `${firstName} ${lastName}`,
-        });
-
-        // Set 'admin' custom claim for secure access control
-        await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
-
-        // Create user document in Firestore with 'admin' role
-        const userDocRef = admin.firestore().collection('users').doc(userRecord.uid);
         await userDocRef.set({
             id: userRecord.uid,
-            firstName,
-            lastName,
-            email,
-            role: 'admin',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            isSetupAdmin: true,
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            role: 'admin', // A role crucial!
+            createdAt: FieldValue.serverTimestamp(),
         });
-
-        return {
-            uid: userRecord.uid,
-            message: 'First admin user created successfully.'
-        };
-
     } catch (error: any) {
-        console.error("Error creating first admin user:", error);
-        if (error.code && error.code.startsWith('auth/')) {
-            throw new functions.https.HttpsError('invalid-argument', error.message);
-        }
-        throw new functions.https.HttpsError('internal', 'An internal error occurred while creating the admin user.');
+        // Rollback: se falhar ao criar no Firestore, deleta do Auth para evitar inconsistência
+        await admin.auth().deleteUser(userRecord.uid);
+        throw new functions.https.HttpsError('internal', 'Erro ao criar documento do usuário no Firestore.', error.message);
     }
+
+    return { success: true, userId: userRecord.uid };
 });
 
-
 /**
- * Callable Cloud Function to create a new user with an admin or support role.
- * Only authenticated admins can call this function.
+ * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-    // 1. Authentication Check: Ensure the user calling the function is an admin.
-    if (!context.auth || context.auth.token.admin !== true) {
-        throw new functions.https.HttpsError(
-            'permission-denied',
-            'Only administrators can create new admin users.'
-        );
+export const createAdminUser = functions.https.onCall(async (data: any, context: any) => {
+    // 1. Verifica se o usuário que está chamando é um admin
+    if (context.auth?.token.admin !== true) {
+        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
     }
 
+    // 2. Valida os dados recebidos
     const { email, password, firstName, lastName, role } = data;
-
-    // 2. Input Validation
     if (!email || !password || !firstName || !lastName || !role) {
-        throw new functions.https.HttpsError(
-            'invalid-argument',
-            'Missing required fields: email, password, firstName, lastName, role.'
-        );
+        throw new functions.https.HttpsError('invalid-argument', 'Todos os campos são obrigatórios.');
+    }
+    if (role !== 'admin' && role !== 'support') {
+         throw new functions.https.HttpsError('invalid-argument', 'O perfil deve ser "admin" ou "support".');
     }
 
+    // 3. Cria o usuário no Firebase Auth
+    let userRecord;
     try {
-        // 3. Create user in Firebase Authentication
-        const userRecord = await admin.auth().createUser({
+        userRecord = await admin.auth().createUser({
             email: email,
             password: password,
             displayName: `${firstName} ${lastName}`,
         });
-        
-        // 4. Set Custom Claim
-        if (role === 'admin') {
+    } catch (error: any) {
+        throw new functions.https.HttpsError('internal', `Erro ao criar usuário no Auth: ${error.message}`);
+    }
+
+    // 4. Se a role for 'admin', adiciona a custom claim
+    if (role === 'admin') {
+        try {
             await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
+        } catch (error: any) {
+             throw new functions.https.HttpsError('internal', `Erro ao definir permissões de admin: ${error.message}`);
         }
-        
-        // 5. Create user document in Firestore
-        const userDocRef = admin.firestore().collection('users').doc(userRecord.uid);
+    }
+    
+    // 5. Cria o documento do usuário no Firestore
+    const userDocRef = db.collection('users').doc(userRecord.uid);
+    try {
         await userDocRef.set({
             id: userRecord.uid,
-            firstName,
-            lastName,
-            email,
-            role, // 'admin' or 'support'
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            role: role,
+            createdAt: FieldValue.serverTimestamp(),
         });
-
-        return {
-            uid: userRecord.uid,
-            message: `Successfully created user ${email} with role ${role}.`
-        };
-
     } catch (error: any) {
-        console.error("Error creating admin user:", error);
-        // Propagate specific auth errors to the client
-        if (error.code && error.code.startsWith('auth/')) {
-             throw new functions.https.HttpsError('invalid-argument', error.message);
-        }
-        throw new functions.https.HttpsError('internal', 'An internal error occurred.');
+        await admin.auth().deleteUser(userRecord.uid);
+        throw new functions.https.HttpsError('internal', `Erro ao criar documento no Firestore: ${error.message}`);
     }
+
+    return { success: true, userId: userRecord.uid, message: `Usuário ${email} criado com o perfil ${role}.` };
 });
 
+
 /**
- * Cloud Function that triggers when a new user document is created via standard signup.
- * Ensures the 'owner' role does not have an admin claim.
+ * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
+ * Garante que cada usuário tenha um documento correspondente no Firestore.
  */
-export const onUserCreateSetRole = functions.firestore
-  .document('users/{userId}')
-  .onCreate(async (snapshot: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
-    const userData = snapshot.data();
-    const userId = context.params.userId;
+exports.onUserCreate = functions.auth.user().onCreate(async (user) => {
+    const userDocRef = db.collection('users').doc(user.uid);
+    
+    const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
 
-    console.log(`User document created for UID: ${userId}`, userData);
-
-    // This handles the standard signup flow for shop owners.
-    if (userData && userData.role === 'owner') {
-      try {
-        // Ensure no admin claim is set for regular owners.
-        await admin.auth().setCustomUserClaims(userId, { admin: false });
-        console.log(`Successfully ensured no admin claim for owner: ${userId}`);
-      } catch (error) {
-        console.error(`Error setting claims for owner: ${userId}`, error);
-      }
-    }
-  });
+    return userDocRef.set({
+        id: user.uid,
+        firstName: firstName,
+        lastName: lastName,
+        email: user.email,
+        role: 'owner', // Papel padrão para auto-registro
+        createdAt: FieldValue.serverTimestamp(),
+    });
+});
