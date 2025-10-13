@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from 'firebase/firestore';
 
 export type WorkingHour = {
@@ -25,7 +26,7 @@ export type PaymentMethod = {
 export type CashierOperator = {
   id: string;
   name: string;
-  role: string; // 'caixa', 'gerente', etc.
+  role: 'caixa' | 'gerente';
   pin?: string; // 4-digit PIN stored securely
 };
 
@@ -36,7 +37,7 @@ export type ChecklistItem = {
 };
 
 export type CashierSettings = {
-  requirePinToOpen: boolean;
+  requirePassword: boolean;
   openingChecklist: ChecklistItem[];
   closingChecklist: ChecklistItem[];
   operators?: CashierOperator[];

@@ -48,6 +48,7 @@ import {
   Palette,
   Lock,
   Users as UsersIcon,
+  Phone,
 } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams, useRouter } from 'next/navigation';
@@ -106,7 +107,8 @@ import {
 } from '@/components/ui/dialog';
 import { PinInput, PinInputField } from '@/components/ui/pin-input';
 import { TeamTable } from './team-table';
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -500,6 +502,7 @@ export default function SettingsPage() {
 
 
   const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
+    if (!shopRef) return;
     const sanitizedValues = {
       ...values,
       logo: values.logo || '',
@@ -574,6 +577,7 @@ export default function SettingsPage() {
   };
 
   const onHoursSubmit = (values: z.infer<typeof workingHoursFormSchema>) => {
+    if (!shopRef) return;
     setDocumentNonBlocking(shopRef, { workingHours: values.hours }, { merge: true });
     toast({
       title: 'Horários atualizados!',
@@ -582,6 +586,7 @@ export default function SettingsPage() {
   };
 
   const onHolidaysSubmit = (values: z.infer<typeof holidaysFormSchema>) => {
+    if (!shopRef) return;
     const holidaysToSave = values.holidays.map((h) => ({
       ...h,
       date: Timestamp.fromDate(h.date),
@@ -596,6 +601,7 @@ export default function SettingsPage() {
   const onPaymentSettingsSubmit = (
     values: z.infer<typeof paymentSettingsFormSchema>
   ) => {
+    if (!shopRef) return;
     setDocumentNonBlocking(
       shopRef,
       { paymentSettings: values.paymentMethods },
@@ -608,6 +614,7 @@ export default function SettingsPage() {
   };
 
   const onCashierSubmit = (values: z.infer<typeof cashierFormSchema>) => {
+    if (!shopRef) return;
     setDocumentNonBlocking(shopRef, { cashierSettings: values }, { merge: true });
     toast({
       title: 'Configurações do Caixa atualizadas!',
@@ -618,6 +625,7 @@ export default function SettingsPage() {
   const onPermissionsSubmit = (
     values: z.infer<typeof permissionsFormSchema>
   ) => {
+    if (!shopRef) return;
     setDocumentNonBlocking(shopRef, { roles: values.roles }, { merge: true });
     toast({
       title: 'Permissões atualizadas!',
@@ -1841,7 +1849,7 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
             <div className="flex justify-center p-4">
-              <PinInput onComplete={(value) => setCurrentPin(value)}>
+              <PinInput onComplete={(value) => setCurrentPin(value)} length={4}>
                   <PinInputField />
                   <PinInputField />
                   <PinInputField />

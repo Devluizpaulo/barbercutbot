@@ -14,7 +14,7 @@ const db = getFirestore();
  * Verifica se já existe um usuário com a role de 'admin'.
  * Chamada pela página /setup para decidir se o formulário deve ser exibido.
  */
-export const checkAdminExists = functions.https.onCall(async (data: any, context: any) => {
+export const checkAdminExists = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const usersRef = db.collection('users');
     const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
 
@@ -25,7 +25,7 @@ export const checkAdminExists = functions.https.onCall(async (data: any, context
  * Cria o primeiro usuário administrador.
  * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = functions.https.onCall(async (data: any, context: any) => {
+export const setupAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     const { email, password, firstName, lastName } = data;
 
     // Verifica se já existe algum administrador
@@ -71,7 +71,7 @@ export const setupAdminUser = functions.https.onCall(async (data: any, context: 
 /**
  * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = functions.https.onCall(async (data: any, context: any) => {
+export const createAdminUser = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
     // 1. Verifica se o usuário que está chamando é um admin
     if (context.auth?.token.admin !== true) {
         throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
