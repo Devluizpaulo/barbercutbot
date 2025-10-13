@@ -9,6 +9,23 @@ import { EventContext } from 'firebase-functions/v1';
 admin.initializeApp();
 
 /**
+ * Callable Cloud Function to check if an admin user already exists.
+ * This can be called by unauthenticated clients on the setup page.
+ */
+export const checkAdminExists = functions.https.onCall(async (data, context) => {
+    try {
+        const usersRef = admin.firestore().collection('users');
+        const adminQuery = usersRef.where('role', '==', 'admin').limit(1);
+        const adminSnapshot = await adminQuery.get();
+        return { adminExists: !adminSnapshot.empty };
+    } catch (error) {
+        console.error("Error checking for admin user:", error);
+        throw new functions.https.HttpsError('internal', 'Could not check for admin existence.');
+    }
+});
+
+
+/**
  * Callable Cloud Function to create a new user with an admin role.
  * Only authenticated admins can call this function.
  */
