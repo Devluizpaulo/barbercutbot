@@ -2,13 +2,6 @@
 'use client';
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
   Tabs,
   TabsContent,
   TabsList,
@@ -16,6 +9,9 @@ import {
 } from '@/components/ui/tabs';
 
 import { Settings, Key, CreditCard } from 'lucide-react';
+import { GeneralSettingsForm } from './components/general-settings-form';
+import { ApiKeysForm } from './components/api-keys-form';
+import { PlansForm } from './components/plans-form';
 
 export default function CPanelSettingsPage() {
   return (
@@ -44,51 +40,15 @@ export default function CPanelSettingsPage() {
         </TabsList>
 
         <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações Gerais</CardTitle>
-              <CardDescription>
-                Informações gerais sobre a plataforma. (Em desenvolvimento)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-               <p className="text-muted-foreground">
-                Aqui você poderá configurar o nome da plataforma, email de suporte, etc.
-              </p>
-            </CardContent>
-          </Card>
+          <GeneralSettingsForm />
         </TabsContent>
 
         <TabsContent value="api_keys">
-           <Card>
-            <CardHeader>
-              <CardTitle>Chaves de API</CardTitle>
-              <CardDescription>
-                Gerencie as chaves de integração para serviços de terceiros. (Em desenvolvimento)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Esta seção permitirá a configuração segura das chaves da Stripe, APIs de IA, e outros serviços.
-              </p>
-            </CardContent>
-          </Card>
+           <ApiKeysForm />
         </TabsContent>
         
         <TabsContent value="plans">
-           <Card>
-            <CardHeader>
-              <CardTitle>Planos e Assinaturas</CardTitle>
-              <CardDescription>
-                Gerencie os planos oferecidos aos seus clientes. (Em desenvolvimento)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-               <p className="text-muted-foreground">
-                Futuramente, você poderá editar preços, funcionalidades e períodos de teste dos planos diretamente daqui.
-              </p>
-            </CardContent>
-          </Card>
+           <PlansForm />
         </TabsContent>
       </Tabs>
     </div>
