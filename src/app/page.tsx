@@ -17,7 +17,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-background">
-      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+      <header className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-20 border-b">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <Link href="/" aria-label="Página Inicial da BarberCut Bot">
               <Logo />
