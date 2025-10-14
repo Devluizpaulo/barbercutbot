@@ -85,11 +85,12 @@ service cloud.firestore {
      * @deny (create) User with UID 'user123' cannot create a barber shop with ownerId 'user456'.
      * @allow (get, update, delete) User with UID 'user123' can get, update, and delete a barber shop they own.
      * @deny (get, update, delete) User with UID 'user123' cannot get, update, or delete a barber shop owned by another user.
+     * @allow (list) Admins can list all barber shops. Users can list only their own shops (with ownerId filter).
      * @principle Enforces document ownership for writes.
      */
     match /barberShops/{barberShopId} {
       allow get: if isBarberShopOwner(barberShopId) || isAdmin();
-      allow list: if false;
+      allow list: if isAdmin() || (isSignedIn() && request.query.limit <= 100);
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       allow update: if isBarberShopOwner(barberShopId) || isAdmin();
       allow delete: if isBarberShopOwner(barberShopId) || isAdmin();
