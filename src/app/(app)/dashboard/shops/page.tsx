@@ -22,18 +22,21 @@ export default function DashboardShopsPage() {
   const isLoading = isUserLoading || areShopsLoading;
 
   useEffect(() => {
-    // Só executa a lógica de redirecionamento quando o carregamento terminar.
+    // Only execute redirection logic when loading is fully complete.
     if (!isLoading) {
       if (shops && shops.length > 0) {
+        // If the user has shops, redirect to the first one.
         router.push(`/dashboard/${shops[0].id}`);
       } else if (shops && shops.length === 0) {
+        // If the user has no shops, redirect to the 'new shop' page.
         router.push('/dashboard/shops/new');
       }
+      // If shops is null (e.g., query hasn't run yet), do nothing and wait.
     }
   }, [isLoading, shops, router]);
 
-  // Exibe uma tela de carregamento enquanto os dados estão sendo buscados
-  // e a lógica de redirecionamento está sendo decidida.
+  // Display a loading screen while user and shop data are being fetched
+  // and the redirection logic is being determined.
   return (
     <div className="flex flex-1 items-center justify-center h-screen bg-secondary">
       <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
