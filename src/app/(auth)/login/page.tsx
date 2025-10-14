@@ -33,6 +33,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ensureUserExists } from '@/lib/google-auth-utils';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -131,26 +132,13 @@ export default function LoginPage() {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
-        // Check if user exists in Firestore, if not, create them.
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
-            const firstName = nameParts[0];
-            const lastName = nameParts.slice(1).join(' ');
-
-            await setDoc(userDocRef, {
-                id: user.uid,
-                firstName: firstName,
-                lastName: lastName,
-                email: user.email,
-                role: 'owner',
-                createdAt: serverTimestamp(),
-            });
-             toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
+        // Ensure user exists in Firestore
+        const wasCreated = await ensureUserExists(firestore, user);
+        
+        if (wasCreated) {
+            toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
         } else {
-             toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
+            toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
         }
         
         // Redirection is handled by the main layout's auth listener

@@ -42,8 +42,10 @@ service cloud.firestore {
     // Each user can read/write their own profile.
     match /users/{userId} {
       allow read, update: if isOwner(userId);
-      // Deny creation/deletion via this path. User creation is handled by Cloud Functions.
-      allow create, delete: if false;
+      // Allow creation only if the user is creating their own document
+      // This is needed for Google Auth users who bypass the normal signup flow
+      allow create: if isOwner(userId);
+      allow delete: if false;
     }
 
     // Barber Shops Collection

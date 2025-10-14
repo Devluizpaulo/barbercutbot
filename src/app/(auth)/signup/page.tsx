@@ -22,6 +22,7 @@ import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { ensureUserExists } from '@/lib/google-auth-utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const GoogleIcon = () => (
@@ -151,9 +152,19 @@ export default function SignupPage() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
-        toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
-        // O `onUserCreate` e o `AuthLayout` cuidarão do resto.
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        // Ensure user exists in Firestore
+        const wasCreated = await ensureUserExists(firestore, user);
+        
+        if (wasCreated) {
+            toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
+        } else {
+            toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
+        }
+        
+        // Redirection is handled by the main layout's auth listener
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({
