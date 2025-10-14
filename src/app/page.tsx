@@ -97,7 +97,7 @@ export default function LandingPage() {
                 Otimize agendamentos, gerencie clientes e controle suas finanças com a ferramenta definitiva para negócios modernos.
                 </p>
                 <div className="mt-8">
-                    <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transform hover:scale-105 transition-transform duration-300 ease-in-out">
                         <Link href="/signup">Descubra como</Link>
                     </Button>
                 </div>
@@ -147,17 +147,17 @@ export default function LandingPage() {
             </div>
             <div className="grid gap-10 md:grid-cols-3 md:gap-16 items-start">
               <div className="flex flex-col items-center text-center">
-                  <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">1</div>
+                  <div className="flex items-center justify-center bg-primary text-primary-foreground rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">1</div>
                   <h3 className="text-xl font-bold mb-2">Cadastre-se</h3>
                   <p className="text-muted-foreground">Crie sua conta em menos de 2 minutos. Sem complicação.</p>
               </div>
                <div className="flex flex-col items-center text-center">
-                  <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">2</div>
+                  <div className="flex items-center justify-center bg-primary text-primary-foreground rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">2</div>
                   <h3 className="text-xl font-bold mb-2">Configure sua Loja</h3>
                   <p className="text-muted-foreground">Adicione seus serviços, profissionais e horários de funcionamento.</p>
               </div>
                <div className="flex flex-col items-center text-center">
-                  <div className="flex items-center justify-center bg-primary text-white rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">3</div>
+                  <div className="flex items-center justify-center bg-primary text-primary-foreground rounded-full h-16 w-16 text-2xl font-bold font-headline mb-4">3</div>
                   <h3 className="text-xl font-bold mb-2">Comece a Crescer</h3>
                   <p className="text-muted-foreground">Divulgue seu link de agendamento e veja sua agenda lotar!</p>
               </div>
@@ -230,7 +230,7 @@ export default function LandingPage() {
             </div>
         </section>
 
-        <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-primary text-white">
+        <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-primary text-primary-foreground">
             <div className="container mx-auto px-4 md:px-6 text-center">
                  <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar seu negócio?</h2>
                  <p className="mt-4 max-w-2xl mx-auto text-lg text-primary-foreground/80">Junte-se a centenas de empreendedores que já estão otimizando sua gestão e lucrando mais.</p>
