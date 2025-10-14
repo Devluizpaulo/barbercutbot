@@ -17,12 +17,12 @@ admin.initializeApp({
 // =========================================================================
 // ⚠️ ALTERE AQUI: Cole o UID do usuário que você criou no Firebase Auth
 // =========================================================================
-const userUid = 'COLE_SEU_UID_AQUI'; 
+const userUid = 'MyKmTvy3JER3nT3BOiI36cIkF4t2'; 
 // =========================================================================
 
 async function addAdminClaim() {
-    if (userUid === 'COLE_SEU_UID_AQUI' || !userUid) {
-        console.error('❌ ERRO: Por favor, edite este arquivo e substitua "COLE_SEU_UID_AQUI" pelo UID do seu usuário administrador.');
+    if (userUid === 'MyKmTvy3JER3nT3BOiI36cIkF4t2' || !userUid) {
+        console.error('❌ ERRO: Por favor, edite este arquivo e substitua "MyKmTvy3JER3nT3BOiI36cIkF4t2" pelo UID do seu usuário administrador.');
         process.exit(1);
     }
     
