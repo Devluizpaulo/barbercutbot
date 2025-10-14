@@ -229,12 +229,12 @@ export function CashierManager({ shopId, initialData }: CashierManagerProps) {
               value={currentPin}
               onChange={setCurrentPin}
               onComplete={handleSetPin}
-              length={4}
+              maxLength={4}
             >
               <PinInputGroup>
                 {[...Array(4)].map((_, i) => (
                   <PinInputSlot key={i} index={i}>
-                    <PinInputField />
+                    <PinInputField maxLength={4}/>
                   </PinInputSlot>
                 ))}
               </PinInputGroup>
