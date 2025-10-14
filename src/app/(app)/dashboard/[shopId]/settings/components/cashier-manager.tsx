@@ -251,5 +251,3 @@ export function CashierManager({ shopId, initialData }: CashierManagerProps) {
     </>
   );
 }
-
-    
