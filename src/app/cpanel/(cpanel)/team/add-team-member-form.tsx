@@ -61,7 +61,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
   const onSubmit = async (values: AddTeamMemberFormValues) => {
     try {
       const createAdminUser = httpsCallable(functions, 'createAdminUser');
-      const result = await createAdminUser(values);
+      await createAdminUser(values);
 
       toast({
         title: 'Membro Adicionado!',

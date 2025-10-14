@@ -19,7 +19,7 @@ import { Home, Shield, Users, Store, FileText, Ticket, Settings, LogOut } from "
 const menuItems = [
     { id: 'home', label: 'Início', icon: Home, href: '/cpanel' },
     { id: 'shops', label: 'Lojas', icon: Store, href: '/cpanel/shops' },
-    { id: 'team', label: 'Usuários', icon: Users, href: '/cpanel/team' },
+    { id: 'team', label: 'Usuários & Equipe', icon: Users, href: '/cpanel/team' },
     { id: 'tickets', label: 'Tickets', icon: Ticket, href: '/cpanel/tickets' },
     { id: 'documents', label: 'Documentos', icon: FileText, href: '/cpanel/documents' },
     { id: 'settings', label: 'Configurações', icon: Settings, href: '/cpanel/settings' },
@@ -40,7 +40,7 @@ export function CPanelNav() {
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
                                 asChild
-                                isActive={pathname === item.href}
+                                isActive={pathname === item.href || (item.href !== '/cpanel' && pathname.startsWith(item.href))}
                             >
                                 <Link href={item.href}>
                                     <item.icon />

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { TeamTable } from './TeamTable';
 
 export default function CPanelTeamPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -57,7 +58,7 @@ export default function CPanelTeamPage() {
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Membro
+              Adicionar Membro da Equipe
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl">
@@ -83,36 +84,7 @@ export default function CPanelTeamPage() {
         </div>
 
        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Perfil</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={3}><Skeleton className="h-8 w-full" /></TableCell>
-                </TableRow>
-              ))}
-              {filteredUsers?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.firstName} {user.lastName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleVariant(user.role)}>{user.role}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && filteredUsers?.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <TeamTable isLoading={isLoading}/>
        </div>
     </div>
   );
