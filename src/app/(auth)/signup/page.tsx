@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
@@ -167,14 +168,24 @@ export default function SignupPage() {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-background">
-      <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-background/80 backdrop-blur-sm z-20 border-b">
+    <div className="flex flex-col min-h-screen">
+       <Image
+            src="/image/hero.png"
+            alt="Fundo de uma barbearia estilosa"
+            fill
+            className="object-cover"
+            quality={90}
+            data-ai-hint="barber shop background"
+        />
+        <div className="absolute inset-0 bg-black/70" />
+
+      <header className="fixed top-0 left-0 right-0 bg-transparent z-20">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <Link href="/" aria-label="Página Inicial da BarberCut Bot">
             <Logo />
           </Link>
           <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" asChild>
+            <Button variant="ghost" asChild className="text-white hover:bg-white/10 hover:text-white">
               <Link href="/login">
                   <Lock className="mr-2 h-4 w-4" />
                   Login
@@ -184,12 +195,12 @@ export default function SignupPage() {
           <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="bg-transparent text-white border-white/20 hover:bg-white/10">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Abrir Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right">
+              <SheetContent side="right" className="bg-background">
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b">
                     <Link href="/" aria-label="Página Inicial da BarberCut Bot">
@@ -197,7 +208,7 @@ export default function SignupPage() {
                     </Link>
                   </div>
                   <div className="p-4 border-t mt-auto flex flex-col gap-4">
-                    <Button variant="ghost" asChild className="w-full">
+                     <Button variant="ghost" asChild className="w-full">
                       <Link href="/login">
                           <Lock className="mr-2 h-4 w-4" />
                           Login
@@ -211,51 +222,51 @@ export default function SignupPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center pt-20 bg-secondary">
-          <Card className="w-full max-w-md">
+      <main className="flex-1 flex items-center justify-center pt-20 px-4 z-10">
+          <Card className="w-full max-w-md bg-slate-900/80 backdrop-blur-lg border-white/10 text-white">
             <CardHeader className="text-center space-y-4">
                 <div className="mx-auto">
                     <Logo />
                 </div>
-              <CardTitle>Crie sua Conta</CardTitle>
-              <CardDescription>
+              <CardTitle className="font-headline text-3xl">Crie sua Conta</CardTitle>
+              <CardDescription className="text-slate-400">
                 Comece a gerenciar seu negócio hoje mesmo.
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSignup}>
                 <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                  <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                       {isGoogleLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                       Cadastrar com Google
                   </Button>
                    <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
+                            <span className="w-full border-t border-white/20" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
+                            <span className="bg-slate-900/80 px-2 text-muted-foreground">
                             Ou cadastre com e-mail
                             </span>
                         </div>
                     </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="firstName">Nome</Label>
+                        <Label htmlFor="firstName" className="text-slate-300">Nome</Label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10" disabled={isGoogleLoading}/>
+                            <Input id="firstName" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className="pl-10 bg-white/5 border-white/20" disabled={isGoogleLoading}/>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="lastName">Sobrenome</Label>
+                        <Label htmlFor="lastName" className="text-slate-300">Sobrenome</Label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10" disabled={isGoogleLoading}/>
+                            <Input id="lastName" required value={lastName} onChange={(e) => setLastName(e.target.value)} className="pl-10 bg-white/5 border-white/20" disabled={isGoogleLoading}/>
                         </div>
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-slate-300">Email</Label>
                     <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -265,13 +276,13 @@ export default function SignupPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-white/5 border-white/20"
                         disabled={isGoogleLoading}
                         />
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
+                    <Label htmlFor="password" className="text-slate-300">Senha</Label>
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -280,7 +291,7 @@ export default function SignupPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 bg-white/5 border-white/20"
                         disabled={isGoogleLoading}
                         />
                     </div>
