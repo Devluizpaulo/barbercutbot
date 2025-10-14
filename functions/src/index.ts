@@ -2,7 +2,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/onCall';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
@@ -157,16 +157,19 @@ export const createAdminUser = onCall(async (request) => {
 export const onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
     const userDocRef = db.collection('users').doc(user.uid);
     
+    // Verifica se um documento para este usuário já existe (ex: criado pelo setup de admin).
     const userDoc = await userDocRef.get();
     if (userDoc.exists) {
         console.log(`Document for user ${user.uid} already exists. Skipping creation.`);
         return;
     }
     
+    // Divide o displayName em nome e sobrenome.
     const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
     const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ' '; // Garante que sobrenome não seja undefined
 
+    // Cria o documento do usuário com a role 'owner' por padrão.
     await userDocRef.set({
         id: user.uid,
         firstName: firstName,
