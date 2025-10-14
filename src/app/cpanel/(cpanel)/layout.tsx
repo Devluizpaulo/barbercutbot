@@ -6,7 +6,7 @@ import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
-import { CPanelNav } from '@/components/cpanel-nav';
+import { CPanelNav } from './cnav';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
@@ -20,9 +20,9 @@ export default function CPanelLayout({
   useEffect(() => {
     if (isUserLoading) return; // Wait until user status is resolved
 
-    // If loading is done and there's no user, redirect to login
+    // If loading is done and there's no user, redirect to the admin login page
     if (!user) {
-      router.push('/login');
+      router.push('/admin');
       return;
     }
     
