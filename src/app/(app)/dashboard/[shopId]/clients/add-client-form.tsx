@@ -466,5 +466,3 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
     </Form>
   );
 }
-
-    
