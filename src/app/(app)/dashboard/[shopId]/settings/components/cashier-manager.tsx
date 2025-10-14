@@ -227,7 +227,7 @@ export function CashierManager({ shopId, initialData }: CashierManagerProps) {
           <div className="flex justify-center p-8">
             <PinInput
               value={currentPin}
-              onValueChange={setCurrentPin}
+              onChange={setCurrentPin}
               onComplete={handleSetPin}
               length={4}
             >
