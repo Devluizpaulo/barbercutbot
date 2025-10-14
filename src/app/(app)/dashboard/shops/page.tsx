@@ -13,6 +13,7 @@ export default function DashboardShopsPage() {
   const firestore = useFirestore();
   const router = useRouter();
 
+  // Corrected query: Only fetch shops where 'ownerId' matches the current user's UID.
   const userShopsQuery = useMemoFirebase(
     () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid)) : null),
     [firestore, user]
