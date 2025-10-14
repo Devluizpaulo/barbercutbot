@@ -164,10 +164,10 @@ export const onUserCreate = functions.auth.user().onCreate(async (user: UserReco
         return;
     }
     
-    // Divide o displayName em nome e sobrenome.
-    const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ' '; // Garante que sobrenome não seja undefined
+    // Divide o displayName em nome e sobrenome de forma segura.
+    const nameParts = user.displayName?.split(' ') || [];
+    const firstName = nameParts.shift() || 'Novo'; // Pega o primeiro nome ou usa 'Novo'
+    const lastName = nameParts.join(' ') || 'Usuário'; // Junta o resto como sobrenome ou usa 'Usuário'
 
     // Cria o documento do usuário com a role 'owner' por padrão.
     await userDocRef.set({
