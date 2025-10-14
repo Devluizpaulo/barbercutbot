@@ -2,8 +2,8 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import type { UserRecord } from 'firebase-admin/auth';
-import type { CallableRequest } from 'firebase-functions/v2/https';
 
 admin.initializeApp();
 const db = getFirestore();
@@ -39,40 +39,45 @@ async function isAdmin(uid: string | undefined): Promise<boolean> {
  * Verifica se já existe um usuário com a role de 'admin'.
  * Chamada pela página /setup para decidir se o formulário deve ser exibido.
  */
-export const checkAdminExists = functions.https.onCall(async (data: any, context: functions.https.CallableContext) => {
-    const usersRef = db.collection('users');
-    const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
-    return { adminExists: !adminQuery.empty };
+export const checkAdminExists = onCall(async (request) => {
+    try {
+        const usersRef = db.collection('users');
+        const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
+        return { adminExists: !adminQuery.empty };
+    } catch (error) {
+        console.error("Error in checkAdminExists:", error);
+        throw new HttpsError('internal', 'Falha ao verificar a existência de administradores.');
+    }
 });
 
 /**
  * Cria o primeiro usuário administrador.
  * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string }, context: functions.https.CallableContext) => {
-    const { email, password, firstName, lastName } = data;
+export const setupAdminUser = onCall(async (request) => {
+    const { email, password, firstName, lastName } = request.data;
 
-    // Double-check inside the function to prevent race conditions
+    if (!email || !password || !firstName || !lastName) {
+        throw new HttpsError('invalid-argument', 'Email, senha, nome e sobrenome são obrigatórios.');
+    }
+
     const usersRef = db.collection('users');
     const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
     
     if (!adminQuery.empty) {
-        throw new functions.https.HttpsError('already-exists', 'Um administrador já existe no sistema.');
+        throw new HttpsError('already-exists', 'Um administrador já existe no sistema.');
     }
 
     let userRecord;
     try {
-        // Create user in Firebase Auth
         userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: `${firstName} ${lastName}`,
         });
         
-        // Set custom claim for admin privileges
         await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
 
-        // Create user document in Firestore
         const userDocRef = usersRef.doc(userRecord.uid);
         await userDocRef.set({
             id: userRecord.uid,
@@ -86,11 +91,11 @@ export const setupAdminUser = functions.https.onCall(async (data: { email: strin
         return { success: true, userId: userRecord.uid };
 
     } catch (error: any) {
-        // Cleanup: if user was created in Auth but Firestore failed, delete the user.
         if (userRecord) {
             await admin.auth().deleteUser(userRecord.uid);
         }
-        throw new functions.https.HttpsError('internal', `Erro ao configurar admin: ${error.message}`);
+        console.error("Error in setupAdminUser:", error);
+        throw new HttpsError('internal', `Erro ao configurar admin: ${error.message}`);
     }
 });
 
@@ -98,17 +103,17 @@ export const setupAdminUser = functions.https.onCall(async (data: { email: strin
 /**
  * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string, role: string }, context: functions.https.CallableContext) => {
-    if (!await isAdmin(context.auth?.uid)) {
-        throw new functions.https.HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
+export const createAdminUser = onCall(async (request) => {
+    if (!request.auth || !await isAdmin(request.auth?.uid)) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
     }
 
-    const { email, password, firstName, lastName, role } = data;
+    const { email, password, firstName, lastName, role } = request.data;
     if (!email || !password || !firstName || !lastName || !role) {
-        throw new functions.https.HttpsError('invalid-argument', 'Todos os campos são obrigatórios.');
+        throw new HttpsError('invalid-argument', 'Todos os campos são obrigatórios.');
     }
     if (role !== 'admin' && role !== 'support') {
-         throw new functions.https.HttpsError('invalid-argument', 'O perfil deve ser "admin" ou "support".');
+         throw new HttpsError('invalid-argument', 'O perfil deve ser "admin" ou "support".');
     }
 
     let userRecord;
@@ -139,7 +144,8 @@ export const createAdminUser = functions.https.onCall(async (data: { email: stri
         if (userRecord) {
             await admin.auth().deleteUser(userRecord.uid);
         }
-        throw new functions.https.HttpsError('internal', `Erro ao criar usuário: ${error.message}`);
+        console.error("Error in createAdminUser:", error);
+        throw new HttpsError('internal', `Erro ao criar usuário: ${error.message}`);
     }
 });
 
@@ -148,10 +154,9 @@ export const createAdminUser = functions.https.onCall(async (data: { email: stri
  * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
  * Garante que cada usuário tenha um documento correspondente no Firestore.
  */
-exports.onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
+export const onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
     const userDocRef = db.collection('users').doc(user.uid);
     
-    // Check if the user document already exists to avoid overwriting, e.g., from setupAdminUser
     const userDoc = await userDocRef.get();
     if (userDoc.exists) {
         console.log(`Document for user ${user.uid} already exists. Skipping creation.`);
