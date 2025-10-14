@@ -38,114 +38,59 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     const browserInfo = getBrowserInfo();
-    let userCredential;
-    let userId: string | undefined;
 
     try {
-      // Primeiro, faz login no Firebase Auth
-      userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // 1. Authenticate with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      userId = user.uid;
 
-      // Verifica se o usuário tem role de admin no Firestore
+      // 2. Verify admin role in Firestore
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists()) {
-        // Log: Usuário não encontrado no sistema
-        await logSecurityAlert(
-          firestore,
-          email,
-          'Usuário autenticado no Firebase Auth mas não encontrado no Firestore',
-          { userId: user.uid, ...browserInfo }
-        );
-
-        // Se não existe documento, faz logout e mostra erro
-        await auth.signOut();
-        toast({
-          variant: 'destructive',
-          title: 'Acesso Negado',
-          description: 'Usuário não encontrado no sistema.',
+      if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+        // SUCCESS: User is an admin
+        await logLoginSuccess(firestore, user.uid, email, {
+          userName: `${userDoc.data()?.firstName} ${userDoc.data()?.lastName}`,
+          ...browserInfo,
         });
-        setIsLoading(false);
-        return;
-      }
-
-      const userData = userDoc.data();
-      
-      // Verifica se o usuário tem role de admin
-      if (userData.role !== 'admin') {
-        // Log: Tentativa de acesso sem permissão
-        await logSecurityAlert(
-          firestore,
-          email,
-          'Tentativa de acesso ao painel admin sem permissão',
-          { 
-            userId: user.uid, 
-            actualRole: userData.role,
-            ...browserInfo 
-          }
-        );
-
-        // Não é admin, faz logout
-        await auth.signOut();
+        toast({
+          title: 'Login de Administrador',
+          description: 'Bem-vindo ao painel de controle!',
+        });
+        router.push('/cpanel');
+      } else {
+        // FAILURE: User is not an admin or document doesn't exist
+        const reason = userDoc.exists()
+          ? 'Tentativa de acesso ao painel admin sem permissão'
+          : 'Usuário autenticado no Auth mas não encontrado no Firestore';
+        
+        await logSecurityAlert(firestore, email, reason, {
+          userId: user.uid,
+          actualRole: userDoc.data()?.role || 'N/A',
+          ...browserInfo,
+        });
+        
+        await auth.signOut(); // Log out the non-admin user
         toast({
           variant: 'destructive',
           title: 'Acesso Restrito',
-          description: 'Você não tem permissão de administrador. Faça login na área de usuários.',
+          description: 'Você não tem permissão para acessar esta área.',
         });
-        setIsLoading(false);
-        return;
       }
-
-      // É admin! Login bem-sucedido
-      // Log: Login administrativo bem-sucedido
-      await logLoginSuccess(
-        firestore,
-        user.uid,
-        email,
-        {
-          userName: `${userData.firstName} ${userData.lastName}`,
-          ...browserInfo
-        }
-      );
-
-      toast({
-        title: 'Login de Administrador',
-        description: 'Bem-vindo ao painel administrativo!',
-      });
-      
-      // Redireciona para o cpanel
-      router.push('/cpanel');
-
     } catch (error: any) {
-      console.error("Firebase Auth Error:", error);
-      let description = 'Ocorreu um erro ao tentar fazer login.';
-      let reason = 'Erro desconhecido';
-      
-      if (error.code === 'auth/user-not-found' || 
-          error.code === 'auth/invalid-credential' || 
-          error.code === 'auth/wrong-password') {
-        description = 'E-mail ou senha inválidos. Verifique suas credenciais de administrador.';
-        reason = 'Credenciais inválidas';
-      } else if (error.code === 'auth/too-many-requests') {
-        description = 'Muitas tentativas de login. Tente novamente mais tarde.';
-        reason = 'Bloqueio por múltiplas tentativas';
+      // AUTHENTICATION FAILED
+      let reason = 'Credenciais inválidas';
+      if (error.code === 'auth/too-many-requests') {
+          reason = 'Muitas tentativas de login';
       }
 
-      // Log: Tentativa de login falhada
-      await logLoginFailed(
-        firestore,
-        email,
-        reason,
-        error.code,
-        error.message
-      );
+      await logLoginFailed(firestore, email, reason, error.code, error.message);
       
       toast({
         variant: 'destructive',
-        title: 'Falha no login',
-        description,
+        title: 'Falha no Login',
+        description: 'Email ou senha inválidos. Verifique suas credenciais de administrador.',
       });
     } finally {
       setIsLoading(false);

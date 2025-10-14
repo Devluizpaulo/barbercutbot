@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -37,28 +37,18 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações básicas
+    // Validações aprimoradas
     if (!firstName.trim() || !lastName.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Campos obrigatórios',
-        description: 'Por favor, preencha seu nome completo.',
+        title: 'Nome incompleto',
+        description: 'Por favor, preencha seu nome e sobrenome.',
       });
       return;
     }
 
-    if (!email.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Email obrigatório',
-        description: 'Por favor, informe seu endereço de e-mail.',
-      });
-      return;
-    }
-
-    // Validação de email básica
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       toast({
         variant: 'destructive',
         title: 'Email inválido',
@@ -75,33 +65,25 @@ export default function SignupPage() {
         });
         return;
     }
-    
-    if (email.toLowerCase() === 'admin@barbercutbot.com') {
-      toast({
-          variant: 'destructive',
-          title: 'Cadastro não permitido',
-          description: 'Este e-mail é reservado para o administrador. Por favor, use outro e-mail.',
-      });
-      return;
-    }
 
     setIsLoading(true);
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const user = userCredential.user;
         
         await updateProfile(user, {
-            displayName: `${firstName} ${lastName}`
+            displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
+        // Cria o documento do usuário no Firestore com a role 'owner'
         const userDocRef = doc(firestore, 'users', user.uid);
         await setDoc(userDocRef, {
             id: user.uid,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: user.email,
-            role: 'owner', // Assign the owner role
+            role: 'owner', // Role padrão para novos cadastros
             createdAt: serverTimestamp(),
         });
 
@@ -110,7 +92,8 @@ export default function SignupPage() {
           description: 'Você será redirecionado para o painel.',
         });
         
-        router.push('/dashboard/shops');
+        router.push('/dashboard/shops'); // Redireciona após o sucesso
+
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
         let title = 'Falha no cadastro';
@@ -124,10 +107,7 @@ export default function SignupPage() {
             title = 'Cadastro desabilitado';
             description = 'O cadastro de novos usuários está temporariamente desabilitado. Entre em contato com o suporte.';
         } else if (error.code === 'auth/weak-password') {
-            description = 'A senha é muito fraca. Use uma combinação de letras, números e caracteres especiais.';
-        } else if (error.code === 'auth/network-request-failed') {
-            title = 'Erro de conexão';
-            description = 'Verifique sua conexão com a internet e tente novamente.';
+            description = 'A senha é muito fraca. Use uma combinação mais forte.';
         }
         
         toast({
