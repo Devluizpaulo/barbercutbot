@@ -152,7 +152,7 @@ export const createAdminUser = onCall(async (request: CallableRequest) => {
 
 /**
  * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
- * Garante que cada usuário tenha um documento correspondente no Firestore.
+ * Garante que cada usuário tenha um documento correspondente no Firestore e uma loja padrão.
  */
 export const onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
     const userDocRef = db.collection('users').doc(user.uid);
@@ -164,18 +164,33 @@ export const onUserCreate = functions.auth.user().onCreate(async (user: UserReco
         return;
     }
     
-    // Divide o displayName em nome e sobrenome de forma segura.
+    const batch = db.batch();
+    
+    // 1. Cria o documento do usuário
     const nameParts = user.displayName?.split(' ') || [];
-    const firstName = nameParts.shift() || 'Novo'; // Pega o primeiro nome ou usa 'Novo'
-    const lastName = nameParts.join(' ') || 'Usuário'; // Junta o resto como sobrenome ou usa 'Usuário'
+    const firstName = nameParts.shift() || 'Novo';
+    const lastName = nameParts.join(' ') || 'Usuário';
 
-    // Cria o documento do usuário com a role 'owner' por padrão.
-    await userDocRef.set({
+    batch.set(userDocRef, {
         id: user.uid,
         firstName: firstName,
         lastName: lastName,
         email: user.email,
-        role: 'owner', // Papel padrão para auto-registro
+        role: 'owner',
         createdAt: FieldValue.serverTimestamp(),
     });
+
+    // 2. Cria uma loja padrão para o novo usuário
+    const newShopRef = db.collection('barberShops').doc();
+    batch.set(newShopRef, {
+        id: newShopRef.id,
+        name: `Meu Negócio`,
+        ownerId: user.uid,
+        status: 'active',
+        createdAt: FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+    console.log(`User ${user.uid} and their default shop ${newShopRef.id} created successfully.`);
 });
+
