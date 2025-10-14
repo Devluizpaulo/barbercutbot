@@ -1,6 +1,4 @@
 
-'use server';
-
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -54,6 +52,7 @@ export const checkAdminExists = functions.https.onCall(async (data: any, context
 export const setupAdminUser = functions.https.onCall(async (data: { email: string, password: string, firstName: string, lastName: string }, context: functions.https.CallableContext) => {
     const { email, password, firstName, lastName } = data;
 
+    // Double-check inside the function to prevent race conditions
     const usersRef = db.collection('users');
     const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
     
@@ -63,14 +62,17 @@ export const setupAdminUser = functions.https.onCall(async (data: { email: strin
 
     let userRecord;
     try {
+        // Create user in Firebase Auth
         userRecord = await admin.auth().createUser({
             email,
             password,
             displayName: `${firstName} ${lastName}`,
         });
         
+        // Set custom claim for admin privileges
         await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
 
+        // Create user document in Firestore
         const userDocRef = usersRef.doc(userRecord.uid);
         await userDocRef.set({
             id: userRecord.uid,
@@ -84,6 +86,7 @@ export const setupAdminUser = functions.https.onCall(async (data: { email: strin
         return { success: true, userId: userRecord.uid };
 
     } catch (error: any) {
+        // Cleanup: if user was created in Auth but Firestore failed, delete the user.
         if (userRecord) {
             await admin.auth().deleteUser(userRecord.uid);
         }
@@ -147,6 +150,13 @@ export const createAdminUser = functions.https.onCall(async (data: { email: stri
  */
 exports.onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
     const userDocRef = db.collection('users').doc(user.uid);
+    
+    // Check if the user document already exists to avoid overwriting, e.g., from setupAdminUser
+    const userDoc = await userDocRef.get();
+    if (userDoc.exists) {
+        console.log(`Document for user ${user.uid} already exists. Skipping creation.`);
+        return;
+    }
     
     const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
     const firstName = nameParts[0];
