@@ -50,17 +50,21 @@ service cloud.firestore {
 
     // Barber Shops Collection
     match /barberShops/{shopId} {
-      // CORRECTED RULE: Allow any authenticated user to create a shop,
-      // as long as they set themselves as the owner.
+      // Allow any authenticated user to create a shop, as long as they set themselves as the owner.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
 
       // Only the shop owner can read, update, or delete their own shop.
-      allow read, update, delete: if isShopOwner(shopId);
+      // Use a safer check that doesn't require reading the document during creation
+      allow read, update, delete: if isSignedIn() && (
+        // Check if the user is the owner by reading the document
+        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid
+      );
 
       // Sub-collections within a barber shop
       match /{collection}/{docId} {
         // Only the owner of the parent shop can read or write to its sub-collections.
-        allow read, write: if isShopOwner(shopId);
+        allow read, write: if isSignedIn() && 
+          get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
       }
     }
     

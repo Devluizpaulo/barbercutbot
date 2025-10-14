@@ -177,6 +177,27 @@ const shopRef = await addDoc(collection(firestore, 'barberShops'), {
 5. `next.config.mjs` - Headers CORS para popups
 6. `docs/GOOGLE-AUTH-FIX.md` - Documentação completa da correção
 
+### 8. **Correção Adicional: Criação de Loja Padrão**
+
+Problema identificado: Usuários Google existentes não tinham lojas criadas.
+
+**Solução implementada:**
+
+```typescript
+// Verifica se usuário existente tem lojas, cria se necessário
+const hasShops = await userHasShops(firestore, user.uid);
+if (!hasShops) {
+  const shopId = await createDefaultShop(firestore, user);
+}
+```
+
+**Melhorias na criação de lojas:**
+
+- Função `createDefaultShop()` com fallback para diferentes métodos
+- Logs detalhados para debugging
+- Verificação automática para usuários existentes sem lojas
+- Tratamento de erros robusto
+
 ## Teste
 
 Para testar a correção completa:
@@ -187,3 +208,13 @@ Para testar a correção completa:
 4. Verifique se uma loja padrão foi criada na coleção `barberShops`
 5. Confirme se o usuário consegue acessar o dashboard normalmente
 6. Teste se não há mais erros de CORS no console
+7. **Teste adicional**: Faça login com um usuário Google existente que não tem lojas - deve criar automaticamente
+
+### Debug
+
+Para verificar se a criação está funcionando, abra o console do navegador e procure por logs:
+- `[Google Auth] Criando usuário:`
+- `[Google Auth] Usuário criado com sucesso`
+- `[Google Auth] Criando loja padrão...`
+- `[Google Auth] Loja criada com addDoc, ID:`
+- `[Google Auth] Loja padrão criada com sucesso:`
