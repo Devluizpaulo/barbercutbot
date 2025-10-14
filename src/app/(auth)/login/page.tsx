@@ -263,7 +263,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
-                     <Button variant="outline" className="w-full bg-white/90 text-black hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                     <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                         {isGoogleLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                         Entrar com Google
                     </Button>
@@ -396,3 +396,5 @@ export default function LoginPage() {
      </>
   );
 }
+
+    
