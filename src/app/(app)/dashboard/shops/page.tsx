@@ -27,9 +27,9 @@ export default function DashboardShopsPage() {
         // Se o usuário tem uma ou mais lojas, redireciona para a primeira.
         router.push(`/dashboard/${shops[0].id}`);
       } 
-      // Se o usuário não tiver lojas, ele ficará em um estado de "carregamento"
-      // enquanto a função onUserCreate cria a loja padrão. A página será
-      // recarregada e o redirecionamento ocorrerá na próxima renderização.
+      // Se o usuário não tiver lojas (e a função de criação automática ainda não terminou),
+      // o componente de loading continua sendo exibido. Quando a loja for criada,
+      // este hook será re-executado e o redirecionamento ocorrerá.
     }
   }, [isLoading, shops, router]);
 
