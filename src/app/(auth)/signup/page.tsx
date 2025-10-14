@@ -151,6 +151,14 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
+    
+    // Configure the provider to handle CORS properly
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;

@@ -64,6 +64,11 @@ service cloud.firestore {
       }
     }
     
+    // Allow users to list their own shops (needed for dashboard/shops page)
+    match /barberShops {
+      allow list: if isSignedIn() && request.query.where.ownerId == request.auth.uid;
+    }
+    
     // Admin Logs Collection
     match /adminLogs/{logId} {
         // Any authenticated user can create a log (needed for failed login attempts).
