@@ -57,9 +57,7 @@ const initialChartData = Array.from({ length: 12 }, (_, i) => ({
 
 export default function AdminDashboard() {
     const { toast } = useToast();
-    const [shopToDeactivate, setShopToDeactivate] = useState<BarberShop | null>(null);
     const { shops, users, isLoading } = useCPanel(); 
-    const firestore = useFirestore();
 
     const toDate = (timestamp: Timestamp | Date | string): Date => {
       if (timestamp instanceof Timestamp) {
@@ -79,27 +77,6 @@ export default function AdminDashboard() {
         })
         return data;
     }, [shops, isLoading])
-
-
-    const handleManageBilling = (shopId: string) => {
-        toast({
-            title: 'Em breve!',
-            description: `A funcionalidade de gerenciar faturas para a loja ${shopId} está em desenvolvimento.`,
-        });
-    };
-    
-    const handleDeactivateShop = (shop: BarberShop | null) => {
-        if (!shop) return;
-        const shopRef = doc(firestore, 'barberShops', shop.id);
-        setDocumentNonBlocking(shopRef, { status: 'inactive' }, { merge: true });
-
-        toast({
-            title: 'Loja Desativada',
-            description: `O negócio "${shop.name}" foi desativado com sucesso.`,
-            variant: 'destructive',
-        });
-        setShopToDeactivate(null);
-    };
 
   return (
     <>
@@ -208,91 +185,28 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
-                  <CardHeader>
-                      <CardTitle className="font-headline">Negócios Parceiros</CardTitle>
-                      <CardDescription>Uma lista de todos os negócios na sua plataforma.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <Table>
-                          <TableHeader>
-                              <TableRow>
-                                  <TableHead className="w-[250px]">Negócio</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="hidden lg:table-cell">Plano</TableHead>
-                                  <TableHead className="hidden md:table-cell">Status Pag.</TableHead>
-                                  <TableHead className="text-right">Ações</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {isLoading && Array.from({length: 3}).map((_, i) => (
-                                  <TableRow key={i}>
-                                      <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
-                                  </TableRow>
-                              ))}
-                              {shops?.map(shop => (
-                                  <TableRow key={shop.id}>
-                                      <TableCell>
-                                          <div className="font-medium">{shop.name}</div>
-                                          <div className="text-sm text-muted-foreground">{shop.address}</div>
-                                      </TableCell>
-                                      <TableCell>
-                                          <Badge 
-                                              variant={shop.status === 'active' ? 'default' : 'destructive'}
-                                              className={cn(shop.status === 'active' && 'bg-green-500 hover:bg-green-500/80')}
-                                          >
-                                              {shop.status === 'active' ? 'Ativo' : 'Inativo'}
-                                          </Badge>
-                                      </TableCell>
-                                      <TableCell className="hidden lg:table-cell">{shop.subscription?.plan === 'pro' ? 'Pro' : 'Gratuito'}</TableCell>
-                                      <TableCell className="hidden md:table-cell">
-                                          <Badge 
-                                              variant={'secondary'}
-                                              className={cn(
-                                                  shop.subscription?.status === 'active' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-                                                  shop.subscription?.status === 'past_due' && 'bg-yellow-100 text-yellow-800'
-                                              )}
-                                          >
-                                              {shop.subscription?.status === 'active' ? 'Pago' : 'Pendente'}
-                                          </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                          <DropdownMenu>
-                                              <DropdownMenuTrigger asChild>
-                                                  <Button variant="ghost" size="icon">
-                                                      <MoreVertical className="h-4 w-4" />
-                                                  </Button>
-                                              </DropdownMenuTrigger>
-                                              <DropdownMenuContent align="end">
-                                                  <DropdownMenuItem asChild>
-                                                      <Link href={`/dashboard/${shop.id}`}>
-                                                          <ExternalLink className="mr-2 h-4 w-4" />
-                                                          Ver Dashboard
-                                                      </Link>
-                                                  </DropdownMenuItem>
-                                                  <DropdownMenuItem onClick={() => handleManageBilling(shop.id)}>
-                                                      <CreditCard className="mr-2 h-4 w-4" />
-                                                      Gerenciar Fatura
-                                                  </DropdownMenuItem>
-                                                  <DropdownMenuItem
-                                                    className="text-red-500"
-                                                    onClick={() => setShopToDeactivate(shop)}
-                                                  >
-                                                    Desativar
-                                                  </DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                          </DropdownMenu>
-                                      </TableCell>
-                                  </TableRow>
-                              ))}
-                              {!isLoading && shops?.length === 0 && (
-                                  <TableRow>
-                                      <TableCell colSpan={5} className="h-24 text-center">Nenhum negócio encontrado.</TableCell>
-                                  </TableRow>
-                              )}
-                          </TableBody>
-                      </Table>
-                  </CardContent>
+             <Card>
+                <CardHeader>
+                  <CardTitle className="font-headline">Atalhos Rápidos</CardTitle>
+                  <CardDescription>Acesse as principais áreas de gerenciamento.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Button variant="outline" asChild>
+                    <Link href="/cpanel/shops">Gerenciar Lojas</Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/cpanel/team">Gerenciar Equipe</Link>
+                  </Button>
+                   <Button variant="outline" asChild>
+                    <Link href="/cpanel/logs">Ver Logs</Link>
+                  </Button>
+                   <Button variant="outline" asChild>
+                    <Link href="/cpanel/tickets">Ver Tickets</Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/cpanel/settings">Configurações</Link>
+                  </Button>
+                </CardContent>
               </Card>
           </div>
           <div className="lg:col-span-1 space-y-8">
@@ -323,29 +237,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      <AlertDialog
-          open={!!shopToDeactivate}
-          onOpenChange={(isOpen) => !isOpen && setShopToDeactivate(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação irá desativar o negócio "{shopToDeactivate?.name}".
-                Isso pode ser revertido, mas bloqueará o acesso do proprietário.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => handleDeactivateShop(shopToDeactivate)}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                Sim, desativar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
     </>
   )
 }

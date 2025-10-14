@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -51,10 +51,13 @@ export default function CPanelShopsPage() {
   const [shopToAction, setShopToAction] = useState<{ shop: BarberShop; action: 'deactivate' | 'cancel_subscription' } | null>(null);
   const [isBillingLoading, setIsBillingLoading] = useState<string | null>(null);
 
-  const filteredShops = shops?.filter(shop => 
-    shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (shop.ownerId && shop.ownerId.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredShops = useMemo(() => {
+    if (!shops) return [];
+    return shops.filter(shop => 
+        shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (shop.ownerId && shop.ownerId.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [shops, searchTerm]);
   
   const handleManageBilling = async (shop: BarberShop) => {
     if (!shop.subscription?.stripeCustomerId) {
@@ -113,13 +116,12 @@ export default function CPanelShopsPage() {
         
         const shopRef = doc(firestore, 'barberShops', shop.id);
         await setDocumentNonBlocking(shopRef, { 
-            status: 'inactive',
             'subscription.status': 'canceled' 
         }, { merge: true });
 
         toast({
             title: 'Assinatura Cancelada!',
-            description: `A assinatura da loja "${shop.name}" foi cancelada e a loja foi desativada.`,
+            description: `A assinatura da loja "${shop.name}" foi cancelada na Stripe.`,
         });
 
     } catch (error: any) {
@@ -271,7 +273,7 @@ export default function CPanelShopsPage() {
                 </AlertDialogDescription>
               ) : (
                  <AlertDialogDescription>
-                    Esta ação irá **cancelar permanentemente** a assinatura da loja "{shopToAction?.shop.name}" na Stripe e desativar o acesso. A ação não pode ser desfeita.
+                    Esta ação irá **cancelar permanentemente** a assinatura da loja "{shopToAction?.shop.name}" na Stripe. A ação não pode ser desfeita.
                 </AlertDialogDescription>
               )}
             </AlertDialogHeader>
