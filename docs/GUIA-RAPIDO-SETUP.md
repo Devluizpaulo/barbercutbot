@@ -59,52 +59,6 @@ Agora você pode:
 
 ---
 
-## 🖼️ Screenshots do Processo
-
-### **Tela 1: Página de Setup**
-```
-┌─────────────────────────────────────────┐
-│         🛡️  Configuração Inicial        │
-│   Crie o primeiro administrador         │
-├─────────────────────────────────────────┤
-│                                         │
-│  Nome:          [João          ]        │
-│  Sobrenome:     [Silva         ]        │
-│  Email:         [admin@flow... ]        │
-│  Senha:         [••••••        ]        │
-│  Confirmar:     [••••••        ]        │
-│                                         │
-│  [ 🛡️  Criar Administrador ]           │
-│                                         │
-│  ℹ️ Esta página só está disponível      │
-│     quando nenhum admin existe          │
-└─────────────────────────────────────────┘
-```
-
-### **Tela 2: Sucesso!**
-```
-┌─────────────────────────────────────────┐
-│    ✅ Administrador criado!             │
-│    Redirecionando para o painel...      │
-└─────────────────────────────────────────┘
-```
-
-### **Tela 3: Painel Admin**
-```
-┌─────────────────────────────────────────┐
-│  🛡️ Painel do Administrador             │
-├─────────────────────────────────────────┤
-│  📊 Receita: R$ --                      │
-│  🏪 Negócios: 0                         │
-│  👥 Usuários: 1                         │
-│  🎫 Tickets: 0                          │
-├─────────────────────────────────────────┤
-│  [Gráfico de crescimento]               │
-└─────────────────────────────────────────┘
-```
-
----
-
 ## 🚨 E se a página /setup não aparecer?
 
 **Cenário 1: "Sistema já configurado"**
@@ -294,4 +248,3 @@ Com estes passos simples, você terá o sistema funcionando em **menos de 5 minu
 ---
 
 **Bom trabalho! 🚀**
-
