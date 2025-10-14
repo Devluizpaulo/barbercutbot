@@ -28,11 +28,13 @@ const checkAdminExistsClient = async () => {
         const functions = getFunctions();
         const checkAdminFunction = httpsCallable(functions, 'checkAdminExists');
         const result = await checkAdminFunction();
-        return (result.data as { adminExists: boolean }).adminExists;
+        // Explicitly check for the boolean `true` from the function's data payload.
+        return (result.data as { adminExists: boolean }).adminExists === true;
     } catch (error) {
         console.error("Error checking for admin existence:", error);
-        // In case of a function call error, we assume an admin might exist to be safe.
-        return true; 
+        // In case of a function call error, we assume an admin might NOT exist to be safe,
+        // allowing the setup form to be shown. The backend function will do the final check anyway.
+        return false; 
     }
 };
 
@@ -59,7 +61,7 @@ export default function SetupPage() {
         setAdminExists(true);
         toast({
           title: 'Sistema já configurado',
-          description: 'Já existe um administrador no sistema.',
+          description: 'Já existe um administrador no sistema. Redirecionando para login...',
         });
         setTimeout(() => {
           router.push('/admin');
