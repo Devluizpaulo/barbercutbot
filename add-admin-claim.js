@@ -21,8 +21,8 @@ const userUid = 'MyKmTvy3JER3nT3BOiI36cIkF4t2';
 // =========================================================================
 
 async function addAdminClaim() {
-    if (userUid === 'MyKmTvy3JER3nT3BOiI36cIkF4t2' || !userUid) {
-        console.error('❌ ERRO: Por favor, edite este arquivo e substitua "MyKmTvy3JER3nT3BOiI36cIkF4t2" pelo UID do seu usuário administrador.');
+    if (!userUid) {
+        console.error('❌ ERRO: Por favor, edite este arquivo e adicione o UID do seu usuário administrador.');
         process.exit(1);
     }
     
