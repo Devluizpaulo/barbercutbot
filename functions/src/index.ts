@@ -1,8 +1,8 @@
 
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
+import { onUserAfterCreate } from 'firebase-functions/v2/identity';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
@@ -154,10 +154,11 @@ export const createAdminUser = onCall(async (request: CallableRequest) => {
  * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
  * Garante que cada usuário tenha um documento correspondente no Firestore e uma loja padrão.
  */
-export const onUserCreate = functions.auth.user().onCreate(async (user: UserRecord): Promise<void> => {
+export const onusercreate = onUserAfterCreate(async (event): Promise<void> => {
+    const user = event.data; // The user object from the event.
     const userDocRef = db.collection('users').doc(user.uid);
     
-    // Verifica se um documento para este usuário já existe (ex: criado pelo setup de admin).
+    // Check if a document for this user already exists (e.g., created by admin setup).
     const userDoc = await userDocRef.get();
     if (userDoc.exists) {
         console.log(`Document for user ${user.uid} already exists. Skipping creation.`);
@@ -166,7 +167,7 @@ export const onUserCreate = functions.auth.user().onCreate(async (user: UserReco
     
     const batch = db.batch();
     
-    // 1. Cria o documento do usuário
+    // 1. Create the user's document
     const nameParts = user.displayName?.split(' ') || [];
     const firstName = nameParts.shift() || 'Novo';
     const lastName = nameParts.join(' ') || 'Usuário';
@@ -180,7 +181,7 @@ export const onUserCreate = functions.auth.user().onCreate(async (user: UserReco
         createdAt: FieldValue.serverTimestamp(),
     });
 
-    // 2. Cria uma loja padrão para o novo usuário
+    // 2. Create a default shop for the new user
     const newShopRef = db.collection('barberShops').doc();
     batch.set(newShopRef, {
         id: newShopRef.id,
@@ -190,7 +191,11 @@ export const onUserCreate = functions.auth.user().onCreate(async (user: UserReco
         createdAt: FieldValue.serverTimestamp(),
     });
 
-    await batch.commit();
-    console.log(`User ${user.uid} and their default shop ${newShopRef.id} created successfully.`);
+    try {
+        await batch.commit();
+        console.log(`User ${user.uid} and their default shop ${newShopRef.id} created successfully.`);
+    } catch (error) {
+        console.error(`Error creating user document and shop for ${user.uid}:`, error);
+        // Optional: Add more robust error handling, like sending an alert.
+    }
 });
-
