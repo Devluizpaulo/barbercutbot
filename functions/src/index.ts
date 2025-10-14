@@ -2,7 +2,7 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { onCall, HttpsError } from 'firebase-functions/v2/onCall';
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
@@ -39,7 +39,7 @@ async function isAdmin(uid: string | undefined): Promise<boolean> {
  * Verifica se já existe um usuário com a role de 'admin'.
  * Chamada pela página /setup para decidir se o formulário deve ser exibido.
  */
-export const checkAdminExists = onCall(async (request) => {
+export const checkAdminExists = onCall(async (request: CallableRequest) => {
     try {
         const usersRef = db.collection('users');
         const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
@@ -54,7 +54,7 @@ export const checkAdminExists = onCall(async (request) => {
  * Cria o primeiro usuário administrador.
  * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = onCall(async (request) => {
+export const setupAdminUser = onCall(async (request: CallableRequest) => {
     const { email, password, firstName, lastName } = request.data;
 
     if (!email || !password || !firstName || !lastName) {
@@ -103,7 +103,7 @@ export const setupAdminUser = onCall(async (request) => {
 /**
  * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = onCall(async (request) => {
+export const createAdminUser = onCall(async (request: CallableRequest) => {
     if (!request.auth || !await isAdmin(request.auth?.uid)) {
         throw new HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
     }
