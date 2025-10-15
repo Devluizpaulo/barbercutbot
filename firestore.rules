@@ -36,9 +36,9 @@ service cloud.firestore {
      * @returns {boolean} True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     /**
      * @description Checks if the current user is the owner of the resource and the resource exists.
      * @param {string} userId - The user ID to compare against the authenticated user's UID.
@@ -87,13 +87,13 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.ownerId);
-      allow delete: if isExistingOwner(resource.data.ownerId);
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
     
     // Allow users to list their own shops (needed for dashboard/shops page)
     match /barberShops {
-      allow list: if isSignedIn() && request.query.where.ownerId == request.auth.uid;
+      allow list: if isSignedIn();
     }
 
     /**

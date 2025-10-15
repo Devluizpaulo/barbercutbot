@@ -26,21 +26,29 @@ export default function DashboardPage() {
       // Garantir que o usuário existe no Firestore e tem uma loja
       const ensureUserAndShop = async () => {
         try {
-          await ensureUserExists(firestore, user);
+          console.log('[Dashboard] Verificando usuário:', user.uid, user.email);
           
-          // Aguardar um pouco para a loja ser criada
-          setTimeout(() => {
-            // Recarregar a página para atualizar as lojas
-            window.location.reload();
-          }, 2000);
+          // Verificar se o usuário tem lojas
+          if (!shops || shops.length === 0) {
+            console.log('[Dashboard] Usuário não tem lojas, criando...');
+            await ensureUserExists(firestore, user);
+            
+            // Aguardar um pouco para a loja ser criada
+            setTimeout(() => {
+              console.log('[Dashboard] Recarregando página...');
+              window.location.reload();
+            }, 3000);
+          } else {
+            console.log('[Dashboard] Usuário tem', shops.length, 'lojas');
+          }
         } catch (error) {
-          console.error('Erro ao garantir usuário e loja:', error);
+          console.error('[Dashboard] Erro ao garantir usuário e loja:', error);
         }
       };
 
       ensureUserAndShop();
     }
-  }, [isLoading, user, firestore]);
+  }, [isLoading, user, firestore, shops]);
 
   useEffect(() => {
     if (!isLoading && shops) {
