@@ -2,7 +2,6 @@
 import * as admin from 'firebase-admin';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
-import { onUserAfterCreate } from 'firebase-functions/v2/identity';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
@@ -153,8 +152,12 @@ export const createAdminUser = onCall(async (request: CallableRequest) => {
 /**
  * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
  * Garante que cada usuário tenha um documento correspondente no Firestore e uma loja padrão.
+ * 
+ * NOTA: Esta função está temporariamente desabilitada devido a problemas de compatibilidade
+ * com Firebase Functions v5. A criação de usuários está sendo feita diretamente no frontend.
  */
-export const onusercreate = onUserAfterCreate(async (event): Promise<void> => {
+/*
+export const onusercreate = onUserCreated(async (event: any): Promise<void> => {
     const user = event.data; // The user object from the event.
     const userDocRef = db.collection('users').doc(user.uid);
     
@@ -199,3 +202,4 @@ export const onusercreate = onUserAfterCreate(async (event): Promise<void> => {
         // Optional: Add more robust error handling, like sending an alert.
     }
 });
+*/
