@@ -21,8 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { ensureUserExists } from '@/lib/google-auth-utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const GoogleIcon = () => (
@@ -52,7 +50,6 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -102,25 +99,15 @@ export default function SignupPage() {
             displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
-        // Cria o documento do usuário no Firestore com a role 'owner'
-        // Esta lógica é agora redundante por causa da Cloud Function, mas mantida como fallback.
-        const userDocRef = doc(firestore, 'users', user.uid);
-        await setDoc(userDocRef, {
-            id: user.uid,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: user.email,
-            role: 'owner', // Role padrão para novos cadastros
-            createdAt: serverTimestamp(),
-        });
+        // The onUserAfterCreate Cloud Function will handle creating the user document
+        // and default shop in Firestore.
 
         toast({
           title: 'Conta criada com sucesso!',
           description: 'Você será redirecionado para o painel.',
         });
         
-        // A lógica no AuthLayout irá redirecionar o usuário
-        // router.push('/dashboard/shops');
+        // The AuthLayout will handle the redirect to /dashboard/shops upon successful login
 
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
@@ -152,7 +139,6 @@ export default function SignupPage() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     
-    // Configure the provider to handle CORS properly
     provider.addScope('email');
     provider.addScope('profile');
     provider.setCustomParameters({
@@ -160,25 +146,16 @@ export default function SignupPage() {
     });
     
     try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        
-        // Ensure user exists in Firestore
-        const wasCreated = await ensureUserExists(firestore, user);
-        
-        if (wasCreated) {
-            toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
-        } else {
-            toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
-        }
-        
-        // Redirection is handled by the main layout's auth listener
+        await signInWithPopup(auth, provider);
+        // On successful sign-in, the onAuthStateChanged listener in AuthLayout
+        // will handle the redirection. We can just show a success toast.
+        toast({ title: "Cadastro bem-sucedido!", description: "Redirecionando..." });
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({
             variant: "destructive",
-            title: "Erro no Login com Google",
-            description: "Não foi possível fazer login. Tente novamente."
+            title: "Erro no Cadastro com Google",
+            description: "Não foi possível criar sua conta. Tente novamente."
         });
     } finally {
         setIsGoogleLoading(false);
@@ -334,3 +311,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

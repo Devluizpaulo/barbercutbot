@@ -32,8 +32,6 @@ import { LoaderCircle, Lock, Menu, Shield, Mail, Scissors } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ensureUserExists } from '@/lib/google-auth-utils';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -62,7 +60,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
@@ -129,7 +126,6 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     
-    // Configure the provider to handle CORS properly
     provider.addScope('email');
     provider.addScope('profile');
     provider.setCustomParameters({
@@ -137,19 +133,10 @@ export default function LoginPage() {
     });
     
     try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        
-        // Ensure user exists in Firestore
-        const wasCreated = await ensureUserExists(firestore, user);
-        
-        if (wasCreated) {
-            toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
-        } else {
-            toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
-        }
-        
-        // Redirection is handled by the main layout's auth listener
+        await signInWithPopup(auth, provider);
+        // On successful sign-in, the onAuthStateChanged listener in AuthLayout
+        // will handle the redirection. We can just show a success toast.
+        toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({
