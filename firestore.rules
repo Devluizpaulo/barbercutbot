@@ -90,6 +90,11 @@ service cloud.firestore {
       allow update: if isExistingOwner(resource.data.ownerId);
       allow delete: if isExistingOwner(resource.data.ownerId);
     }
+    
+    // Allow users to list their own shops (needed for dashboard/shops page)
+    match /barberShops {
+      allow list: if isSignedIn() && request.query.where.ownerId == request.auth.uid;
+    }
 
     /**
      * @description Rules for team members within a barber shop.

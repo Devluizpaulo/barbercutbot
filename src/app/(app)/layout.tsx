@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppNav } from './app-nav';
 
 export default function AppLayout({
@@ -35,12 +35,12 @@ export default function AppLayout({
   if (user) {
     return (
        <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-            <AppNav />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                {children}
-            </main>
-        </div>
+        <AppNav />
+        <SidebarInset>
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+            {children}
+          </main>
+        </SidebarInset>
        </SidebarProvider>
     );
   }
