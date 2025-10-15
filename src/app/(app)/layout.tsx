@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppNav } from './app-nav';
 
 export default function AppLayout({
   children,
@@ -14,14 +16,14 @@ export default function AppLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) return;
-
-    if (!user) {
+    // If loading is finished and there's no user, redirect to login.
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user) {
+  // Show a loading spinner while the user's auth state is being determined.
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -29,5 +31,24 @@ export default function AppLayout({
     );
   }
 
-  return <>{children}</>;
+  // If there is a user, render the main app layout.
+  if (user) {
+    return (
+       <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+            <AppNav />
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                {children}
+            </main>
+        </div>
+       </SidebarProvider>
+    );
+  }
+
+  // Fallback for the brief moment before redirect happens when no user is found.
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+    </div>
+  );
 }
