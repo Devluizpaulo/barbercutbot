@@ -4,8 +4,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import type { FinancialRecord, Service, Barber, Appointment } from '@/lib/types';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// Dynamically import heavy libs when needed to reduce initial bundle
+import dynamic from 'next/dynamic';
 
 import {
   Card,
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { DollarSign, Users, Calendar, Scissors, Store, ArrowUpRight, ArrowDownLeft, PlusCircle, Download } from "lucide-react"
 import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,6 +28,10 @@ import { AddTransactionForm } from './add-transaction-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PeriodNavigator, type Period } from './period-navigator';
 import { calculateInterval } from '@/lib/date-utils';
+
+const AnnualBarChart = dynamic(() => import('./Charts').then(m => m.AnnualBarChart), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
+const PieRevenueByBarber = dynamic(() => import('./Charts').then(m => m.PieRevenueByBarber), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
+const PieRevenueByPayment = dynamic(() => import('./Charts').then(m => m.PieRevenueByPayment), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
 
 
 const annualChartConfig = {
@@ -76,16 +79,17 @@ export default function FinancePage() {
   const barberChartRef = useRef<HTMLDivElement>(null);
   const paymentChartRef = useRef<HTMLDivElement>(null);
   
-  const handleDownloadPdf = (chartRef: React.RefObject<HTMLDivElement>, fileName: string) => {
+  const handleDownloadPdf = async (chartRef: React.RefObject<HTMLDivElement>, fileName: string) => {
     if (!chartRef.current) return;
-    html2canvas(chartRef.current, { backgroundColor: null }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'px', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 15, 15, pdfWidth - 30, pdfHeight - 30);
-      pdf.save(`${fileName}.pdf`);
-    });
+    const html2canvas = (await import('html2canvas')).default;
+    const jsPDF = (await import('jspdf')).default;
+    const canvas = await html2canvas(chartRef.current, { backgroundColor: null });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'px', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 15, 15, pdfWidth - 30, pdfHeight - 30);
+    pdf.save(`${fileName}.pdf`);
   };
 
   const toDate = (timestamp: Timestamp | Date | string): Date => {
@@ -282,26 +286,7 @@ export default function FinancePage() {
           </Button>
         </CardHeader>
         <CardContent>
-            <ChartContainer config={annualChartConfig} className="w-full h-[250px]">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                  />
-                  <YAxis tickFormatter={(value) => `R$${value / 1000}k`} />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Bar dataKey="income" fill="var(--color-income)" radius={4} name="Receita Realizada" />
-                  <Bar dataKey="expense" fill="var(--color-expense)" radius={4} name="Despesa Realizada" />
-                  <Bar dataKey="projectedIncome" fill="var(--color-income)" radius={4} fillOpacity={0.4} name="Receita Projetada" />
-                  <Bar dataKey="projectedExpense" fill="var(--color-expense)" radius={4} fillOpacity={0.4} name="Despesa Projetada" />
-                </BarChart>
-            </ChartContainer>
+            <AnnualBarChart data={monthlyData} />
         </CardContent>
       </Card>
       
@@ -326,16 +311,7 @@ export default function FinancePage() {
                   </Button>
                 </CardHeader>
                 <CardContent className="flex justify-center">
-                    <ChartContainer config={{}} className="w-full h-[250px]">
-                        <PieChart>
-                            <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                            <Pie data={revenueByBarber} dataKey="revenue" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} label>
-                                {revenueByBarber.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
+                  <PieRevenueByBarber data={revenueByBarber} colors={COLORS} />
                 </CardContent>
             </Card>
             <Card ref={paymentChartRef}>
@@ -349,16 +325,7 @@ export default function FinancePage() {
                     </Button>
                 </CardHeader>
                 <CardContent className="flex justify-center">
-                    <ChartContainer config={{}} className="w-full h-[250px]">
-                        <PieChart>
-                            <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                            <Pie data={revenueByPaymentMethod} dataKey="revenue" nameKey="method" cx="50%" cy="50%" innerRadius={60} outerRadius={80} label>
-                                {revenueByPaymentMethod.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
+                  <PieRevenueByPayment data={revenueByPaymentMethod} colors={COLORS} />
                 </CardContent>
             </Card>
         </div>

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
@@ -18,20 +17,27 @@ if (!getApps().length) {
 
 const firestore = getFirestore(adminApp);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+const isProd = process.env.NODE_ENV === 'production';
+const secretKey = process.env.STRIPE_SECRET_KEY;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+if (isProd && (!secretKey || !webhookSecret)) {
+  throw new Error('Stripe environment variables are not configured');
+}
+const stripe = new Stripe(secretKey || 'sk_test_placeholder', {
   apiVersion: '2024-06-20',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder';
-
 export async function POST(req: Request) {
   const buf = await req.text();
-  const sig = req.headers.get('stripe-signature')!;
+  const sig = req.headers.get('stripe-signature');
+  if (!sig) {
+    return new NextResponse('Missing stripe-signature header', { status: 400 });
+  }
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+    event = stripe.webhooks.constructEvent(buf, sig, webhookSecret || '');
   } catch (err: any) {
     console.error(`❌ Error message: ${err.message}`);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
@@ -42,73 +48,70 @@ export async function POST(req: Request) {
   // Handle the event
   switch (event.type) {
     case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session;
-
-      if (session.mode === 'subscription') {
-        const { shopId, userId } = session.metadata || {};
-        if (!shopId || !userId) {
-          console.error('❌ Metadata (shopId or userId) missing in checkout session');
-          break;
+      try {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === 'subscription') {
+          const { shopId, userId } = session.metadata || {};
+          if (!shopId || !userId) {
+            console.error('❌ Metadata (shopId or userId) missing in checkout session');
+            break;
+          }
+          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+          const shopRef = firestore.doc(`barberShops/${shopId}`);
+          await shopRef.update({
+              'subscription.status': subscription.status,
+              'subscription.stripeSubscriptionId': subscription.id,
+              'subscription.stripeCustomerId': subscription.customer,
+              'subscription.stripePriceId': subscription.items.data[0].price.id,
+              'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
+          });
+          console.log(`✅ Subscription for shop ${shopId} updated.`);
         }
-
-        const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-        
-        const shopRef = firestore.doc(`barberShops/${shopId}`);
-
-        await shopRef.update({
-            'subscription.status': subscription.status,
-            'subscription.stripeSubscriptionId': subscription.id,
-            'subscription.stripeCustomerId': subscription.customer,
-            'subscription.stripePriceId': subscription.items.data[0].price.id,
-            'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
-        });
-
-        console.log(`✅ Subscription for shop ${shopId} updated.`);
+      } catch (e) {
+        console.error('❌ Error processing checkout.session.completed', e);
       }
       break;
 
     case 'invoice.payment_succeeded':
-      const invoice = event.data.object as Stripe.Invoice;
-      if (invoice.billing_reason === 'subscription_cycle' && invoice.subscription) {
-        const subscriptionId = invoice.subscription as string;
-        
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        
-        // As Stripe customer metadata isn't on the invoice, we retrieve it from subscription
-        if (!subscription.metadata.shopId) {
-          console.error(`❌ shopId not found in subscription metadata for subscription ${subscriptionId}`);
-          break;
+      try {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.billing_reason === 'subscription_cycle' && invoice.subscription) {
+          const subscriptionId = invoice.subscription as string;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          if (!subscription.metadata.shopId) {
+            console.error(`❌ shopId not found in subscription metadata for subscription ${subscriptionId}`);
+            break;
+          }
+          const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
+          await shopRef.update({
+              'subscription.status': 'active',
+              'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
+          });
+          console.log(`✅ Subscription renewal successful for shop ${subscription.metadata.shopId}.`);
         }
-        
-        const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
-        
-        await shopRef.update({
-            'subscription.status': 'active',
-            'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
-        });
-
-        console.log(`✅ Subscription renewal successful for shop ${subscription.metadata.shopId}.`);
+      } catch (e) {
+        console.error('❌ Error processing invoice.payment_succeeded', e);
       }
       break;
 
     case 'invoice.payment_failed':
-      const failedInvoice = event.data.object as Stripe.Invoice;
-      if (failedInvoice.billing_reason === 'subscription_cycle' && failedInvoice.subscription) {
-        const subscriptionId = failedInvoice.subscription as string;
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-        if (!subscription.metadata.shopId) {
-          console.error(`❌ shopId not found in subscription metadata for subscription ${subscriptionId}`);
-          break;
+      try {
+        const failedInvoice = event.data.object as Stripe.Invoice;
+        if (failedInvoice.billing_reason === 'subscription_cycle' && failedInvoice.subscription) {
+          const subscriptionId = failedInvoice.subscription as string;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          if (!subscription.metadata.shopId) {
+            console.error(`❌ shopId not found in subscription metadata for subscription ${subscriptionId}`);
+            break;
+          }
+          const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
+          await shopRef.update({
+              'subscription.status': 'past_due',
+          });
+          console.warn(`🔔 Subscription payment failed for shop ${subscription.metadata.shopId}. Status set to past_due.`);
         }
-
-        const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
-        
-        await shopRef.update({
-            'subscription.status': 'past_due',
-        });
-
-        console.warn(`🔔 Subscription payment failed for shop ${subscription.metadata.shopId}. Status set to past_due.`);
+      } catch (e) {
+        console.error('❌ Error processing invoice.payment_failed', e);
       }
       break;
     
@@ -119,5 +122,3 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ received: true });
 }
-
-    

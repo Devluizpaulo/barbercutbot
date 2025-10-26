@@ -2,8 +2,6 @@
 'use client';
 
 import { useRef } from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import {
   Dialog,
   DialogContent,
@@ -45,16 +43,17 @@ export function ReceiptDialog({ open, onOpenChange, receipt }: ReceiptDialogProp
 
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!receiptRef.current) return;
-    html2canvas(receiptRef.current, { backgroundColor: null }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'px', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 15, 25, pdfWidth - 30, pdfHeight - 30);
-      pdf.save(`recibo-${receipt.customer?.firstName?.toLowerCase() || 'cliente'}.pdf`);
-    });
+    const html2canvas = (await import('html2canvas')).default;
+    const jsPDF = (await import('jspdf')).default;
+    const canvas = await html2canvas(receiptRef.current, { backgroundColor: null });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'px', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 15, 25, pdfWidth - 30, pdfHeight - 30);
+    pdf.save(`recibo-${receipt.customer?.firstName?.toLowerCase() || 'cliente'}.pdf`);
   };
 
   const handleShareWhatsApp = () => {
