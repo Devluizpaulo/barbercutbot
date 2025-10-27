@@ -1,15 +1,16 @@
+
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
+import { env } from '@/lib/env';
 
 // Lazy initialization of Firebase Admin
 let adminApp: App;
 if (!getApps().length) {
+  const credsJson = env().GOOGLE_APPLICATION_CREDENTIALS;
   adminApp = initializeApp({
-    ...(process.env.GOOGLE_APPLICATION_CREDENTIALS
-      ? { credential: cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS)) }
-      : {}),
+    ...(credsJson ? { credential: cert(JSON.parse(credsJson)) } : {}),
   });
 } else {
   adminApp = getApps()[0];
@@ -17,9 +18,9 @@ if (!getApps().length) {
 
 const firestore = getFirestore(adminApp);
 
-const isProd = process.env.NODE_ENV === 'production';
-const secretKey = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const isProd = env().NODE_ENV === 'production';
+const secretKey = env().STRIPE_SECRET_KEY;
+const webhookSecret = env().STRIPE_WEBHOOK_SECRET;
 if (isProd && (!secretKey || !webhookSecret)) {
   throw new Error('Stripe environment variables are not configured');
 }
@@ -44,6 +45,24 @@ export async function POST(req: Request) {
   }
 
   console.log(`✅ Stripe event received: ${event.type}`);
+
+  // Idempotency guard: ensure each event is processed once
+  try {
+    const processedRef = firestore.collection('stripeEventsProcessed').doc(event.id);
+    await processedRef.create({
+      id: event.id,
+      type: event.type,
+      createdAt: Timestamp.now(),
+    });
+  } catch (e: any) {
+    const msg = typeof e?.message === 'string' ? e.message : '';
+    if (e?.code === 6 || msg.includes('ALREADY_EXISTS')) {
+      console.warn(`⚠️ Duplicate Stripe event ${event.id}, skipping.`);
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    console.error('❌ Idempotency guard failed', e);
+    return new NextResponse('Internal error', { status: 500 });
+  }
 
   // Handle the event
   switch (event.type) {
@@ -121,4 +140,20 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+export async function GET() {
+  return new NextResponse('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+export async function PUT() {
+  return new NextResponse('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+export async function PATCH() {
+  return new NextResponse('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
+}
+
+export async function DELETE() {
+  return new NextResponse('Method Not Allowed', { status: 405, headers: { Allow: 'POST' } });
 }

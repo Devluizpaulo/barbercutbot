@@ -11,7 +11,7 @@ const store: Map<string, StoreValue> = global.__rateLimitStore || new Map()
 if (!global.__rateLimitStore) global.__rateLimitStore = store
 
 function getKey(req: NextRequest) {
-  const ip = req.ip || req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+  const ip = getClientIp(req)
   const path = new URL(req.url).pathname.startsWith('/api/webhooks') ? 'webhook' : 'api'
   return `${ip}:${path}`
 }
@@ -21,6 +21,16 @@ function getPolicy(pathname: string) {
     return { limit: 30, windowMs: 60_000 }
   }
   return { limit: 100, windowMs: 60_000 }
+}
+
+function getClientIp(req: NextRequest): string {
+  const xf = req.headers.get('x-forwarded-for')
+  const ip = xf?.split(',')[0]?.trim()
+    || req.headers.get('x-real-ip')
+    || req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-client-ip')
+    || 'unknown'
+  return ip
 }
 
 export function middleware(req: NextRequest) {

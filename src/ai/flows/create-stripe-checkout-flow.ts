@@ -66,6 +66,12 @@ const createStripeCheckoutFlow = ai.defineFlow(
                 shopId: shopId,
                 userId: userId,
             },
+            subscription_data: {
+                metadata: {
+                    shopId: shopId,
+                    userId: userId,
+                },
+            },
             // Define the success and cancel URLs
             success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${shopId}/settings?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${shopId}/settings`,
