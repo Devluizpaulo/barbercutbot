@@ -1,6 +1,14 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
+    if (!isProd) {
+      return [];
+    }
     const cspHeader = `
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com;

@@ -20,9 +20,9 @@ export default function CPanelLayout({
   useEffect(() => {
     if (isUserLoading) return; // Wait until user status is resolved
 
-    // If loading is done and there's no user, redirect to the admin login page
+    // If loading is done and there's no user, redirect to the cpanel login page
     if (!user) {
-      router.push('/admin');
+      router.push('/cpanel/login');
       return;
     }
     

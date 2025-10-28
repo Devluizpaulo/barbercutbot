@@ -329,15 +329,9 @@ export default function LoginPage() {
             <nav className="flex flex-wrap justify-center items-center gap-4 text-center md:gap-6">
                 <Link href="#" className="text-sm text-slate-400 hover:text-primary">Termos de Serviço</Link>
                 <Link href="#" className="text-sm text-slate-400 hover:text-primary">Política de Privacidade</Link>
-                <Button variant="ghost" size="sm" asChild className="text-slate-400 hover:text-primary">
-                    <Link href="/admin">
-                        <Shield className="mr-2 h-4 w-4"/>
-                        Admin
-                    </Link>
-                </Button>
             </nav>
             <p className="text-sm text-slate-400 text-center md:text-right">
-                © {new Date().getFullYear()} BarberCut Bot. Todos os direitos reservados.
+                {new Date().getFullYear()} BarberCut Bot. Todos os direitos reservados.
             </p>
             </div>
         </footer>

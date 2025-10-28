@@ -48,6 +48,16 @@ service cloud.firestore {
       return isOwner(userId) && resource != null;
     }
 
+    /**
+     * @description Checks if the authenticated user has admin privileges via custom claim
+     *              or via users/{uid} document with role == 'admin'.
+     */
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
 
     /**
      * @description Rules for user profiles.
@@ -63,11 +73,11 @@ service cloud.firestore {
      * @principle Enforces user-ownership for all data access. Only the authenticated user can manage their own profile.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Listing all users is not permitted.
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; // Enforce immutability of userId.
-      allow delete: if isExistingOwner(userId);
+      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id; // Enforce immutability of userId.
+      allow delete: if isExistingOwner(userId) || isAdmin();
     }
 
     /**
@@ -84,16 +94,16 @@ service cloud.firestore {
      * @principle Allows public read access but restricts write access to the owner.
      */
     match /barberShops/{shopId} {
-      allow get: if true;
-      allow list: if true;
+      allow get: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.get('ownerId')[2] == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
+      allow delete: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
     }
     
-    // Allow users to list their own shops (needed for dashboard/shops page)
+    // Allow listing shops only for admin or when filtered by ownerId == current user
     match /barberShops {
-      allow list: if isSignedIn();
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.get('ownerId')[2] == request.auth.uid);
     }
 
     /**
