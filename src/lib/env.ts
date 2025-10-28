@@ -3,7 +3,7 @@ import { z } from 'zod'
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
-  NEXT_PUBLIC_BASE_URL: z.string().url(),
+  NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
 
   // Stripe (server)
   STRIPE_SECRET_KEY: z.string(),
@@ -32,6 +32,13 @@ export function env(): Env {
     const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')
     throw new Error(`Environment validation failed: ${issues}`)
   }
-  cached = parsed.data
+  const data = parsed.data
+  if (data.NODE_ENV === 'production' && !data.NEXT_PUBLIC_BASE_URL) {
+    throw new Error('Environment validation failed: NEXT_PUBLIC_BASE_URL: Required in production')
+  }
+  if (!data.NEXT_PUBLIC_BASE_URL) {
+    data.NEXT_PUBLIC_BASE_URL = 'http://localhost:9002'
+  }
+  cached = data
   return cached
 }
