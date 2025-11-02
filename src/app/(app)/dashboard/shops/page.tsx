@@ -3,44 +3,22 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import type { BarberShop } from '@/lib/types';
 import { LoaderCircle } from 'lucide-react';
 
-export default function DashboardShopsPage() {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
+// Esta página agora serve apenas como um ponto de entrada que redireciona
+// para a lógica principal de carregamento no dashboard.
+export default function DashboardShopsRedirectPage() {
   const router = useRouter();
 
-  const userShopsQuery = useMemoFirebase(
-    () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid)) : null),
-    [firestore, user]
-  );
-  const { data: shops, isLoading: areShopsLoading } = useCollection<BarberShop>(userShopsQuery);
-
-  const isLoading = isUserLoading || areShopsLoading;
-
   useEffect(() => {
-    if (!isLoading) {
-      if (shops && shops.length > 0) {
-        // Se o usuário tem uma ou mais lojas, redireciona para a primeira.
-        router.push(`/dashboard/${shops[0].id}`);
-      } 
-      // Se o usuário não tiver lojas (e a função de criação automática ainda não terminou),
-      // o componente de loading continua sendo exibido. Quando a loja for criada,
-      // este hook será re-executado e o redirecionamento ocorrerá.
-    }
-  }, [isLoading, shops, router]);
+    router.replace('/dashboard');
+  }, [router]);
 
-  // Exibe uma tela de carregamento enquanto o usuário e as lojas estão sendo carregados
-  // e o redirecionamento está sendo processado.
   return (
     <div className="flex flex-1 items-center justify-center h-screen bg-secondary">
       <div className="flex flex-col items-center gap-4 text-center">
         <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-        <h2 className="text-xl font-semibold">Configurando seu ambiente...</h2>
-        <p className="text-muted-foreground max-w-sm">Estamos preparando tudo para você. Se for seu primeiro acesso, isso pode levar alguns instantes.</p>
+        <h2 className="text-xl font-semibold">Redirecionando...</h2>
       </div>
     </div>
   );
