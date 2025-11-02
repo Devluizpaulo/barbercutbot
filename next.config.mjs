@@ -1,7 +1,9 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    qualities: [75, 90, 100],
+  },
   async headers() {
     return [
       {
@@ -11,12 +13,13 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://accounts.google.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://js.stripe.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com",
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https://images.unsplash.com https://picsum.photos",
-              "connect-src 'self' https://firestore.googleapis.com https://www.googleapis.com",
+              "img-src 'self' data: blob: https://images.unsplash.com https://picsum.photos",
+              "connect-src 'self' ws: wss: https://firestore.googleapis.com https://www.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
               "font-src 'self'",
-              "frame-src 'self' https://js.stripe.com https://accounts.google.com",
+              "frame-src 'self' https://js.stripe.com https://accounts.google.com https://*.google.com https://www.gstatic.com https://*.firebaseapp.com https://*.web.app",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
