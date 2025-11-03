@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo";
 import { Home, Shield, Users, Store, FileText, Ticket, Settings, LogOut } from "lucide-react";
@@ -19,7 +20,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { SidebarHeader, SidebarMenuButton, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
 
 const menuItems = [
     { id: 'home', label: 'Início', icon: Home, href: '/cpanel' },
