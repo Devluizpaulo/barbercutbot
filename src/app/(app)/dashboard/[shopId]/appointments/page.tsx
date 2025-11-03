@@ -46,6 +46,7 @@ import { collection, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from '../calendar-view';
 import { CashierDialog } from '../cashier-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
@@ -271,14 +272,21 @@ export default function AppointmentsPage() {
         onOpenChange={setIsCashierOpen} 
         shopId={shopId} 
        />
-      <Button
-          onClick={() => setIsCashierOpen(true)}
-          className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
-          size="icon"
-      >
-          <Store className="h-8 w-8" />
-          <span className="sr-only">Abrir Caixa</span>
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+                onClick={() => setIsCashierOpen(true)}
+                className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+                size="icon"
+            >
+                <Store className="h-8 w-8" />
+                <span className="sr-only">Abrir Caixa</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left" sideOffset={10}>Abrir caixa</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </>
   );
 }

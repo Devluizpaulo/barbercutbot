@@ -436,17 +436,24 @@ export default function ShopDashboardPage() {
       </div>
 
       {/* Main FAB */}
-      <Button
-        onClick={() => setFabOpen((v) => !v)}
-        className="h-16 w-16 rounded-full shadow-lg"
-        size="icon"
-      >
-        {isFabOpen ? (
-          <span className="text-xl leading-none">×</span>
-        ) : (
-          <span className="text-2xl leading-none">＋</span>
-        )}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setFabOpen((v) => !v)}
+              className="h-16 w-16 rounded-full shadow-lg"
+              size="icon"
+            >
+              {isFabOpen ? (
+                <span className="text-xl leading-none">×</span>
+              ) : (
+                <span className="text-2xl leading-none">＋</span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left" sideOffset={10}>{isFabOpen ? 'Fechar atalhos' : 'Abrir atalhos'}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
 </>
   );

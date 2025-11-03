@@ -22,6 +22,7 @@ import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -56,11 +57,21 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [acceptedLGPD, setAcceptedLGPD] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validações aprimoradas
+    if (!acceptedLGPD) {
+      toast({
+        variant: 'destructive',
+        title: 'Consentimento necessário',
+        description: 'Para criar sua conta, é necessário aceitar a Política de Privacidade e autorizar o tratamento de dados (LGPD).',
+      });
+      return;
+    }
+
     if (!firstName.trim() || !lastName.trim()) {
       toast({
         variant: 'destructive',
@@ -136,7 +147,16 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!acceptedLGPD) {
+      toast({
+        variant: 'destructive',
+        title: 'Consentimento necessário',
+        description: 'Para criar sua conta com Google, é necessário aceitar a Política de Privacidade e autorizar o tratamento de dados (LGPD).',
+      });
+      return;
+    }
     setIsGoogleLoading(true);
+    
     const provider = new GoogleAuthProvider();
     
     provider.addScope('email');
@@ -231,7 +251,7 @@ export default function SignupPage() {
             </CardHeader>
             <form onSubmit={handleSignup}>
                 <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                  <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || !acceptedLGPD}>
                       {isGoogleLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                       Cadastrar com Google
                   </Button>
@@ -292,9 +312,15 @@ export default function SignupPage() {
                         />
                     </div>
                 </div>
+                <div className="flex items-start gap-3 rounded-md border border-white/10 p-3">
+                  <Checkbox id="lgpd" checked={acceptedLGPD} onCheckedChange={(v) => setAcceptedLGPD(Boolean(v))} />
+                  <Label htmlFor="lgpd" className="text-slate-300 text-sm leading-relaxed">
+                    Eu li e concordo com a <Link href="/privacy" className="underline">Política de Privacidade</Link> e autorizo o tratamento dos meus dados pessoais conforme a <abbr title="Lei Geral de Proteção de Dados">LGPD</abbr> e os <Link href="/terms" className="underline">Termos de Uso</Link>.
+                  </Label>
+                </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full" type="submit" disabled={isLoading || isGoogleLoading}>
+                    <Button className="w-full" type="submit" disabled={isLoading || isGoogleLoading || !acceptedLGPD}>
                         {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                         Criar conta
                     </Button>

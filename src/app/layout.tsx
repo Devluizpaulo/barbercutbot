@@ -4,6 +4,7 @@ import { PT_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const pt_sans = PT_Sans({ 
   subsets: ["latin"], 
@@ -34,6 +35,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
           <Toaster />
+          <CookieConsent />
         </FirebaseClientProvider>
       </body>
     </html>
