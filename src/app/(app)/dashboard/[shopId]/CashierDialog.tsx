@@ -70,10 +70,18 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   useEffect(() => {
     if (open) {
       const activeSession = localStorage.getItem(`cashier-session-${shopId}`);
-      if (activeSession) {
-        const sessionData = JSON.parse(activeSession);
-        setView('open');
-        setOpeningBalance(sessionData.openingBalance);
+      if (activeSession && activeSession.trim() !== '') {
+        try {
+          const sessionData = JSON.parse(activeSession);
+          setView('open');
+          setOpeningBalance(sessionData.openingBalance);
+        } catch (error) {
+          console.error("Failed to parse cashier session data:", error);
+          localStorage.removeItem(`cashier-session-${shopId}`); // Clear corrupted data
+          setView('closed');
+          setOpeningChecklist({});
+          setClosingChecklist({});
+        }
       } else {
         setView('closed');
         setOpeningChecklist({});

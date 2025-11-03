@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -30,7 +31,8 @@ export function AppNav({ shopId }: AppNavProps) {
   const { data: shop } = useDoc<{ id: string; name?: string; logoUrl?: string }>(shopRef);
 
   function ThemeToggle() {
-    const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+    if (typeof document === 'undefined') return null;
+    const isDark = document.documentElement.classList.contains('dark');
     const label = isDark ? 'Claro' : 'Escuro';
     return (
       <Button
@@ -103,17 +105,19 @@ export function AppNav({ shopId }: AppNavProps) {
       </SidebarHeader>
       <SidebarContent>
         {groups.map((group) => (
-          <div key={group.title} className="px-3 py-2">
-            <div className="px-2 pb-1 text-xs font-medium text-muted-foreground">{group.title}</div>
+          <div key={group.title} className="mb-2">
+            <div className="px-5 pb-1 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
+              {group.title}
+            </div>
             <SidebarMenu>
               {group.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href !== `/dashboard/${shopId}` && pathname.startsWith(item.href));
                 return (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                      <Link href={item.href} className="flex items-center gap-3">
+                      <Link href={item.href}>
                         <item.icon className="h-4 w-4" />
-                        {item.name}
+                        <span>{item.name}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
