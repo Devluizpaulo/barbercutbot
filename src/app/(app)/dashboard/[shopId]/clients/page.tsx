@@ -122,6 +122,23 @@ export default function ClientsPage() {
           </div>
         </div>
 
+        {!isLoading && (clients?.length || 0) === 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between rounded-md border p-4">
+                <div className="flex items-center gap-3">
+                  <Search className="h-5 w-5" />
+                  <div>
+                    <div className="font-medium">Adicione seu primeiro cliente</div>
+                    <div className="text-sm text-muted-foreground">Nome, contato e observações.</div>
+                  </div>
+                </div>
+                <Button size="sm" onClick={() => { setSelectedClient(undefined); setFormOpen(true); }}>Adicionar</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardContent className="pt-6">
             <Table>

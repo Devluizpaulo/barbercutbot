@@ -209,6 +209,35 @@ export default function FinancePage() {
             Acompanhe a receita e as despesas do seu negócio.
           </p>
         </div>
+
+      {!isLoading && (allFinancialRecords?.length || 0) === 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <button onClick={() => setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5" />
+                  <div>
+                    <div className="font-medium">Registre sua primeira transação</div>
+                    <div className="text-sm text-muted-foreground">Receita ou despesa</div>
+                  </div>
+                </div>
+                <Button size="sm">Abrir</Button>
+              </button>
+              <button onClick={() => setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <Store className="h-5 w-5" />
+                  <div>
+                    <div className="font-medium">Abrir caixa</div>
+                    <div className="text-sm text-muted-foreground">Lançar recebimento</div>
+                  </div>
+                </div>
+                <Button size="sm">Abrir</Button>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
         <div className="flex items-center gap-4">
             <PeriodNavigator 
                 period={period} 

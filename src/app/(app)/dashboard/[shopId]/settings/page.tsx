@@ -80,14 +80,79 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">Complete as informações da sua loja</CardTitle>
+          <CardDescription>Atalhos rápidos para preencher as seções principais.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <a href="#profile" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Perfil</div>
+                  <div className="text-sm text-muted-foreground">Nome, contato e logo</div>
+                </div>
+              </div>
+            </a>
+            <a href="#address" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Endereço</div>
+                  <div className="text-sm text-muted-foreground">Localização e CEP</div>
+                </div>
+              </div>
+            </a>
+            <a href="#hours" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Horários</div>
+                  <div className="text-sm text-muted-foreground">Dias e turnos de atendimento</div>
+                </div>
+              </div>
+            </a>
+            <a href="#integrations" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Bot className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Automação</div>
+                  <div className="text-sm text-muted-foreground">Integrações e notificações</div>
+                </div>
+              </div>
+            </a>
+            <a href="#payments" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Recebimentos</div>
+                  <div className="text-sm text-muted-foreground">Formas de pagamento</div>
+                </div>
+              </div>
+            </a>
+            <a href="#subscription" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Assinatura</div>
+                  <div className="text-sm text-muted-foreground">Planos e cobrança</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-8 h-auto">
-          <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
-          <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
-          <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
-          <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
-          <TabsTrigger value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
-          <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
+          <TabsTrigger id="profile" value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
+          <TabsTrigger id="address" value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
+          <TabsTrigger id="hours" value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
+          <TabsTrigger id="integrations" value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
+          <TabsTrigger id="payments" value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
+          <TabsTrigger id="subscription" value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">

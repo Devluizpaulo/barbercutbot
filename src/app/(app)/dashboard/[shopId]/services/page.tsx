@@ -1,7 +1,8 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
+
 import { useParams } from 'next/navigation';
 import { PlusCircle, MoreVertical, Trash2, Edit, EyeOff, Eye, Search } from 'lucide-react';
 import {
@@ -160,6 +161,23 @@ export default function ServicesPage() {
             </Dialog>
         </div>
       </div>
+
+      {!isLoading && (services?.length || 0) === 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between rounded-md border p-4">
+              <div className="flex items-center gap-3">
+                <ImageIcon className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">Cadastre seu primeiro serviço</div>
+                  <div className="text-sm text-muted-foreground">Defina nome, preço e duração.</div>
+                </div>
+              </div>
+              <Button size="sm" onClick={handleAddNew}>Adicionar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="pt-6">

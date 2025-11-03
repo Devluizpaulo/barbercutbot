@@ -1,18 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
   Store,
+  Users,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Popover,
   PopoverContent,
@@ -137,6 +140,78 @@ export default function AppointmentsPage() {
           </div>
         </div>
         
+        {!isLoading && (
+          (() => {
+            const hasAppointments = (appointments?.length || 0) > 0;
+            const hasCustomers = (customers?.length || 0) > 0;
+            const hasBarbers = (barbers?.length || 0) > 0;
+            const hasServices = (services?.length || 0) > 0;
+            if (hasAppointments && hasCustomers && hasBarbers && hasServices) return null;
+            return (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {!hasAppointments && (
+                      <button onClick={handleAddNew} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <CalendarIcon className="h-5 w-5" />
+                          <div>
+                            <div className="font-medium">Crie um agendamento</div>
+                            <div className="text-sm text-muted-foreground">Cliente, serviço e horário</div>
+                          </div>
+                        </div>
+                        <Button size="sm">Abrir</Button>
+                      </button>
+                    )}
+                    {!hasCustomers && (
+                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <Users className="h-5 w-5" />
+                          <div>
+                            <div className="font-medium">Adicione um cliente</div>
+                            <div className="text-sm text-muted-foreground">Necessário para agendar</div>
+                          </div>
+                        </div>
+                        <Button size="sm" asChild>
+                          <Link href={`/dashboard/${shopId}/clients`}>Abrir</Link>
+                        </Button>
+                      </div>
+                    )}
+                    {!hasBarbers && (
+                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <Store className="h-5 w-5" />
+                          <div>
+                            <div className="font-medium">Adicione um profissional</div>
+                            <div className="text-sm text-muted-foreground">Atribua aos atendimentos</div>
+                          </div>
+                        </div>
+                        <Button size="sm" asChild>
+                          <Link href={`/dashboard/${shopId}/barbers`}>Abrir</Link>
+                        </Button>
+                      </div>
+                    )}
+                    {!hasServices && (
+                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <Store className="h-5 w-5" />
+                          <div>
+                            <div className="font-medium">Cadastre um serviço</div>
+                            <div className="text-sm text-muted-foreground">Preço e duração</div>
+                          </div>
+                        </div>
+                        <Button size="sm" asChild>
+                          <Link href={`/dashboard/${shopId}/services`}>Abrir</Link>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()
+        )}
+
         <header className="flex flex-none flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
             <div className="flex items-center gap-4">
                 <h2 className="text-xl font-semibold hidden md:block">Agenda</h2>

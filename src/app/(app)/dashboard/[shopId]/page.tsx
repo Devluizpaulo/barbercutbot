@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   Card,
@@ -22,6 +23,8 @@ import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { DollarSign, Users, Calendar, Scissors, Store } from "lucide-react"
+import { LoaderCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
@@ -47,6 +50,7 @@ export default function ShopDashboardPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const [isCashierOpen, setCashierOpen] = useState(false);
+  const [isFabOpen, setFabOpen] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const firestore = useFirestore();
   const { user } = useUser();
@@ -174,6 +178,76 @@ export default function ShopDashboardPage() {
           </TabsList>
         </Tabs>
       </div>
+
+      {(!isLoading) && (
+        (() => {
+          const hasServices = (services?.length || 0) > 0;
+          const hasCustomers = (customers?.length || 0) > 0;
+          const hasAppointments = (allAppointments?.length || 0) > 0;
+          const hasFinancial = (financialRecords?.length || 0) > 0;
+          if (hasServices && hasCustomers && hasAppointments && hasFinancial) return null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline">Comece configurando sua loja</CardTitle>
+                <CardDescription>Atalhos rápidos para adicionar seus primeiros dados.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {!hasServices && (
+                    <Link href={`/dashboard/${shopId}/services`} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Scissors className="h-5 w-5" />
+                        <div>
+                          <div className="font-medium">Cadastre um serviço</div>
+                          <div className="text-sm text-muted-foreground">Preço e duração</div>
+                        </div>
+                      </div>
+                      <Button size="sm">Abrir</Button>
+                    </Link>
+                  )}
+                  {!hasCustomers && (
+                    <Link href={`/dashboard/${shopId}/clients`} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5" />
+                        <div>
+                          <div className="font-medium">Adicione um cliente</div>
+                          <div className="text-sm text-muted-foreground">Nome e contato</div>
+                        </div>
+                      </div>
+                      <Button size="sm">Abrir</Button>
+                    </Link>
+                  )}
+                  {!hasAppointments && (
+                    <Link href={`/dashboard/${shopId}/appointments`} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5" />
+                        <div>
+                          <div className="font-medium">Crie um agendamento</div>
+                          <div className="text-sm text-muted-foreground">Cliente, serviço e horário</div>
+                        </div>
+                      </div>
+                      <Button size="sm">Abrir</Button>
+                    </Link>
+                  )}
+                  {!hasFinancial && (
+                    <button onClick={() => setCashierOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="h-5 w-5" />
+                        <div>
+                          <div className="font-medium">Registre uma receita</div>
+                          <div className="text-sm text-muted-foreground">Abrir caixa</div>
+                        </div>
+                      </div>
+                      <Button size="sm">Abrir</Button>
+                    </button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -317,14 +391,62 @@ export default function ShopDashboardPage() {
       onOpenChange={setCashierOpen}
       shopId={shopId} 
     />
-    <Button
-        onClick={() => setCashierOpen(true)}
-        className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+    <div className="fixed bottom-8 right-8 flex flex-col items-end gap-3">
+      {/* Children actions */}
+      <div className={`flex flex-col items-end gap-3 transition-all duration-200 ${isFabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/dashboard/${shopId}/appointments`} className="inline-flex">
+                <Button size="icon" className="h-12 w-12 rounded-full shadow-md"> 
+                  <Calendar className="h-5 w-5" />
+                  <span className="sr-only">Novo Agendamento</span>
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={10}>Novo agendamento</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/dashboard/${shopId}/clients`} className="inline-flex">
+                <Button size="icon" className="h-12 w-12 rounded-full shadow-md">
+                  <Users className="h-5 w-5" />
+                  <span className="sr-only">Adicionar Cliente</span>
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={10}>Adicionar cliente</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" onClick={() => setCashierOpen(true)} className="h-12 w-12 rounded-full shadow-md">
+                <Store className="h-5 w-5" />
+                <span className="sr-only">Abrir caixa</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={10}>Abrir caixa</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Main FAB */}
+      <Button
+        onClick={() => setFabOpen((v) => !v)}
+        className="h-16 w-16 rounded-full shadow-lg"
         size="icon"
-    >
-        <Store className="h-8 w-8" />
-        <span className="sr-only">Abrir Caixa</span>
-    </Button>
-    </>
-  );
-}
+      >
+        {isFabOpen ? (
+          <span className="text-xl leading-none">×</span>
+        ) : (
+          <span className="text-2xl leading-none">＋</span>
+        )}
+      </Button>
+    </div>
+  </div>
+</> 

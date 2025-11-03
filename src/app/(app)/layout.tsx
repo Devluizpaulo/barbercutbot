@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
@@ -13,7 +13,15 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isUserLoading } = useUser();
+
+  // Try to extract shopId from routes like /dashboard/:shopId/*
+  const shopId = (() => {
+    if (!pathname) return undefined;
+    const m = pathname.match(/^\/dashboard\/([^\/]+)(?:\/|$)/);
+    return m?.[1];
+  })();
 
   useEffect(() => {
     // If loading is finished and there's no user, redirect to login.
@@ -34,14 +42,14 @@ export default function AppLayout({
   // If there is a user, render the main app layout.
   if (user) {
     return (
-       <SidebarProvider>
-        <AppNav />
+      <SidebarProvider>
+        <AppNav shopId={shopId} />
         <SidebarInset>
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
             {children}
           </main>
         </SidebarInset>
-       </SidebarProvider>
+      </SidebarProvider>
     );
   }
 
