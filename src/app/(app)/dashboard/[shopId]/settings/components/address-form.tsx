@@ -283,13 +283,8 @@ export function AddressForm({ shopId, initialData }: AddressFormProps) {
           </CardContent>
           <CardFooter>
             <div className="flex justify-end w-full">
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting && (
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 Salvar Endereço
               </Button>
@@ -300,4 +295,3 @@ export function AddressForm({ shopId, initialData }: AddressFormProps) {
     </Card>
   );
 }
-

@@ -180,9 +180,7 @@ export function AddSupplierForm({ shopId, initialData, onSuccess }: AddSupplierF
 
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             {initialData ? 'Salvar Alterações' : 'Salvar Fornecedor'}
           </Button>
         </div>

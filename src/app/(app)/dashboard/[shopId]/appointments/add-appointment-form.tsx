@@ -537,7 +537,7 @@ export function AddAppointmentForm({
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Salvar Agendamento
+            {initialData ? 'Salvar Alterações' : 'Salvar Agendamento'}
           </Button>
         </div>
       </form>
