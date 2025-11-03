@@ -48,30 +48,31 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const availableColors = [
-    '#e11d48', // rose
-    '#f97316', // orange
-    '#eab308', // yellow
-    '#84cc16', // lime
-    '#22c55e', // green
-    '#10b981', // emerald
-    '#14b8a6', // teal
-    '#06b6d4', // cyan
-    '#0ea5e9', // sky
-    '#3b82f6', // blue
-    '#6366f1', // indigo
-    '#8b5cf6', // violet
-    '#a855f7', // purple
-    '#d946ef', // fuchsia
-    '#ec4899', // pink
+  '#e11d48', // rose
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#84cc16', // lime
+  '#22c55e', // green
+  '#10b981', // emerald
+  '#14b8a6', // teal
+  '#06b6d4', // cyan
+  '#0ea5e9', // sky
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#a855f7', // purple
+  '#d946ef', // fuchsia
+  '#ec4899', // pink
 ];
 
 const commissionSchema = z.object({
-    serviceId: z.string(),
-    commissionType: z.enum(['fixed', 'percentage']).optional(),
-    commissionValue: z.coerce.number().optional(),
+  serviceId: z.string(),
+  commissionType: z.enum(['fixed', 'percentage']).optional(),
+  commissionValue: z.coerce.number().optional(),
 });
 
 const formSchema = z.object({
@@ -163,6 +164,74 @@ export function AddBarberForm({
   const firstName = form.watch('firstName');
   const barberColor = form.watch('color');
 
+  // Image upload helpers
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const MAX_BYTES = 1024 * 1024; // 1MB
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
+
+  async function cropCenterSquare(file: File): Promise<Blob> {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const img: HTMLImageElement = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+
+    const size = Math.min(img.width, img.height);
+    const sx = (img.width - size) / 2;
+    const sy = (img.height - size) / 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+    ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+    const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const quality = mime === 'image/jpeg' ? 0.85 : undefined;
+    return await new Promise((resolve) => canvas.toBlob(b => resolve(b as Blob), mime, quality));
+  }
+
+  const onUploadAvatar = async (file: File) => {
+    try {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({ variant: 'destructive', title: 'Formato inválido', description: 'Envie PNG ou JPG.' });
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        toast({ variant: 'destructive', title: 'Arquivo muito grande', description: 'Tamanho máximo de 1MB.' });
+        return;
+      }
+      setUploading(true);
+      const cropped = await cropCenterSquare(file);
+      const storage = getStorage();
+      const key = `barberShops/${shopId}/barbers/${initialData?.id || 'new'}/avatar_${Date.now()}`;
+      const ref = storageRef(storage, key);
+      const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
+      task.on('state_changed', (snap) => {
+        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        setUploadProgress(pct);
+      });
+      await task;
+      const url = await getDownloadURL(ref);
+      form.setValue('avatar', url, { shouldDirty: true, shouldValidate: true });
+      toast({ title: 'Foto atualizada!', description: 'Upload concluído com sucesso.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Falha no upload', description: 'Tente novamente.' });
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
   const handleCepLookup = async () => {
     const cep = form.getValues('cep')?.replace(/\D/g, '');
     if (!cep || cep.length !== 8) {
@@ -253,45 +322,88 @@ export function AddBarberForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Tabs defaultValue="profile">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="profile">Perfil</TabsTrigger>
-                <TabsTrigger value="address">Endereço</TabsTrigger>
-                <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
-            </TabsList>
-             <TabsContent value="profile" className="mt-6 space-y-6">
-                <div className="flex flex-col sm:flex-row items-center gap-6">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={avatarUrl} alt={firstName} />
-                    <AvatarFallback>
-                      {firstName ? (
-                        firstName.charAt(0).toUpperCase()
-                      ) : (
-                        <User className="h-10 w-10" />
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 w-full space-y-4">
-                    <FormField
-                        control={form.control}
-                        name="avatar"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>URL da Foto</FormLabel>
-                            <div className="relative">
-                            <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <FormControl>
-                                <Input
-                                placeholder="https://exemplo.com/foto.jpg"
-                                {...field}
-                                className="pl-10"
-                                value={field.value || ''}
-                                />
-                            </FormControl>
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Perfil</TabsTrigger>
+            <TabsTrigger value="address">Endereço</TabsTrigger>
+            <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
+          </TabsList>
+          <TabsContent value="profile" className="mt-6 space-y-6">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={avatarUrl} alt={firstName} />
+                <AvatarFallback>
+                  {firstName ? (
+                    firstName.charAt(0).toUpperCase()
+                  ) : (
+                    <User className="h-10 w-10" />
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className="flex-1 w-full space-y-4"
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onUploadAvatar(f); }}
+              >
+                {uploadProgress !== null && (
+                  <div className="w-40">
+                    <div className="h-2 w-full bg-muted rounded">
+                      <div className="h-2 bg-primary rounded" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{uploadProgress}%</div>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadAvatar(f); }}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+                    {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    Enviar foto
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      const currentUrl = form.getValues('avatar');
+                      if (currentUrl) {
+                        try {
+                          const storage = getStorage();
+                          const ref = storageRef(storage, currentUrl);
+                          await deleteObject(ref);
+                        } catch {}
+                      }
+                      form.setValue('avatar', '', { shouldDirty: true, shouldValidate: true });
+                    }}
+                  >
+                    Remover foto
+                  </Button>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="avatar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL da Foto</FormLabel>
+                      <div className="relative">
+                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input
+                            placeholder="https://exemplo.com/foto.jpg"
+                            {...field}
+                            className="pl-10"
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                     <FormField
                         control={form.control}
                         name="color"

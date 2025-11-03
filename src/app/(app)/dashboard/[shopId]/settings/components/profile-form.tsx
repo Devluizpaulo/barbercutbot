@@ -2,6 +2,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
+import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ import { Save, LoaderCircle, Building2, ImageIcon, Phone, Hash, Instagram, Globe
 import type { BarberShop } from '@/lib/types';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -50,6 +52,42 @@ interface ProfileFormProps {
 export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const MAX_BYTES = 1024 * 1024; // 1MB
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
+
+  async function cropCenterSquare(file: File): Promise<Blob> {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const img: HTMLImageElement = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+
+    const size = Math.min(img.width, img.height);
+    const sx = (img.width - size) / 2;
+    const sy = (img.height - size) / 2;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+    ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+
+    const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const quality = mime === 'image/jpeg' ? 0.85 : undefined;
+    return await new Promise((resolve) => canvas.toBlob(b => resolve(b as Blob), mime, quality));
+  }
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -84,6 +122,41 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
     });
   };
 
+  const onUploadLogo = async (file: File) => {
+    try {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({ title: 'Formato inválido', description: 'Envie PNG ou JPG.', variant: 'destructive' });
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        toast({ title: 'Arquivo muito grande', description: 'Tamanho máximo de 1MB.', variant: 'destructive' });
+        return;
+      }
+      setUploading(true);
+      // Crop central quadrado antes de enviar
+      const cropped = await cropCenterSquare(file);
+      const storage = getStorage();
+      const key = `barberShops/${shopId}/logo_${Date.now()}`;
+      const ref = storageRef(storage, key);
+      const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
+      task.on('state_changed', (snap) => {
+        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        setUploadProgress(pct);
+      });
+      await task;
+      const url = await getDownloadURL(ref);
+      form.setValue('logo', url, { shouldDirty: true, shouldValidate: true });
+      const shopRef = doc(firestore, 'barberShops', shopId);
+      setDocumentNonBlocking(shopRef, { logo: url }, { merge: true });
+      toast({ title: 'Logo atualizada!', description: 'A imagem foi enviada com sucesso.' });
+    } catch (e) {
+      toast({ title: 'Falha ao enviar logo', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
   return (
     <Card>
       <Form {...form}>
@@ -96,7 +169,15 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div className="space-y-2">
+              <div
+                className="space-y-2"
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) onUploadLogo(f);
+                }}
+              >
                 <FormLabel>Logo</FormLabel>
                 <Avatar className="h-24 w-24">
                   <AvatarImage
@@ -107,6 +188,55 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     <Building2 />
                   </AvatarFallback>
                 </Avatar>
+                {uploadProgress !== null && (
+                  <div className="w-40">
+                    <div className="h-2 w-full bg-muted rounded">
+                      <div className="h-2 bg-primary rounded" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{uploadProgress}%</div>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onUploadLogo(f);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                  Enviar imagem
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    const currentUrl = form.getValues('logo');
+                    if (currentUrl) {
+                      try {
+                        const storage = getStorage();
+                        const ref = storageRef(storage, currentUrl);
+                        await deleteObject(ref);
+                      } catch {}
+                    }
+                    form.setValue('logo', '', { shouldDirty: true, shouldValidate: true });
+                    const shopRef = doc(firestore, 'barberShops', shopId);
+                    setDocumentNonBlocking(shopRef, { logo: '' }, { merge: true });
+                    toast({ title: 'Logo removida', description: 'A logo foi resetada.' });
+                  }}
+                >
+                  Remover logo
+                </Button>
               </div>
               <div className="flex-1 space-y-4">
                 <FormField

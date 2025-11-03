@@ -448,5 +448,6 @@ export default function ShopDashboardPage() {
         )}
       </Button>
     </div>
-  </div>
-</> 
+</>
+  );
+}
