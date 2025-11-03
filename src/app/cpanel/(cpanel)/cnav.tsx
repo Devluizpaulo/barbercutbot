@@ -19,6 +19,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { SidebarHeader, SidebarMenuButton, SidebarTrigger, SidebarContent, SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
 
 const menuItems = [
     { id: 'home', label: 'Início', icon: Home, href: '/cpanel' },
@@ -46,7 +47,13 @@ export function CPanelNav() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <Logo />
+                <div className="flex items-center justify-between gap-2 px-2 py-2">
+                  <Logo />
+                  <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                    <SidebarTrigger />
+                  </div>
+                </div>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
@@ -55,6 +62,7 @@ export function CPanelNav() {
                             <SidebarMenuButton
                                 asChild
                                 isActive={pathname === item.href || (item.href !== '/cpanel' && pathname.startsWith(item.href))}
+                                tooltip={item.label}
                             >
                                 <Link href={item.href}>
                                     <item.icon />
@@ -85,4 +93,25 @@ export function CPanelNav() {
             </SidebarFooter>
         </Sidebar>
     )
+}
+
+function ThemeToggle() {
+  if (typeof document === 'undefined') return null;
+  const isDark = document.documentElement.classList.contains('dark');
+  const label = isDark ? 'Claro' : 'Escuro';
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => {
+        const el = document.documentElement;
+        const willDark = !el.classList.contains('dark');
+        el.classList.toggle('dark', willDark);
+        try { localStorage.setItem('theme', willDark ? 'dark' : 'light'); } catch {}
+        el.setAttribute('data-theme', willDark ? 'dark' : 'light');
+      }}
+    >
+      {label}
+    </Button>
+  );
 }

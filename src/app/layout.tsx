@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { CookieConsent } from "@/components/cookie-consent";
+import { ThemeInit } from "@/components/theme-init";
 
 const pt_sans = PT_Sans({ 
   subsets: ["latin"], 
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${pt_sans.variable} ${playfair_display.variable} font-body antialiased`}>
+        <ThemeInit />
         <FirebaseClientProvider>
           {children}
           <Toaster />

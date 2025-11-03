@@ -5,40 +5,40 @@
 
 @layer base {
   :root {
-    /* Light theme: cream background, graphite text, golden primary */
-    --background: 40 45% 96%; /* #FAF7F2 approx */
-    --foreground: 222 47% 11%; /* #0F172A */
+    /* Light theme refinado: maior contraste, mais legível, mantendo estética quente */
+    --background: 42 40% 97%;
+    --foreground: 222 47% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 47% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 32 52% 45%; /* #A36B2C like warm gold/brown */
+    --popover-foreground: 222 47% 12%;
+    --primary: 32 60% 40%; /* ouro mais profundo para contraste */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 220 16% 96%;
+    --secondary-foreground: 222 47% 12%;
     --muted: 220 14% 94%;
-    --muted-foreground: 222 13% 30%;
-    --accent: 28 35% 90%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 62.8% 40%;
+    --muted-foreground: 222 15% 28%;
+    --accent: 28 30% 92%;
+    --accent-foreground: 222 47% 12%;
+    --destructive: 0 65% 42%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 14% 90%;
-    --input: 220 14% 90%;
-    --ring: 32 52% 45%;
+    --border: 220 12% 86%;
+    --input: 220 12% 86%;
+    --ring: 32 60% 40%;
     --radius: 0.5rem;
-    --chart-1: 32 52% 45%; /* gold */
-    --chart-2: 220 50% 50%; /* blue */
-    --chart-3: 160 45% 40%; /* green */
-    --chart-4: 12 60% 55%; /* orange */
-    --chart-5: 280 45% 55%; /* purple */
+    --chart-1: 32 60% 40%;
+    --chart-2: 220 55% 50%;
+    --chart-3: 160 50% 40%;
+    --chart-4: 12 62% 55%;
+    --chart-5: 280 50% 55%;
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 32 52% 45%;
+    --sidebar-foreground: 222 47% 12%;
+    --sidebar-primary: 32 60% 40%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 14% 90%;
-    --sidebar-ring: 32 52% 45%;
+    --sidebar-accent: 220 16% 96%;
+    --sidebar-accent-foreground: 222 47% 12%;
+    --sidebar-border: 220 12% 86%;
+    --sidebar-ring: 32 60% 40%;
   }
 
   .dark {
