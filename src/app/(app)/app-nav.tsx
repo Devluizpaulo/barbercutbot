@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -34,9 +35,9 @@ export function AppNav({ shopId }: AppNavProps) {
   const { data: shop } = useDoc<{ id: string; name?: string; logo?: string }>(shopRef);
 
   function ThemeToggle() {
-    const [theme, setTheme] = React.useState<string | null>(null);
+    const [theme, setTheme] = useState<string | null>(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         // Acessa o tema do localStorage no lado do cliente
         setTheme(localStorage.getItem('theme'));
     }, []);
