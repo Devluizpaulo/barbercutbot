@@ -12,13 +12,16 @@ import {
   Package, 
   DollarSign,
   Settings,
-  BarChart3
+  BarChart3,
+  Moon,
+  Sun
 } from 'lucide-react';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
+import { UserNav } from '@/components/user-nav';
 
 interface AppNavProps {
   shopId?: string;
@@ -28,24 +31,37 @@ export function AppNav({ shopId }: AppNavProps) {
   const pathname = usePathname();
   const firestore = useFirestore();
   const shopRef = useMemoFirebase(() => (shopId ? doc(firestore, 'barberShops', shopId) : null), [firestore, shopId]);
-  const { data: shop } = useDoc<{ id: string; name?: string; logoUrl?: string }>(shopRef);
+  const { data: shop } = useDoc<{ id: string; name?: string; logo?: string }>(shopRef);
 
   function ThemeToggle() {
-    if (typeof document === 'undefined') return null;
-    const isDark = document.documentElement.classList.contains('dark');
-    const label = isDark ? 'Claro' : 'Escuro';
+    const [theme, setTheme] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        // Acessa o tema do localStorage no lado do cliente
+        setTheme(localStorage.getItem('theme'));
+    }, []);
+
+    const toggleTheme = () => {
+        const el = document.documentElement;
+        const currentTheme = el.classList.contains('dark') ? 'dark' : 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        el.classList.toggle('dark', newTheme === 'dark');
+        try {
+            localStorage.setItem('theme', newTheme);
+            setTheme(newTheme);
+        } catch {}
+    };
+    
+    if (theme === null) return null;
+
     return (
       <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const el = document.documentElement;
-          const willDark = !el.classList.contains('dark');
-          el.classList.toggle('dark', willDark);
-          try { localStorage.setItem('theme', willDark ? 'dark' : 'light'); } catch {}
-        }}
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        aria-label={`Mudar para tema ${theme === 'dark' ? 'claro' : 'escuro'}`}
       >
-        {label}
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </Button>
     );
   }
@@ -87,25 +103,22 @@ export function AppNav({ shopId }: AppNavProps) {
         <div className="flex items-center justify-between gap-2 px-4 py-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              {shop?.logoUrl && <AvatarImage src={shop.logoUrl} alt={shop?.name || 'Loja'} />}
+              {shop?.logo && <AvatarImage src={shop.logo} alt={shop?.name || 'Loja'} />}
               <AvatarFallback>
                 {shop?.name ? shop.name.charAt(0).toUpperCase() : 'B'}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col leading-tight">
+            <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
               <span className="text-sm text-muted-foreground">BarberCut</span>
               <span className="text-sm font-medium truncate max-w-[140px]">{shop?.name || 'Minha Barbearia'}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <SidebarTrigger />
-          </div>
+          <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {groups.map((group) => (
-          <div key={group.title} className="mb-2">
+        {groups.map((group, groupIndex) => (
+          <div key={group.title} className={cn("mb-2", groupIndex > 0 && "pt-2 border-t")}>
             <div className="px-5 pb-1 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
               {group.title}
             </div>
@@ -116,8 +129,8 @@ export function AppNav({ shopId }: AppNavProps) {
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
                       <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.name}</span>
+                        <item.icon className="h-5 w-5" />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.name}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -127,6 +140,14 @@ export function AppNav({ shopId }: AppNavProps) {
           </div>
         ))}
       </SidebarContent>
+       <SidebarFooter>
+        <div className="flex items-center justify-between p-2">
+            <div className="group-data-[collapsible=icon]:hidden">
+              <UserNav />
+            </div>
+            <ThemeToggle />
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
