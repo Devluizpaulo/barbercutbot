@@ -49,7 +49,7 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRef, useState } from 'react';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject, UploadTask } from 'firebase/storage';
 
 const availableColors = [
   '#e11d48', // rose
@@ -168,6 +168,7 @@ export function AddBarberForm({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
   const MAX_BYTES = 1024 * 1024; // 1MB
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
 
@@ -213,22 +214,28 @@ export function AddBarberForm({
       setUploading(true);
       const cropped = await cropCenterSquare(file);
       const storage = getStorage();
-      const key = `barberShops/${shopId}/barbers/${initialData?.id || 'new'}/avatar_${Date.now()}`;
+      const unique = `${Date.now()}_${(crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}`;
+      const ext = file.type === 'image/png' ? 'png' : 'jpg';
+      const key = `barberShops/${shopId}/barbers/${initialData?.id || 'tmp'}/avatar_${unique}.${ext}`;
       const ref = storageRef(storage, key);
-      const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
-      task.on('state_changed', (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        setUploadProgress(pct);
+      const task = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
+      uploadTaskRef.current = task;
+      await new Promise<void>((resolve, reject) => {
+        task.on('state_changed', (snap) => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          setUploadProgress(pct);
+        }, (err) => reject(err), () => resolve());
       });
-      await task;
       const url = await getDownloadURL(ref);
       form.setValue('avatar', url, { shouldDirty: true, shouldValidate: true });
       toast({ title: 'Foto atualizada!', description: 'Upload concluído com sucesso.' });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Falha no upload', description: 'Tente novamente.' });
+      const message = (e as any)?.message || 'Tente novamente.';
+      toast({ variant: 'destructive', title: 'Falha no upload', description: message });
     } finally {
       setUploading(false);
       setUploadProgress(null);
+      uploadTaskRef.current = null;
     }
   };
 

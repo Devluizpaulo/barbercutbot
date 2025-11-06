@@ -190,7 +190,7 @@ export default function BarbersPage() {
                     Adicionar Profissional
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-3xl">
+                <DialogContent className="sm:max-w-3xl" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
                   <DialogHeader>
                     <DialogTitle>{selectedBarber ? 'Editar Profissional' : 'Adicionar Novo Profissional'}</DialogTitle>
                     <DialogDescription>
