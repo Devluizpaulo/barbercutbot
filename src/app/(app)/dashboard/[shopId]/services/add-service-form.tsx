@@ -276,7 +276,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                 <div className="relative">
                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <FormControl>
-                    <Input type="number" placeholder="30" {...field} className="pl-10" />
+                    <Input type="number" placeholder="30" {...field} step="15" className="pl-10" />
                     </FormControl>
                 </div>
                 <FormMessage />
