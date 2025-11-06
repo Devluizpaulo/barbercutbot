@@ -1,10 +1,7 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['@genkit-ai/google-genai', 'genkit'],
-  },
+  serverExternalPackages: ['@genkit-ai/google-genai', 'genkit'],
   async headers() {
     return [
       {
