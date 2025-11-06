@@ -55,7 +55,7 @@ service cloud.firestore {
       allow create: if isOwner(request.resource.data.ownerId);
       allow read, update, delete: if isShopOwner(shopId);
       
-      // Any team member can READ data within the shop
+      // Allow team members to READ data within the shop
       match /{subcollection}/{docId=**} {
         allow read: if isShopMember(shopId);
         // Only the shop owner can WRITE data within the shop
