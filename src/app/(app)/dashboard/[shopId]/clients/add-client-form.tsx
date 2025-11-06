@@ -179,7 +179,7 @@ export function AddClientForm({ shopId, initialData, onSuccess }: AddClientFormP
     try {
       if (initialData) {
           const clientRef = doc(firestore, 'barberShops', shopId, 'customers', initialData.id);
-          setDocumentNonBlocking(clientRef, values, { merge: true });
+          setDocumentNonBlocking(clientRef, { ...values, barberShopId: shopId }, { merge: true });
       } else {
           const customersRef = collection(firestore, 'barberShops', shopId, 'customers');
           await addDocumentNonBlocking(customersRef, {

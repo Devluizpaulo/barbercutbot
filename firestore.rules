@@ -1,5 +1,6 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -18,7 +19,8 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
     
@@ -27,7 +29,7 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
         get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
     }
-
+    
     // Checks if the user is the owner OR a registered team member of the shop
     function isShopMember(shopId) {
       return isShopOwner(shopId) || 
@@ -42,31 +44,44 @@ service cloud.firestore {
     }
 
     // =============================================
-    // COLLECTION RULES
+    // USER & SHOP RULES
     // =============================================
 
     match /users/{userId} {
       allow read, update, delete: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.id == userId;
     }
-
+    
     match /barberShops/{shopId} {
-      // Shop owner can create, read, update, delete their own shop document
       allow create: if isOwner(request.resource.data.ownerId);
       allow read, update, delete: if isShopOwner(shopId);
-      
-      // Allow team members to READ data within the shop
-      match /{subcollection}/{docId=**} {
-        allow read: if isShopMember(shopId);
-        // Only the shop owner can WRITE data within the shop
-        allow write: if isShopOwner(shopId);
-      }
     }
     
     // Rule for a user to list only their own shops
     match /barberShops {
       allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
+
+    // =============================================
+    // SHOP SUB-COLLECTION RULES
+    // =============================================
+
+    match /barberShops/{shopId}/{subcollection}/{docId} {
+        // READ (get, list): Allow if user is a member of the shop
+        allow get: if isShopMember(shopId);
+        
+        // This is the CRITICAL rule for LIST operations.
+        // It allows a list query ONLY IF it includes a `where('barberShopId', '==', shopId)` clause.
+        // This ensures queries are scoped per shop and performant.
+        allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId && isShopMember(shopId);
+        
+        // WRITE (create, update, delete): Allow only if the user is the shop owner.
+        allow write: if isShopOwner(shopId);
+    }
+    
+    // =============================================
+    // PLATFORM-WIDE RULES
+    // =============================================
     
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
