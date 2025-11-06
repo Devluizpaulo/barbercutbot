@@ -42,7 +42,7 @@ import {
   useMemoFirebase,
   useUser
 } from '@/firebase';
-import { collection, doc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -68,7 +68,8 @@ export default function ClientDetailsPage() {
       user && client && shopId
         ? query(
             collection(firestore, 'barberShops', shopId, 'appointments'),
-            where('customerId', '==', client.id)
+            where('customerId', '==', client.id),
+            orderBy('startTime', 'desc')
           )
         : null,
     [firestore, shopId, client, user]
@@ -91,9 +92,9 @@ export default function ClientDetailsPage() {
   }
 
 
-  const totalSpent = clientAppointments?.reduce((acc, appt) => {
-    return acc + (appt.totalPrice || 0);
-  }, 0);
+  const totalSpent = clientAppointments
+    ?.filter(appt => appt.status === 'completed')
+    .reduce((acc, appt) => acc + (appt.totalPrice || 0), 0);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
