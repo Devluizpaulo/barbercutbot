@@ -18,54 +18,109 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
     
     function isShopOwner(shopId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
-        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+        return isSignedIn() && 
+               exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
+               get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+    
+    // =============================================
+    // ADMIN GOD-MODE RULE (Highest Priority)
+    // =============================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
 
     // =============================================
-    // COLLECTION RULES (ESPECÍFICAS PRIMEIRO)
+    // USER-SPECIFIC RULES
     // =============================================
 
     match /users/{userId} {
+      // Users can only manage their own profile.
       allow read, update, delete: if isOwner(userId);
+      // A user can create their own profile document.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
     }
 
-    match /barberShops/{shopId} {
-      allow create: if isOwner(request.resource.data.ownerId);
-      allow read, update, delete: if isShopOwner(shopId);
+    // =============================================
+    // BARBER SHOP RULES
+    // =============================================
 
-      // ✅ Esta regra permite acesso a subcoleções como appointments, clients, etc.
-      match /{subcollection}/{docId=**} {
-        allow read, write: if isShopOwner(shopId);
-      }
+    match /barberShops/{shopId} {
+      // Any signed-in user can create a shop, as long as they set themselves as the owner.
+      allow create: if isOwner(request.resource.data.ownerId);
+      // Only the shop owner can read, update, or delete their shop document.
+      allow read, update, delete: if isShopOwner(shopId);
     }
-    
+
+    // This rule allows a user to query for the shops they own.
+    // It is critical for the /dashboard/shops page.
     match /barberShops {
       allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
     
+    // =============================================
+    // SHOP SUB-COLLECTION RULES
+    // =============================================
+
+    // Appointments
+    match /barberShops/{shopId}/appointments/{appointmentId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+    
+    // Clients
+    match /barberShops/{shopId}/clients/{clientId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+    
+    // Barbers
+    match /barberShops/{shopId}/barbers/{barberId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // Services
+    match /barberShops/{shopId}/services/{serviceId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // Products
+    match /barberShops/{shopId}/products/{productId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // Financial Records
+    match /barberShops/{shopId}/financialRecords/{recordId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // Suppliers
+    match /barberShops/{shopId}/suppliers/{supplierId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // Team Members
+     match /barberShops/{shopId}/team/{memberId} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // =============================================
+    // GLOBAL COLLECTION RULES
+    // =============================================
+
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow update, delete: if false;
     }
 
     match /tickets/{ticketId} {
         allow create: if isOwner(request.resource.data.userId);
         allow read: if isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId) || isAdmin();
-    }
-
-    // =============================================
-    // ✅ REGRA GLOBAL ADMIN - AVALIADA POR ÚLTIMO
-    // =============================================
-    match /{document=**} {
-      allow read, write: if isAdmin();
     }
   }
 }
