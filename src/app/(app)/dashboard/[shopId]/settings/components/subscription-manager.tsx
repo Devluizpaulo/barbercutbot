@@ -203,6 +203,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
   const currentPlanId = shop?.subscription?.plan || 'starter';
   const currentPlan = PLANS.find(p => p.id === currentPlanId) || PLANS[0];
   const isSubscriptionActive = shop?.subscription?.status === 'active' || shop?.subscription?.status === 'trialing';
+  const subscriptionEndDate = toDate(shop?.subscription?.currentPeriodEnd);
 
   return (
     <>
@@ -257,7 +258,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
             <CardHeader>
               <CardTitle>Cancelar Assinatura</CardTitle>
               <CardDescription>
-                Ao cancelar, seu acesso continuará até o final do período de cobrança atual ({format(toDate(shop.subscription.currentPeriodEnd)!, 'dd/MM/yyyy')}).
+                Ao cancelar, seu acesso continuará até o final do período de cobrança atual {subscriptionEndDate ? `(${format(subscriptionEndDate, 'dd/MM/yyyy')})` : ''}.
               </CardDescription>
             </CardHeader>
             <CardFooter>
