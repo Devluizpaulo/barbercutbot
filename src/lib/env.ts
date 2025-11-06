@@ -8,6 +8,9 @@ const EnvSchema = z.object({
   // Stripe (server)
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  
+  // Genkit AI
+  GEMINI_API_KEY: z.string().optional(),
 
   // Firebase (client/public)
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
