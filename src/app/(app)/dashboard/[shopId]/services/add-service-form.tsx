@@ -23,17 +23,18 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useFirestore } from '@/firebase';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject, UploadTask } from 'firebase/storage';
 import { collection, doc, serverTimestamp } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Service } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const formSchema = z.object({
   name: z.string().min(1, 'O nome do serviço é obrigatório.'),
   description: z.string().optional(),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
   cost: z.coerce.number().min(0, 'O custo não pode ser negativo.').optional(),
-  duration: z.coerce.number().min(0, 'A duração deve ser um número positivo em minutos.'),
+  duration: z.coerce.number().min(0, 'A duração deve ser um número positivo em minutos.').step(15, 'A duração deve ser em incrementos de 15 minutos.'),
   imageUrl: z.string().url('URL inválida.').optional().or(z.literal('')),
   isCommissionEnabled: z.boolean().default(false),
   commissionType: z.enum(['fixed', 'percentage']).optional(),
@@ -55,6 +56,8 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
+
   const MAX_BYTES = 1024 * 1024; // 1MB
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
 
@@ -88,6 +91,10 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   }
 
   const onUploadImage = async (file: File) => {
+    if (uploadTaskRef.current) {
+        uploadTaskRef.current.cancel();
+    }
+
     try {
       if (!ALLOWED_TYPES.includes(file.type)) {
         toast({ variant: 'destructive', title: 'Formato inválido', description: 'Envie PNG ou JPG.' });
@@ -103,22 +110,33 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       const key = `barberShops/${shopId}/services/${initialData?.id || 'new'}/image_${Date.now()}`;
       const ref = storageRef(storage, key);
       const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
-      task.on('state_changed', (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        setUploadProgress(pct);
+      uploadTaskRef.current = task;
+
+      await new Promise<void>((resolve, reject) => {
+        task.on('state_changed', 
+          (snap) => {
+            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+            setUploadProgress(pct);
+          }, 
+          (err) => reject(err), 
+          () => resolve()
+        );
       });
-      await task;
+
       const url = await getDownloadURL(ref);
       form.setValue('imageUrl', url, { shouldDirty: true, shouldValidate: true });
       toast({ title: 'Imagem atualizada!', description: 'Upload concluído com sucesso.' });
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Falha no upload', description: 'Tente novamente.' });
+    } catch (e: any) {
+       if (e.code !== 'storage/canceled') {
+         toast({ variant: 'destructive', title: 'Falha no upload', description: e.message || 'Tente novamente.' });
+       }
     } finally {
       setUploading(false);
       setUploadProgress(null);
+      uploadTaskRef.current = null;
     }
   };
-
+  
   const form = useForm<AddServiceFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -126,6 +144,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       imageUrl: initialData.imageUrl || '',
       description: initialData.description || '',
       cost: initialData.cost || 0,
+      duration: initialData.duration || 30,
       isCommissionEnabled: initialData.partnership?.isCommissionEnabled || false,
       commissionType: initialData.partnership?.commissionType,
       commissionValue: initialData.partnership?.commissionValue,
@@ -146,6 +165,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
 
   const { isSubmitting } = form.formState;
   const isCommissionEnabled = form.watch('isCommissionEnabled');
+  const imageUrl = form.watch('imageUrl');
 
   const onSubmit = async (values: AddServiceFormValues) => {
     try {
@@ -163,7 +183,6 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                 commissionType: values.commissionType,
                 commissionValue: values.commissionValue,
             },
-            createdAt: serverTimestamp()
         };
 
         if (initialData) {
@@ -171,7 +190,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
             setDocumentNonBlocking(serviceRef, serviceData, { merge: true });
         } else {
             const serviceRef = collection(firestore, 'barberShops', shopId, 'services');
-            addDocumentNonBlocking(serviceRef, serviceData);
+            addDocumentNonBlocking(serviceRef, {...serviceData, createdAt: serverTimestamp()});
         }
 
         toast({
@@ -193,24 +212,80 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome do Serviço</FormLabel>
-              <div className="relative">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <FormControl>
-                  <Input placeholder="Ex: Corte de Cabelo" {...field} className="pl-10" />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div 
+                className="relative group w-24 h-24"
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onUploadImage(f); }}
+            >
+                <Avatar className="h-24 w-24 rounded-lg">
+                    <AvatarImage src={imageUrl} alt={form.getValues('name')} className="object-cover" />
+                    <AvatarFallback className="rounded-lg bg-muted">
+                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                    </AvatarFallback>
+                </Avatar>
+                {uploadProgress !== null && (
+                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                     <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
+                       <div className="h-full bg-primary" style={{ width: `${uploadProgress}%` }} />
+                     </div>
+                   </div>
+                )}
+                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageIcon className="h-8 w-8 text-white" />
+                 </div>
+            </div>
+            <div className="flex-1 w-full space-y-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadImage(f); }}
+                />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Serviço</FormLabel>
+                      <div className="relative">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                          <Input placeholder="Ex: Corte de Cabelo" {...field} className="pl-10" />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+                        {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        Enviar foto
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                            const currentUrl = form.getValues('imageUrl');
+                            if (currentUrl) {
+                                try {
+                                    const storage = getStorage();
+                                    const ref = storageRef(storage, currentUrl);
+                                    await deleteObject(ref);
+                                } catch {}
+                            }
+                            form.setValue('imageUrl', '', { shouldDirty: true, shouldValidate: true });
+                        }}
+                    >
+                        Remover foto
+                    </Button>
+                </div>
+            </div>
+        </div>
         
         <FormField
           control={form.control}
