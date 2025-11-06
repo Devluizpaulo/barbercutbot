@@ -61,6 +61,14 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   const shopRef = useMemoFirebase(() => (user && shopId) ? doc(firestore, 'barberShops', shopId) : null, [firestore, shopId, user]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
   
+  // Helper declared early to be available for filters below
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+  
   const savedOpeningChecklist = shop?.cashierSettings?.openingChecklist || [];
   const savedClosingChecklist = shop?.cashierSettings?.closingChecklist || [];
 
@@ -180,18 +188,12 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   const customersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
   const { data: allCustomers } = useCollection<Customer>(customersQuery);
 
+
   const getAssociatedData = (appt: Appointment) => {
     const barber = allBarbers?.find(b => appt.items.some(i => i.barberId === b.id));
     const customer = allCustomers?.find(c => c.id === appt.customerId);
     return { barber, customer };
   };
-
-  const toDate = (timestamp: Timestamp | Date | string): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    return new Date(timestamp);
-  }
 
   const renderChecklist = (items: ChecklistItem[], state: Record<string, boolean>, setState: (state: Record<string, boolean>) => void) => (
     <div className="space-y-3">

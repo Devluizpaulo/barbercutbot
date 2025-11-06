@@ -56,6 +56,13 @@ export default function BarbersPage() {
   const [selectedBarber, setSelectedBarber] = useState<Barber | undefined>(undefined);
   const [barberToDelete, setBarberToDelete] = useState<Barber | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isScheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleBarber, setScheduleBarber] = useState<Barber | null>(null);
+  const defaultDays = ['segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado','domingo'];
+  const [workingForm, setWorkingForm] = useState(() => defaultDays.map(d => ({ day: d, enabled: d !== 'domingo', open: '08:00', close: '18:00' })));
+  const [breaksForm, setBreaksForm] = useState<{ day: string; start: string; end: string; label?: string }[]>([]);
+  const [preBufferMinutes, setPreBufferMinutes] = useState<number>(5);
+  const [postBufferMinutes, setPostBufferMinutes] = useState<number>(5);
   const params = useParams();
   const shopId = params.shopId as string;
   const firestore = useFirestore();
@@ -82,6 +89,44 @@ export default function BarbersPage() {
   const handleEdit = (barber: Barber) => {
     setSelectedBarber(barber);
     setFormOpen(true);
+  };
+
+  const openSchedule = (barber: Barber) => {
+    setScheduleBarber(barber);
+    const wh = (barber as any).workingHours || [];
+    const brs = (barber as any).breaks || [];
+    const next = defaultDays.map(d => {
+      const w = wh.find((x: any) => (x.day || '').toLowerCase() === d);
+      return {
+        day: d,
+        enabled: w ? w.enabled !== false : d !== 'domingo',
+        open: w?.open || '08:00',
+        close: w?.close || '18:00',
+      };
+    });
+    setWorkingForm(next);
+    setBreaksForm(
+      brs.map((b: any) => ({ day: (b.day || '').toLowerCase(), start: b.start || '12:00', end: b.end || '13:00', label: b.label || 'Pausa' }))
+    );
+    setPreBufferMinutes(((barber as any).defaultPreBufferMinutes ?? (barber as any).defaultBufferMinutes ?? 5) as number);
+    setPostBufferMinutes(((barber as any).defaultPostBufferMinutes ?? (barber as any).defaultBufferMinutes ?? 5) as number);
+    setScheduleOpen(true);
+  };
+
+  const saveSchedule = async () => {
+    if (!scheduleBarber) return;
+    const workingHours = workingForm.map(d => ({ day: d.day, open: d.open, close: d.close, enabled: d.enabled }));
+    const breaks = breaksForm.map(b => ({ day: b.day, start: b.start, end: b.end, label: b.label || 'Pausa' }));
+    try {
+      const ref = doc(firestore, 'barberShops', shopId, 'barbers', scheduleBarber.id);
+      await setDocumentNonBlocking(ref, { workingHours, breaks, defaultPreBufferMinutes: preBufferMinutes, defaultPostBufferMinutes: postBufferMinutes }, { merge: true });
+      toast({ title: 'Horários salvos', description: 'Disponibilidades do profissional atualizadas.' });
+      setScheduleOpen(false);
+      setScheduleBarber(null);
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erro ao salvar horários' });
+    }
   };
 
   const handleAddNew = () => {
@@ -230,6 +275,9 @@ export default function BarbersPage() {
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSchedule(barber)}>
+                            <Eye className="mr-2 h-4 w-4" /> Horários
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setBarberToDelete(barber)}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Remover
@@ -277,6 +325,90 @@ export default function BarbersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isScheduleOpen} onOpenChange={setScheduleOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Horários e Pausas {scheduleBarber ? `— ${scheduleBarber.firstName}` : ''}</DialogTitle>
+            <DialogDescription>Defina os horários de atendimento por dia e o intervalo de almoço.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {workingForm.map((d, idx) => (
+                <div key={d.day} className="border rounded-md p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium capitalize">{d.day}</span>
+                    <label className="text-sm flex items-center gap-2">
+                      <input type="checkbox" checked={d.enabled} onChange={e => {
+                        const next = [...workingForm]; next[idx] = { ...d, enabled: e.target.checked }; setWorkingForm(next);
+                      }} /> Ativo
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Abertura</div>
+                      <input type="time" className="w-full border rounded-md h-9 px-2 bg-background" value={d.open} onChange={e => { const next = [...workingForm]; next[idx] = { ...d, open: e.target.value }; setWorkingForm(next); }} />
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Fechamento</div>
+                      <input type="time" className="w-full border rounded-md h-9 px-2 bg-background" value={d.close} onChange={e => { const next = [...workingForm]; next[idx] = { ...d, close: e.target.value }; setWorkingForm(next); }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Pausas (múltiplas)</h4>
+                <Button size="sm" variant="outline" onClick={() => setBreaksForm(prev => [...prev, { day: defaultDays[0], start: '12:00', end: '13:00', label: 'Pausa' }])}>Adicionar Pausa</Button>
+              </div>
+              <div className="space-y-2">
+                {breaksForm.map((br, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-end">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Dia</div>
+                      <select className="w-full border rounded-md h-9 px-2 bg-background" value={br.day} onChange={e => { const next=[...breaksForm]; next[idx]={...br, day:e.target.value}; setBreaksForm(next); }}>
+                        {defaultDays.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Início</div>
+                      <input type="time" className="w-full border rounded-md h-9 px-2 bg-background" value={br.start} onChange={e => { const next=[...breaksForm]; next[idx]={...br, start:e.target.value}; setBreaksForm(next); }} />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Fim</div>
+                      <input type="time" className="w-full border rounded-md h-9 px-2 bg-background" value={br.end} onChange={e => { const next=[...breaksForm]; next[idx]={...br, end:e.target.value}; setBreaksForm(next); }} />
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Rótulo</div>
+                      <input className="w-full border rounded-md h-9 px-2 bg-background" placeholder="Pausa/Almoço" value={br.label || ''} onChange={e => { const next=[...breaksForm]; next[idx]={...br, label:e.target.value}; setBreaksForm(next); }} />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button variant="ghost" size="icon" onClick={() => setBreaksForm(prev => prev.filter((_,i)=>i!==idx))}>✕</Button>
+                    </div>
+                  </div>
+                ))}
+                {breaksForm.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma pausa adicionada.</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <div className="text-sm text-muted-foreground">Buffer (pré) min</div>
+                <input type="number" min={0} className="w-full border rounded-md h-9 px-2 bg-background" value={preBufferMinutes} onChange={e => setPreBufferMinutes(Number(e.target.value) || 0)} />
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Buffer (pós) min</div>
+                <input type="number" min={0} className="w-full border rounded-md h-9 px-2 bg-background" value={postBufferMinutes} onChange={e => setPostBufferMinutes(Number(e.target.value) || 0)} />
+              </div>
+              <div className="text-sm text-muted-foreground">Buffers aplicados ao iniciar e encerrar cada atendimento do profissional.</div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setScheduleOpen(false)}>Cancelar</Button>
+            <Button onClick={saveSchedule}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -42,9 +42,9 @@ import {
 import { AddAppointmentForm } from './add-appointment-form';
 
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, Timestamp } from 'firebase/firestore';
+import { collection, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { CalendarView } from '../calendar-view';
+import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -90,6 +90,38 @@ export default function AppointmentsPage() {
 
   const changeDate = (amount: number) => {
     setSelectedDate(prev => new Date(prev.setDate(prev.getDate() + amount)));
+  };
+
+  const goToday = () => setSelectedDate(new Date());
+
+  const handleEdit = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setFormOpen(true);
+  };
+
+  const handleReschedule = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setFormOpen(true);
+  };
+
+  const handleCancel = async (appointment: Appointment) => {
+    const confirmed = typeof window !== 'undefined' ? window.confirm('Tem certeza que deseja cancelar este agendamento?') : true;
+    if (!confirmed) return;
+    try {
+      const apptRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+      await updateDoc(apptRef, { status: 'cancelled' });
+    } catch (err) {
+      console.error('Erro ao cancelar agendamento', err);
+    }
+  };
+
+  const handleComplete = async (appointment: Appointment) => {
+    try {
+      const apptRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+      await updateDoc(apptRef, { status: 'completed' });
+    } catch (err) {
+      console.error('Erro ao concluir agendamento', err);
+    }
   };
 
   return (
@@ -153,7 +185,15 @@ export default function AppointmentsPage() {
                 <CardContent className="pt-6">
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {!hasAppointments && (
-                      <button onClick={handleAddNew} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                      <div
+                        onClick={handleAddNew}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') handleAddNew();
+                        }}
+                        className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50"
+                      >
                         <div className="flex items-center gap-3">
                           <CalendarIcon className="h-5 w-5" />
                           <div>
@@ -162,7 +202,7 @@ export default function AppointmentsPage() {
                           </div>
                         </div>
                         <Button size="sm">Abrir</Button>
-                      </button>
+                      </div>
                     )}
                     {!hasCustomers && (
                       <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
@@ -249,6 +289,7 @@ export default function AppointmentsPage() {
                     />
                     </PopoverContent>
                 </Popover>
+                <Button variant="secondary" onClick={goToday}>Hoje</Button>
                 <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -264,6 +305,10 @@ export default function AppointmentsPage() {
                 isLoading={isLoading}
                 selectedDate={selectedDate}
                 selectedBarberId={selectedBarberId}
+                onEdit={handleEdit}
+                onReschedule={handleReschedule}
+                onCancel={handleCancel}
+                onComplete={handleComplete}
             />
         </div>
       </div>

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, getDoc, Timestamp } from 'firebase/firestore';
 import type { BarberShop, Appointment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +17,7 @@ interface TimeSlotPickerProps {
   serviceDuration: number;
   selectedValue: string;
   onValueChange: (value: string) => void;
+  excludeAppointmentId?: string;
 }
 
 export function TimeSlotPicker({ 
@@ -25,7 +26,8 @@ export function TimeSlotPicker({
     barberIds, 
     serviceDuration,
     selectedValue,
-    onValueChange
+    onValueChange,
+    excludeAppointmentId,
 }: TimeSlotPickerProps) {
   const firestore = useFirestore();
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -34,17 +36,56 @@ export function TimeSlotPicker({
   const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
 
+  const toDate = (ts: Timestamp | Date | string): Date => {
+    if ((ts as any)?.toDate) return (ts as any).toDate();
+    return new Date(ts as any);
+  };
+
+  const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const intersectSegments = (a: Array<[number, number]>, b: Array<[number, number]>) => {
+    const res: Array<[number, number]> = [];
+    let i = 0, j = 0;
+    const A = a.slice().sort((x, y) => x[0] - y[0]);
+    const B = b.slice().sort((x, y) => x[0] - y[0]);
+    while (i < A.length && j < B.length) {
+      const start = Math.max(A[i][0], B[j][0]);
+      const end = Math.min(A[i][1], B[j][1]);
+      if (start < end) res.push([start, end]);
+      if (A[i][1] < B[j][1]) i++; else j++;
+    }
+    return res;
+  };
+
+  const subtractSegments = (base: Array<[number, number]>, removes: Array<[number, number]>) => {
+    // subtract each remove interval from base
+    let result = base.slice();
+    for (const r of removes) {
+      const tmp: Array<[number, number]> = [];
+      for (const [s, e] of result) {
+        if (r[1] <= s || r[0] >= e) {
+          tmp.push([s, e]);
+        } else {
+          if (r[0] > s) tmp.push([s, Math.max(s, Math.min(r[0], e))]);
+          if (r[1] < e) tmp.push([Math.max(r[1], s), e]);
+        }
+      }
+      result = tmp;
+    }
+    return result;
+  };
+
   useEffect(() => {
     const calculateAvailableSlots = async () => {
-      if (!shop?.workingHours || barberIds.length === 0) {
-        setAvailableSlots([]);
-        setIsLoading(false);
-        return;
-      }
       setIsLoading(true);
 
       const dayOfWeek = selectedDate.toLocaleDateString('pt-BR', { weekday: 'long' }).split(',')[0];
-      const workingHours = shop.workingHours.find(wh => wh.day.toLowerCase() === dayOfWeek.toLowerCase());
+      // Fallback working hours when shop or day config is missing
+      const defaultWH = { day: dayOfWeek, open: '08:00', close: '20:00', enabled: true };
+      const workingHours = shop?.workingHours?.find(wh => wh.day.toLowerCase() === dayOfWeek.toLowerCase()) || defaultWH as any;
 
       if (!workingHours || !workingHours.enabled) {
         setAvailableSlots([]);
@@ -56,45 +97,95 @@ export function TimeSlotPicker({
       const endDateTime = endOfDay(selectedDate);
       
       const appointmentsRef = collection(firestore, 'barberShops', shopId, 'appointments');
+      // Query all appointments of the day, we'll filter by selected barbers client-side
       const q = query(
         appointmentsRef,
-        where('barberId', 'in', barberIds),
         where('startTime', '>=', Timestamp.fromDate(startDateTime)),
         where('startTime', '<=', Timestamp.fromDate(endDateTime))
       );
 
-      const querySnapshot = await getDocs(q);
-      const existingAppointments = querySnapshot.docs.map(doc => doc.data() as Appointment);
+      let existingAppointments: Appointment[] = [];
+      try {
+        const querySnapshot = await getDocs(q);
+        const allAppointments = querySnapshot.docs.map(d => {
+          const data = d.data() as Appointment;
+          return { ...data, id: (data as any).id || d.id } as Appointment;
+        });
+        if (barberIds.length === 0) {
+          // Quando nenhum barbeiro foi selecionado, não bloqueamos por conflitos
+          existingAppointments = [];
+        } else {
+          existingAppointments = allAppointments.filter(appt => {
+            const apptBarberIds: string[] = (appt as any).barberIds || (appt.items || []).map(it => it.barberId);
+            const involvesSelected = apptBarberIds.some(id => barberIds.includes(id));
+            const status = (appt.status || 'confirmed');
+            const isBlocking = status !== 'cancelled';
+            const isSameAsEditing = excludeAppointmentId && appt.id === excludeAppointmentId;
+            return involvesSelected && isBlocking && !isSameAsEditing;
+          });
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[TimeSlotPicker] Falha ao buscar agendamentos, usando slots sem bloqueios:', err);
+        existingAppointments = [];
+      }
       
+      const bufferMin = (shop as any)?.defaultBufferMinutes ?? 5;
       const busySlots: { start: number, end: number }[] = existingAppointments.map(appt => {
-        const startTime = (appt.startTime as Timestamp).toDate();
-        const endTime = (appt.endTime as Timestamp).toDate();
-        return { start: startTime.getTime(), end: endTime.getTime() };
+        const startTime = toDate(appt.startTime as any);
+        const endTime = toDate(appt.endTime as any);
+        return {
+          start: startTime.getTime() - bufferMin * 60000,
+          end: endTime.getTime() + bufferMin * 60000,
+        };
       });
 
-      const slots: string[] = [];
-      const [startHour, startMinute] = workingHours.open.split(':').map(Number);
-      const [endHour, endMinute] = workingHours.close.split(':').map(Number);
+      // 1) Compute base availability from shop hours
+      const shopSeg: Array<[number, number]> = [[toMinutes(workingHours.open), toMinutes(workingHours.close)]];
 
-      let currentTime = new Date(selectedDate);
-      currentTime.setHours(startHour, startMinute, 0, 0);
-
-      const endTime = new Date(selectedDate);
-      endTime.setHours(endHour, endMinute, 0, 0);
-
-      while (currentTime.getTime() + serviceDuration * 60000 <= endTime.getTime()) {
-        const slotStart = currentTime.getTime();
-        const slotEnd = slotStart + serviceDuration * 60000;
-        
-        const isOverlapping = busySlots.some(busy => 
-            slotStart < busy.end && slotEnd > busy.start
-        );
-
-        if (!isOverlapping) {
-          slots.push(format(currentTime, 'HH:mm'));
+      // 2) Load barbers and build per-barber segments (intersect with shop)
+      let intersectionSeg = shopSeg;
+      if (barberIds.length > 0) {
+        const barberDocs = await Promise.all(barberIds.map(id => getDoc(doc(firestore, 'barberShops', shopId, 'barbers', id))));
+        for (const bdoc of barberDocs) {
+          if (!bdoc.exists()) continue;
+          const bdata: any = bdoc.data();
+          // working hours
+          const dayName = selectedDate.toLocaleDateString('pt-BR', { weekday: 'long' }).split(',')[0]?.toLowerCase();
+          const bwh = (bdata.workingHours || []).find((wh: any) => wh.day?.toLowerCase() === dayName);
+          let segs: Array<[number, number]> = shopSeg;
+          if (bwh?.enabled !== false && bwh?.open && bwh?.close) {
+            segs = intersectSegments(shopSeg, [[toMinutes(bwh.open), toMinutes(bwh.close)]]);
+          }
+          // breaks
+          const bbreaks = (bdata.breaks || []).filter((br: any) => !br.day || br.day?.toLowerCase() === dayName)
+            .map((br: any) => [toMinutes(br.start), toMinutes(br.end)]) as Array<[number, number]>;
+          segs = subtractSegments(segs, bbreaks);
+          // Intersect with cumulative
+          intersectionSeg = intersectSegments(intersectionSeg, segs);
         }
+      }
 
-        currentTime.setMinutes(currentTime.getMinutes() + 15);
+      // 3) Generate slots inside intersection segments only
+      const effectiveDuration = (serviceDuration && serviceDuration > 0) ? serviceDuration : ((shop as any)?.defaultSlotDuration || 30);
+      const slots: string[] = [];
+      // iterate from opening to closing in 15-min steps
+      const dayStart = new Date(selectedDate);
+      dayStart.setHours(0,0,0,0);
+      for (let minutes = 0; minutes <= 24*60; minutes += 15) {
+        const slotStartMin = minutes;
+        const slotEndMin = minutes + effectiveDuration;
+        // must be inside at least one intersection segment
+        const inside = intersectionSeg.some(([s,e]) => slotStartMin >= s && slotEndMin <= e);
+        if (!inside) continue;
+        const slotStart = dayStart.getTime() + slotStartMin*60000;
+        const slotEnd = dayStart.getTime() + slotEndMin*60000;
+        // must not overlap busy
+        const isOverlapping = busySlots.some(busy => slotStart < busy.end && slotEnd > busy.start);
+        if (!isOverlapping) {
+          const date = new Date(slotStart);
+          slots.push(format(date, 'HH:mm'));
+        }
       }
       
       setAvailableSlots(slots);

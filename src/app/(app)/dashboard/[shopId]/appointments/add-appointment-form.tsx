@@ -216,25 +216,42 @@ export function AddAppointmentForm({
     }
   }
 
+  const watchedItems = appointmentForm.watch('items');
+
   const { totalPrice, totalDuration } = useMemo(() => {
-    const items = appointmentForm.watch('items');
+    const items = watchedItems || [];
     return items.reduce((acc, item) => {
-        const service = availableServices?.find(s => s.id === item.serviceId);
-        if (service) {
+        // Preferir valores já aplicados no item; se ausentes, cair no serviço
+        if (item.price && item.duration) {
+          acc.totalPrice += item.price;
+          acc.totalDuration += item.duration;
+        } else {
+          const service = availableServices?.find(s => s.id === item.serviceId);
+          if (service) {
             acc.totalPrice += service.price;
             acc.totalDuration += service.duration;
+          }
         }
         return acc;
     }, { totalPrice: 0, totalDuration: 0 });
-  }, [appointmentForm.watch('items'), availableServices]);
+  }, [watchedItems, availableServices]);
   
   const selectedBarberIds = useMemo(() => {
-    const items = appointmentForm.watch('items');
+    const items = watchedItems || [];
     const ids = new Set(items.map(item => item.barberId).filter(Boolean));
     return Array.from(ids);
-  }, [appointmentForm.watch('items')]);
+  }, [watchedItems]);
   
   const selectedDate = appointmentForm.watch('date');
+  const customerId = appointmentForm.watch('customerId');
+  const selectedTime = appointmentForm.watch('time');
+
+  const canSubmit = useMemo(() => {
+    const hasBarber = (watchedItems || []).some(i => i.barberId);
+    const hasCustomer = !!customerId;
+    const hasTime = !!selectedTime;
+    return hasBarber && hasCustomer && hasTime;
+  }, [watchedItems, customerId, selectedTime]);
 
 
   const onSubmit = async (values: AddAppointmentFormValues) => {
@@ -248,6 +265,7 @@ export function AddAppointmentForm({
       const appointmentData = {
         ...values,
         barberShopId: shopId,
+        barberIds: selectedBarberIds,
         startTime: Timestamp.fromDate(startTime),
         endTime: Timestamp.fromDate(endTime),
         totalPrice: totalPrice,
@@ -401,14 +419,21 @@ export function AddAppointmentForm({
         <div className="space-y-4">
             <FormLabel>Serviços e Profissionais</FormLabel>
             {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 p-4 border rounded-lg items-end">
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-4 p-4 border rounded-lg items-end">
                     <FormField
                     control={appointmentForm.control}
                     name={`items.${index}.serviceId`}
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel className="text-xs">Serviço {index + 1}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={(val) => {
+                            field.onChange(val);
+                            const service = availableServices?.find(s => s.id === val);
+                            if (service) {
+                              appointmentForm.setValue(`items.${index}.price`, service.price, { shouldDirty: true, shouldTouch: true });
+                              appointmentForm.setValue(`items.${index}.duration`, service.duration, { shouldDirty: true, shouldTouch: true });
+                            }
+                          }} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione um serviço" />
@@ -422,6 +447,15 @@ export function AddAppointmentForm({
                             ))}
                             </SelectContent>
                         </Select>
+                        {(() => {
+                          const svc = availableServices?.find(s => s.id === appointmentForm.getValues(`items.${index}.serviceId` as const));
+                          const price = appointmentForm.getValues(`items.${index}.price` as const) || svc?.price;
+                          const duration = appointmentForm.getValues(`items.${index}.duration` as const) || svc?.duration;
+                          if (!price && !duration) return null;
+                          return (
+                            <div className="text-xs text-muted-foreground pt-1">R$ {Number(price || 0).toFixed(2)} — {Number(duration || 0)} min</div>
+                          );
+                        })()}
                         <FormMessage />
                         </FormItem>
                     )}
@@ -432,7 +466,11 @@ export function AddAppointmentForm({
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel className="text-xs">Barbeiro {index + 1}</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={(val) => {
+                                field.onChange(val);
+                                // Quando o barbeiro muda, forçar recálculo de horários limpando o horário escolhido
+                                appointmentForm.setValue('time', '', { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                              }} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione um barbeiro" />
@@ -450,6 +488,22 @@ export function AddAppointmentForm({
                             </FormItem>
                         )}
                     />
+                    <Button type="button" size="sm" variant="secondary"
+                      disabled={!appointmentForm.getValues(`items.${index}.serviceId` as const)}
+                      onClick={async () => {
+                        const current = appointmentForm.getValues(`items.${index}.serviceId` as const);
+                        const service = availableServices?.find(s => s.id === current);
+                        if (service) {
+                          appointmentForm.setValue(`items.${index}.price`, service.price, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                          appointmentForm.setValue(`items.${index}.duration`, service.duration, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                          // Limpar horário selecionado e validar para recalcular os slots
+                          appointmentForm.setValue('time', '', { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                          await appointmentForm.trigger(['items', 'time']);
+                        }
+                      }}
+                    >
+                      Aplicar
+                    </Button>
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -482,8 +536,15 @@ export function AddAppointmentForm({
                         serviceDuration={totalDuration}
                         selectedValue={field.value}
                         onValueChange={field.onChange}
+                        excludeAppointmentId={initialData?.id}
                     />
                 </FormControl>
+                {selectedBarberIds.length === 0 && (
+                  <p className="text-xs text-muted-foreground pt-2">Selecione ao menos um barbeiro para filtrar conflitos de horário.</p>
+                )}
+                {field.value && (
+                  <p className="text-xs text-muted-foreground pt-2">Selecionado: {field.value}{totalDuration ? ` — termina às ${(() => { const [h,m]=String(field.value).split(':').map(Number); const d=new Date(selectedDate); d.setHours(h||0,m||0,0,0); return new Date(d.getTime()+ (totalDuration||0)*60000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); })()}` : ''}</p>
+                )}
                 <FormMessage />
                 </FormItem>
             )}
@@ -533,7 +594,7 @@ export function AddAppointmentForm({
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || !canSubmit}>
             {isSubmitting && (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             )}
