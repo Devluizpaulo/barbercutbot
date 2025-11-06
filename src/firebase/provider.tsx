@@ -14,7 +14,7 @@ interface FirebaseProviderProps {
   auth: Auth;
 }
 
-type UserWithRole = User & { role?: 'admin' | 'owner' | 'staff' };
+export type UserWithRole = User & { role: 'admin' | 'owner' | 'staff' | 'unknown' };
 
 interface UserAuthState {
   user: UserWithRole | null;
@@ -70,32 +70,29 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribe = onIdTokenChanged(
       auth,
       async (firebaseUser) => {
-        // If there's no Firebase user, we are done loading.
         if (!firebaseUser) {
           setUserAuthState({ user: null, isUserLoading: false, userError: null });
           return;
         }
 
-        // If there is a user, start the loading process. It's not finished until we get the role.
-        setUserAuthState(prevState => ({ ...prevState, user: firebaseUser as UserWithRole, isUserLoading: true }));
+        // Keep loading true until we have fetched the role
+        setUserAuthState(prevState => ({ ...prevState, isUserLoading: true }));
 
         try {
-          // Check for admin custom claim first.
-          const idTokenResult = await firebaseUser.getIdTokenResult(true); // Force refresh
+          // Force refresh the token to get the latest custom claims.
+          const idTokenResult = await firebaseUser.getIdTokenResult(true);
           const isAdmin = !!idTokenResult.claims.admin;
           
           if (isAdmin) {
              const userWithRole: UserWithRole = {
               ...firebaseUser,
-              // This is a workaround to make the user object properties accessible
-              ...Object.fromEntries(Object.entries(firebaseUser)),
               role: 'admin',
             };
             setUserAuthState({ user: userWithRole, isUserLoading: false, userError: null });
             return;
           }
 
-          // If not an admin via claim, check Firestore for 'owner' or 'staff' role.
+          // If not an admin, check the /users collection in Firestore.
           const userDocRef = doc(firestore, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           
@@ -103,7 +100,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
           const userWithRole: UserWithRole = {
             ...firebaseUser,
-            ...Object.fromEntries(Object.entries(firebaseUser)),
             role: role,
           };
           
@@ -111,8 +107,9 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
         } catch (error) {
            console.error("FirebaseProvider: Error processing user role:", error);
-           // If there's an error, default to the basic user and stop loading.
-           setUserAuthState({ user: firebaseUser as UserWithRole, isUserLoading: false, userError: error as Error });
+           // Fallback to a user with an 'unknown' role if fetching fails.
+           const userWithUnknownRole: UserWithRole = { ...firebaseUser, role: 'unknown' };
+           setUserAuthState({ user: userWithUnknownRole, isUserLoading: false, userError: error as Error });
         }
       },
       (error) => {

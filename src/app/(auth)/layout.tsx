@@ -15,33 +15,36 @@ export default function AuthLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // Only perform actions once the user loading state is confirmed (not loading).
     if (isUserLoading) {
-      return;
+      return; // Wait until user status is resolved.
     }
 
-    // If there is a user, decide where to redirect them based on their role.
     if (user) {
+      // User is logged in, redirect based on role.
       if (user.role === 'admin') {
-        router.push('/cpanel');
+        router.replace('/cpanel');
       } else {
-        router.push('/dashboard/shops');
+        router.replace('/dashboard');
       }
     }
-    // If there is no user and loading is complete, do nothing, allowing the
-    // login/signup pages to be displayed.
+    // If no user and loading is complete, do nothing (render the login/signup page).
   }, [user, isUserLoading, router]);
 
-  // Show a loading spinner while the user's auth state is being determined,
-  // or if we are about to redirect a logged-in user.
+  // While checking auth or if a user is found and we are about to redirect, show a loading screen.
   if (isUserLoading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4 text-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+            <h2 className="text-xl font-semibold">Autenticando...</h2>
+            <p className="text-muted-foreground max-w-sm">
+                Verificando suas credenciais e preparando o redirecionamento.
+            </p>
+        </div>
       </div>
     );
   }
   
-  // If loading is finished and there's no user, render the authentication page (e.g., Login, Signup).
+  // If loading is done and there's no user, show the auth page (login, signup, etc.).
   return <>{children}</>;
 }

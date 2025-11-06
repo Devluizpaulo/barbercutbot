@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
@@ -34,13 +35,20 @@ export default function AppLayout({
   if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4 text-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+            <h2 className="text-xl font-semibold">Preparando seu painel...</h2>
+            <p className="text-muted-foreground max-w-sm">
+                Carregando suas informações e permissões.
+            </p>
+        </div>
       </div>
     );
   }
 
   // If there is a user, render the main app layout.
-  if (user) {
+  // We also check if the user is an owner, otherwise they have no business here.
+  if (user && (user.role === 'owner' || user.role === 'admin')) {
     return (
       <SidebarProvider>
         <AppNav shopId={shopId} />

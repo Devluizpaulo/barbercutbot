@@ -7,7 +7,7 @@ import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
 import { CPanelNav } from './cnav';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export default function CPanelLayout({
   children,
@@ -20,41 +20,56 @@ export default function CPanelLayout({
   useEffect(() => {
     if (isUserLoading) return; // Wait until user status is resolved
 
-    // If loading is done and there's no user, redirect to the cpanel login page
     if (!user) {
-      router.push('/cpanel/login');
+      router.replace('/cpanel/login');
       return;
     }
     
-    // If a user is logged in but is NOT an admin, redirect them away from cpanel
     if (user.role !== 'admin') {
-      router.push('/dashboard/shops');
+      // If user is not an admin, deny access and redirect.
+      router.replace('/dashboard');
     }
 
   }, [user, isUserLoading, router]);
 
-  // Show a loading screen while user status is being checked or if the user is not an admin
-  if (isUserLoading || !user || user.role !== 'admin') {
+  // Show a loading screen while user status is being checked.
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-4 text-center">
+              <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+              <h2 className="text-xl font-semibold">Verificando Acesso Admin...</h2>
+              <p className="text-muted-foreground max-w-sm">
+                  Validando suas permissões de administrador.
+              </p>
+          </div>
       </div>
     );
   }
 
-  // If user is a confirmed admin, render the layout
+  // If user is a confirmed admin, render the layout. Otherwise, render a loader
+  // while the redirect is in progress.
+  if (user && user.role === 'admin') {
+    return (
+      <SidebarProvider>
+        <CPanelProvider>
+          <div className="flex min-h-screen w-full">
+              <CPanelNav />
+              <SidebarInset>
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                    {children}
+                </main>
+              </SidebarInset>
+          </div>
+        </CPanelProvider>
+      </SidebarProvider>
+    );
+  }
+
+  // Fallback loading screen while redirecting non-admins
   return (
-    <SidebarProvider>
-      <CPanelProvider>
-        <div className="flex min-h-screen w-full">
-            <CPanelNav />
-            <SidebarInset>
-              <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                  {children}
-              </main>
-            </SidebarInset>
-        </div>
-      </CPanelProvider>
-    </SidebarProvider>
+    <div className="flex min-h-screen items-center justify-center bg-secondary">
+      <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+    </div>
   );
 }
