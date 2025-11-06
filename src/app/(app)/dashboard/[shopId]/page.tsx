@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { DollarSign, Users, Calendar, Scissors, Store } from "lucide-react"
+import { DollarSign, Users, Calendar, Scissors, Store, ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react"
 import { LoaderCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
@@ -231,7 +231,7 @@ export default function ShopDashboardPage() {
                     </Link>
                   )}
                   {!hasFinancial && (
-                    <button onClick={() => setCashierOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+                    <div role="button" onClick={() => setCashierOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50 cursor-pointer">
                       <div className="flex items-center gap-3">
                         <DollarSign className="h-5 w-5" />
                         <div>
@@ -240,7 +240,7 @@ export default function ShopDashboardPage() {
                         </div>
                       </div>
                       <Button size="sm">Abrir</Button>
-                    </button>
+                    </div>
                   )}
                 </div>
               </CardContent>
