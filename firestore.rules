@@ -1,24 +1,4 @@
 
-/**
- * @file Firebase Security Rules for Firestore.
- *
- * @core_philosophy This ruleset enforces a strict owner-based access control model for barber shops and user profiles.
- *  It prioritizes security by default, restricting access unless explicitly granted. Data validation is minimized
- *  to allow for rapid prototyping and schema evolution.
- *
- * @data_structure The data is organized hierarchically, with user profiles stored under `/users/{userId}` and
- *  barber shop data stored under `/barberShops/{shopId}`.  Team member relationships are managed in the
- *  `/barberShops/{shopId}/team/{userId}` subcollection.
- *
- * @key_security_decisions
- *  - Listing of all users is disallowed. Only the authenticated user can access their own profile.
- *  - BarberShops are publicly listable but writes are owner-controlled.
- *  - Team members can only be managed by the shop owner.
- *  - All write operations are validated to ensure the document exists before modification or deletion to prevent accidental data loss.
- *  - The rules do not enforce strong schema validation (data types, required fields) in order to allow for faster iteration. The rules focus instead on authorization.
- *
- * @denormalization To avoid costly `get()` calls in the rules, the `BarberShop` entity contains an `ownerId` field. This allows the rules to quickly check ownership without needing to read another document.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -27,27 +7,14 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // =============================================
 
-    /**
-     * @description Checks if the current user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the current user is the owner of the resource, based on the provided userId.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user is the owner, false otherwise.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user has admin privileges.
-     *              An admin can be defined by a custom claim or a role field in their user document.
-     */
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
@@ -55,92 +22,50 @@ service cloud.firestore {
       );
     }
     
-    /**
-     * @description Checks if the authenticated user is the owner of a specific shop.
-     *              It fetches the shop document and compares the ownerId.
-     * @param {string} shopId - The ID of the barber shop to check.
-     * @returns {boolean} True if the user is the owner of the shop, false otherwise.
-     */
     function isShopOwner(shopId) {
-        // Ensure the shop document exists before trying to access its data.
-        return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+        return isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
+        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
     }
 
     // =============================================
-    // GLOBAL ADMIN RULE
-    // =============================================
-    // The most powerful rule: if a user is an admin, they can do anything.
-    // This is checked first and provides a master key for the CPanel.
-    match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    // =============================================
-    // COLLECTION RULES
+    // COLLECTION RULES (ESPECÍFICAS PRIMEIRO)
     // =============================================
 
-    /**
-     * @description Rules for user profiles.
-     * @path /users/{userId}
-     */
     match /users/{userId} {
-      // Only the user themselves or an admin can read, update, or delete their own profile.
       allow read, update, delete: if isOwner(userId);
-      // A user can only create their own profile document.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
     }
 
-    /**
-     * @description Rules for the main barber shops collection.
-     * @path /barberShops/{shopId}
-     */
     match /barberShops/{shopId} {
-      // Any authenticated user can create a shop, as long as they set themselves as the owner.
       allow create: if isOwner(request.resource.data.ownerId);
-      
-      // Only the shop owner can read, update, or delete their shop document.
       allow read, update, delete: if isShopOwner(shopId);
 
-      // --- SUBCOLLECTION CATCH-ALL RULE ---
-      // This is the key rule that grants owners access to everything inside their shop.
-      // It allows any read/write operation on any document within any subcollection
-      // as long as the user is the owner of the parent shop.
+      // ✅ Esta regra permite acesso a subcoleções como appointments, clients, etc.
       match /{subcollection}/{docId=**} {
         allow read, write: if isShopOwner(shopId);
       }
     }
     
-    /**
-     * @description Rules for listing shops.
-     * Required for the /dashboard/shops page to find which shop to redirect to.
-     * The query must include a `where('ownerId', '==', request.auth.uid)`.
-     */
     match /barberShops {
       allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
     
-    /**
-    * @description Rules for the admin logs.
-    * @path /adminLogs/{logId}
-    */
     match /adminLogs/{logId} {
-      // Any authenticated user can create a log entry (e.g., for failed login attempts).
       allow create: if isSignedIn();
-      // Only admins can read the logs.
       allow read: if isAdmin();
-      // Logs are immutable and cannot be changed or deleted.
       allow update, delete: if false;
     }
 
-    /**
-     * @description Rules for support tickets.
-     * @path /tickets/{ticketId}
-     */
     match /tickets/{ticketId} {
-        // Users can create their own tickets.
         allow create: if isOwner(request.resource.data.userId);
-        // Users can only read their own tickets. Admins can read all.
         allow read: if isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId) || isAdmin();
+    }
+
+    // =============================================
+    // ✅ REGRA GLOBAL ADMIN - AVALIADA POR ÚLTIMO
+    // =============================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
     }
   }
 }
