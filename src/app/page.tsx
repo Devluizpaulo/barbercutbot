@@ -6,8 +6,11 @@ import { Logo } from "@/components/logo";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Star, CheckCircle, TrendingUp, Users, Lock, Menu, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { PLANS } from "@/lib/plans";
+import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
   const avatar1 = PlaceHolderImages.find(p => p.id === 'avatar-1');
@@ -230,18 +233,58 @@ export default function LandingPage() {
             </div>
         </section>
 
-        <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-secondary text-secondary-foreground">
-            <div className="container mx-auto px-4 md:px-6 text-center">
-                 <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar seu negócio?</h2>
-                 <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">Junte-se a centenas de empreendedores que já estão otimizando sua gestão e lucrando mais.</p>
-                 <div className="mt-8">
-                    <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transform hover:scale-105 transition-transform">
-                        <Link href="/signup">Começar meu teste grátis de 14 dias</Link>
-                    </Button>
-                    <p className="text-xs mt-4 text-muted-foreground">Não é necessário cartão de crédito.</p>
-                 </div>
-            </div>
-        </section>
+        <section id="pricing" className="py-16 md:py-24 lg:py-32 bg-secondary">
+          <div className="container mx-auto px-4 md:px-6">
+              <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold font-headline">Pronto para transformar seu negócio?</h2>
+                  <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">Escolha o plano perfeito para o seu momento. Cancele quando quiser.</p>
+              </div>
+              <Carousel 
+                  opts={{
+                      align: "start",
+                      loop: false,
+                  }}
+                  className="w-full"
+              >
+                  <CarouselContent className="-ml-4">
+                      {PLANS.filter(p => p.id !== 'addon-ia').map((plan, index) => (
+                          <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                              <Card className={cn("flex flex-col h-full", plan.isFeatured && "border-primary ring-2 ring-primary")}>
+                                  <CardHeader className="text-left">
+                                      <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
+                                      <CardDescription>{plan.description}</CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="flex-1 space-y-6">
+                                      <div className="flex items-baseline gap-2">
+                                          <span className="text-4xl font-bold">R${plan.price.toFixed(2)}</span>
+                                          <span className="text-muted-foreground">/mês</span>
+                                      </div>
+                                      <ul className="space-y-3">
+                                          {plan.features.map((feature, i) => (
+                                              <li key={i} className="flex items-start gap-3">
+                                                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                                                  <span className="text-sm">{feature}</span>
+                                              </li>
+                                          ))}
+                                      </ul>
+                                  </CardContent>
+                                  <CardFooter>
+                                      <Button asChild className="w-full">
+                                          <Link href="/signup">Começar Agora</Link>
+                                      </Button>
+                                  </CardFooter>
+                              </Card>
+                          </CarouselItem>
+                      ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="hidden lg:flex"/>
+                  <CarouselNext className="hidden lg:flex"/>
+              </Carousel>
+               <div className="text-center mt-8">
+                    <p className="text-sm text-muted-foreground">Dúvidas? <Link href="#" className="underline hover:text-primary">Fale conosco</Link>.</p>
+                </div>
+          </div>
+      </section>
       </main>
 
       <footer className="py-8 border-t bg-secondary">
