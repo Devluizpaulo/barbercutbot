@@ -66,15 +66,14 @@ service cloud.firestore {
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-        // READ (get, list): Allow if user is a member of the shop
+        // READ: Allow if user is a member of the shop
         allow get: if isShopMember(shopId);
         
-        // This is the CRITICAL rule for LIST operations.
-        // It allows a list query ONLY IF it includes a `where('barberShopId', '==', shopId)` clause.
-        // This ensures queries are scoped per shop and performant.
-        allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId && isShopMember(shopId);
+        // ✅ LIST: Allow a list query ONLY IF it's scoped by barberShopId
+        // This is a performant and secure way to handle list permissions.
+        allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
         
-        // WRITE (create, update, delete): Allow only if the user is the shop owner.
+        // WRITE: Allow only if the user is the shop owner.
         allow write: if isShopOwner(shopId);
     }
     

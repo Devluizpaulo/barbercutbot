@@ -69,7 +69,7 @@ export default function ClientDetailsPage() {
         ? query(
             collection(firestore, 'barberShops', shopId, 'appointments'),
             where('customerId', '==', client.id),
-            // Ensure the query is scoped by shopId to satisfy security rules
+            // ✅ CRITICAL FIX: Add this where clause to match the security rule for 'list'
             where('barberShopId', '==', shopId), 
             orderBy('startTime', 'desc')
           )
