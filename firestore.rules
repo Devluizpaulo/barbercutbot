@@ -95,31 +95,27 @@ service cloud.firestore {
      * @description Rules for barber shops.
      * @path /barberShops/{shopId}
      * @allow (create) - An authenticated user can create a barber shop and becomes the owner by setting the `ownerId` field.
-     * @allow (get) - Anyone can read a barber shop's data.
-     * @allow (list) - Anyone can list barber shops.
-     * @allow (update) - Only the owner of the barber shop can update it.
-     * @allow (delete) - Only the owner of the barber shop can delete it.
-     * @deny (create) - An unauthenticated user cannot create a barber shop.
-     * @deny (update) - An authenticated user cannot update a barber shop they do not own.
-     * @deny (delete) - An authenticated user cannot delete a barber shop they do not own.
+     * @allow (get) - Only the owner of the barber shop or an admin can read it.
+     * @allow (list) - Users can only list shops they own, admins can list all.
+     * @allow (update) - Only the owner of the barber shop or an admin can update it.
+     * @allow (delete) - Only the owner of the barber shop or an admin can delete it.
      * @principle Allows public read access but restricts write access to the owner.
      */
     match /barberShops/{shopId} {
-      allow get: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.get('ownerId')[2] == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
-      allow delete: if isAdmin() || (resource != null && isOwner(resource.data.ownerId));
+      allow get: if isShopOwner(shopId) || isAdmin();
+      allow create: if isOwner(request.resource.data.ownerId);
+      allow update, delete: if isShopOwner(shopId) || isAdmin();
 
-       // Generic rule for all subcollections within a barberShop
-      match /{subcollection}/{docId} {
+      // Generic rule for all subcollections within a barberShop
+      // Allows the shop owner or an admin to read and write any data inside their shop.
+      match /{subcollection}/{docId=**} {
         allow read, write: if isShopOwner(shopId) || isAdmin();
       }
     }
     
-    // Allow listing shops only for admin or when filtered by ownerId == current user
+    // Allow users to list shops they own. Needed for the /dashboard/shops selector page.
     match /barberShops {
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.get('ownerId')[2] == request.auth.uid);
+      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid || isAdmin();
     }
 
     /**
@@ -159,5 +155,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
