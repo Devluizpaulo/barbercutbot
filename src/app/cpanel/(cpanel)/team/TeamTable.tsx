@@ -35,14 +35,13 @@ import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { useCPanel } from '../context';
 
 interface TeamTableProps {
+  users: UserProfile[] | null;
   isLoading: boolean;
 }
 
-export function TeamTable({ isLoading }: TeamTableProps) {
-  const { users } = useCPanel();
+export function TeamTable({ users, isLoading }: TeamTableProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
 

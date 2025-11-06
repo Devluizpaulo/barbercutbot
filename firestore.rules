@@ -28,7 +28,7 @@ service cloud.firestore {
         get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
     }
 
-    // NEW: Checks if the user is the owner OR a registered team member of the shop
+    // Checks if the user is the owner OR a registered team member of the shop
     function isShopMember(shopId) {
       return isShopOwner(shopId) || 
              (isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)/team/$(request.auth.uid)));
@@ -55,7 +55,7 @@ service cloud.firestore {
       allow create: if isOwner(request.resource.data.ownerId);
       allow read, update, delete: if isShopOwner(shopId);
       
-      // ✅ Any team member can READ data within the shop
+      // Any team member can READ data within the shop
       match /{subcollection}/{docId=**} {
         allow read: if isShopMember(shopId);
         // Only the shop owner can WRITE data within the shop

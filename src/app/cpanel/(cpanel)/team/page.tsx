@@ -8,10 +8,8 @@ import { PlusCircle, Users, Search } from 'lucide-react';
 import { AddTeamMemberForm } from './add-team-member-form';
 import { useCPanel } from '../context';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { TeamTable } from './TeamTable';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CPanelTeamPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -24,24 +22,13 @@ export default function CPanelTeamPage() {
 
     const lowercasedTerm = searchTerm.toLowerCase();
     return users.filter(user =>
-        user.firstName.toLowerCase().includes(lowercasedTerm) ||
-        user.lastName.toLowerCase().includes(lowercasedTerm) ||
+        (user.firstName && user.firstName.toLowerCase().includes(lowercasedTerm)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(lowercasedTerm)) ||
         user.email.toLowerCase().includes(lowercasedTerm) ||
         user.role.toLowerCase().includes(lowercasedTerm)
     );
   }, [users, searchTerm]);
   
-  const getRoleVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'owner':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
-
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-4">
@@ -84,7 +71,8 @@ export default function CPanelTeamPage() {
         </div>
 
        <div className="border rounded-lg">
-          <TeamTable isLoading={isLoading}/>
+          {isLoading && <Skeleton className="h-[200px] w-full" />}
+          {!isLoading && <TeamTable users={filteredUsers} isLoading={isLoading}/>}
        </div>
     </div>
   );
