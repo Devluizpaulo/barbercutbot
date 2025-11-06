@@ -29,7 +29,7 @@ import { Save, LoaderCircle, Building2, ImageIcon, Phone, Hash, Instagram, Globe
 import type { BarberShop } from '@/lib/types';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject, UploadTask } from 'firebase/storage';
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'O nome é obrigatório'),
@@ -55,6 +55,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
   const MAX_BYTES = 1024 * 1024; // 1MB
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
 
@@ -123,6 +124,10 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
   };
 
   const onUploadLogo = async (file: File) => {
+    if (uploadTaskRef.current) {
+        uploadTaskRef.current.cancel();
+    }
+    
     try {
       if (!ALLOWED_TYPES.includes(file.type)) {
         toast({ title: 'Formato inválido', description: 'Envie PNG ou JPG.', variant: 'destructive' });
@@ -133,27 +138,31 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
         return;
       }
       setUploading(true);
-      // Crop central quadrado antes de enviar
       const cropped = await cropCenterSquare(file);
       const storage = getStorage();
       const key = `barberShops/${shopId}/logo_${Date.now()}`;
       const ref = storageRef(storage, key);
       const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
-      task.on('state_changed', (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        setUploadProgress(pct);
+      uploadTaskRef.current = task;
+      await new Promise<void>((resolve, reject) => {
+        task.on('state_changed', (snap) => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          setUploadProgress(pct);
+        }, (err) => reject(err), () => resolve());
       });
-      await task;
       const url = await getDownloadURL(ref);
       form.setValue('logo', url, { shouldDirty: true, shouldValidate: true });
       const shopRef = doc(firestore, 'barberShops', shopId);
       setDocumentNonBlocking(shopRef, { logo: url }, { merge: true });
       toast({ title: 'Logo atualizada!', description: 'A imagem foi enviada com sucesso.' });
-    } catch (e) {
-      toast({ title: 'Falha ao enviar logo', description: 'Tente novamente.', variant: 'destructive' });
+    } catch (e: any) {
+      if (e.code !== 'storage/canceled') {
+        toast({ title: 'Falha ao enviar logo', description: e.message || 'Tente novamente.', variant: 'destructive' });
+      }
     } finally {
       setUploading(false);
       setUploadProgress(null);
+      uploadTaskRef.current = null;
     }
   };
 
@@ -170,7 +179,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
           <CardContent className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start gap-6">
               <div
-                className="space-y-2"
+                className="relative group"
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -178,7 +187,6 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                   if (f) onUploadLogo(f);
                 }}
               >
-                <FormLabel>Logo</FormLabel>
                 <Avatar className="h-24 w-24">
                   <AvatarImage
                     src={form.watch('logo')}
@@ -189,13 +197,17 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                   </AvatarFallback>
                 </Avatar>
                 {uploadProgress !== null && (
-                  <div className="w-40">
-                    <div className="h-2 w-full bg-muted rounded">
-                      <div className="h-2 bg-primary rounded" style={{ width: `${uploadProgress}%` }} />
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{uploadProgress}%</div>
-                  </div>
+                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                     <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
+                       <div className="h-full bg-primary" style={{ width: `${uploadProgress}%` }} />
+                     </div>
+                   </div>
                 )}
+                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageIcon className="h-8 w-8 text-white" />
+                 </div>
+              </div>
+              <div className="flex-1 space-y-4">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -206,60 +218,39 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     if (f) onUploadLogo(f);
                   }}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                  Enviar imagem
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    const currentUrl = form.getValues('logo');
-                    if (currentUrl) {
-                      try {
-                        const storage = getStorage();
-                        const ref = storageRef(storage, currentUrl);
-                        await deleteObject(ref);
-                      } catch {}
-                    }
-                    form.setValue('logo', '', { shouldDirty: true, shouldValidate: true });
-                    const shopRef = doc(firestore, 'barberShops', shopId);
-                    setDocumentNonBlocking(shopRef, { logo: '' }, { merge: true });
-                    toast({ title: 'Logo removida', description: 'A logo foi resetada.' });
-                  }}
-                >
-                  Remover logo
-                </Button>
-              </div>
-              <div className="flex-1 space-y-4">
-                <FormField
-                  control={form.control}
-                  name="logo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL da Logo</FormLabel>
-                      <div className="relative">
-                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <FormControl>
-                          <Input
-                            placeholder="https://exemplo.com/logo.png"
-                            {...field}
-                            value={field.value || ''}
-                            className="pl-10"
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex gap-2">
+                    <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    >
+                    {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    Enviar imagem
+                    </Button>
+                    <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                        const currentUrl = form.getValues('logo');
+                        if (currentUrl) {
+                        try {
+                            const storage = getStorage();
+                            const ref = storageRef(storage, currentUrl);
+                            await deleteObject(ref);
+                        } catch {}
+                        }
+                        form.setValue('logo', '', { shouldDirty: true, shouldValidate: true });
+                        const shopRef = doc(firestore, 'barberShops', shopId);
+                        setDocumentNonBlocking(shopRef, { logo: '' }, { merge: true });
+                        toast({ title: 'Logo removida', description: 'A logo foi resetada.' });
+                    }}
+                    >
+                    Remover logo
+                    </Button>
+                </div>
                 <FormField
                   control={form.control}
                   name="name"

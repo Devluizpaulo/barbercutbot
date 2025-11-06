@@ -335,30 +335,36 @@ export function AddBarberForm({
             <TabsTrigger value="services">Serviços e Comissões</TabsTrigger>
           </TabsList>
           <TabsContent value="profile" className="mt-6 space-y-6">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={avatarUrl} alt={firstName} />
-                <AvatarFallback>
-                  {firstName ? (
-                    firstName.charAt(0).toUpperCase()
-                  ) : (
-                    <User className="h-10 w-10" />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <div
-                className="flex-1 w-full space-y-4"
+             <div className="flex flex-col sm:flex-row items-center gap-6">
+               <div
+                className="relative group"
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) onUploadAvatar(f); }}
               >
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={avatarUrl} alt={firstName} />
+                  <AvatarFallback>
+                    {firstName ? (
+                      firstName.charAt(0).toUpperCase()
+                    ) : (
+                      <User className="h-10 w-10" />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
                 {uploadProgress !== null && (
-                  <div className="w-40">
-                    <div className="h-2 w-full bg-muted rounded">
-                      <div className="h-2 bg-primary rounded" style={{ width: `${uploadProgress}%` }} />
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{uploadProgress}%</div>
-                  </div>
+                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                     <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
+                       <div className="h-full bg-primary" style={{ width: `${uploadProgress}%` }} />
+                     </div>
+                   </div>
                 )}
+                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageIcon className="h-8 w-8 text-white" />
+                 </div>
+              </div>
+              <div
+                className="flex-1 w-full space-y-4"
+              >
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -390,27 +396,6 @@ export function AddBarberForm({
                     Remover foto
                   </Button>
                 </div>
-                <FormField
-                  control={form.control}
-                  name="avatar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL da Foto</FormLabel>
-                      <div className="relative">
-                        <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <FormControl>
-                          <Input
-                            placeholder="https://exemplo.com/foto.jpg"
-                            {...field}
-                            className="pl-10"
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                     <FormField
                         control={form.control}
                         name="color"
