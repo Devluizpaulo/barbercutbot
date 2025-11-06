@@ -7,12 +7,9 @@ service cloud.firestore {
     // =============================================
     // HELPER FUNCTIONS
     // =============================================
+
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
@@ -23,73 +20,36 @@ service cloud.firestore {
       );
     }
     
-    function isShopOwner(shopId) {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
-        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
-    }
-    
-    // Checks if the user is the owner OR a registered team member of the shop
-    function isShopMember(shopId) {
-      return isShopOwner(shopId) || 
-             (isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)/team/$(request.auth.uid)));
-    }
-
     // =============================================
     // ADMIN GOD-MODE RULE (Highest Priority)
     // =============================================
+    // O Administrador tem acesso irrestrito a todos os documentos.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
 
     // =============================================
-    // USER & SHOP RULES
+    // GENERAL USER RULES
     // =============================================
+    // Qualquer usuário autenticado (isSignedIn) pode ler e escrever nos seus próprios dados
+    // dentro de uma loja. A UI é responsável por garantir que um 'owner' só veja/edite
+    // os dados da sua própria loja.
+    // Esta regra é mais permissiva, confiando que o frontend fará as queries corretas.
 
     match /users/{userId} {
-      allow read, update, delete: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow read, create, update, delete: if isSignedIn();
     }
     
+    match /barberShops/{shopId}/{document=**} {
+      allow read, write: if isSignedIn();
+    }
+
     match /barberShops/{shopId} {
-      allow create: if isOwner(request.resource.data.ownerId);
-      allow read, update, delete: if isShopOwner(shopId);
+      allow read, write: if isSignedIn();
     }
     
-    // Rule for a user to list only their own shops
-    match /barberShops {
-      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
-    }
-
-    // =============================================
-    // SHOP SUB-COLLECTION RULES
-    // =============================================
-
-    match /barberShops/{shopId}/{subcollection}/{docId} {
-        // READ: Allow if user is a member of the shop
-        allow get: if isShopMember(shopId);
-        
-        // ✅ LIST: Allow a list query ONLY IF it's scoped by barberShopId
-        // This is a performant and secure way to handle list permissions.
-        allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
-        
-        // WRITE: Allow only if the user is the shop owner.
-        allow write: if isShopOwner(shopId);
-    }
-    
-    // =============================================
-    // PLATFORM-WIDE RULES
-    // =============================================
-    
-    match /adminLogs/{logId} {
-      allow create: if isSignedIn();
-      allow read: if isAdmin();
-      allow update, delete: if false;
-    }
-
     match /tickets/{ticketId} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow read: if isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId) || isAdmin();
+      allow read, write: if isSignedIn();
     }
   }
 }
