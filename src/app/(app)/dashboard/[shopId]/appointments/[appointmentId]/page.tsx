@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
@@ -10,6 +11,12 @@ import {
   Scissors,
   DollarSign,
   AlertCircle,
+  Edit,
+  CalendarPlus,
+  CheckCircle,
+  XCircle,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -19,20 +26,36 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection } from '@/firebase';
-import { doc, Timestamp, query, collection, where } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection, setDocumentNonBlocking } from '@/firebase';
+import { doc, Timestamp, query, collection, where, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useState } from 'react';
 
 export default function AppointmentDetailsPage() {
   const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const shopId = params.shopId as string;
   const appointmentId = params.appointmentId as string;
   const firestore = useFirestore();
   const { user } = useUser();
+  const [isCancelAlertOpen, setCancelAlertOpen] = useState(false);
 
   const appointmentRef = useMemoFirebase(() => (user && shopId && appointmentId) ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null, [firestore, shopId, appointmentId, user]);
   const { data: appointment, isLoading, error } = useDoc<Appointment>(appointmentRef);
@@ -45,7 +68,6 @@ export default function AppointmentDetailsPage() {
 
   const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
   const { data: allBarbers } = useCollection<Barber>(barbersQuery);
-
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
@@ -53,6 +75,18 @@ export default function AppointmentDetailsPage() {
     }
     return new Date(timestamp);
   }
+
+  const handleUpdateStatus = async (newStatus: Appointment['status']) => {
+    if (!appointment) return;
+    try {
+      const appointmentDocRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+      await updateDoc(appointmentDocRef, { status: newStatus });
+      toast({ title: "Status Atualizado!", description: `O agendamento foi marcado como ${newStatus}.` });
+    } catch (err) {
+      console.error("Failed to update status", err);
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível atualizar o status." });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -114,6 +148,7 @@ export default function AppointmentDetailsPage() {
   const startTime = toDate(appointment.startTime);
 
   return (
+    <>
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -158,11 +193,12 @@ export default function AppointmentDetailsPage() {
               Cliente
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <div className="text-lg font-semibold">
               {customer ? `${customer.firstName} ${customer.lastName}` : <Skeleton className="h-6 w-3/4" />}
             </div>
-            <p className="text-muted-foreground text-sm">{customer?.email}</p>
+            {customer?.email && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Mail className="h-4 w-4" />{customer.email}</div>}
+            {customer?.phone && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" />{customer.phone}</div>}
           </CardContent>
         </Card>
 
@@ -174,8 +210,8 @@ export default function AppointmentDetailsPage() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-2xl font-bold">R$ {appointment.totalPrice?.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">{appointment.totalDuration} min</p>
+                <p className="text-2xl font-bold">R$ {appointment.totalPrice?.toFixed(2) || '0.00'}</p>
+                <p className="text-xs text-muted-foreground">{appointment.totalDuration || '0'} min</p>
             </CardContent>
         </Card>
       </div>
@@ -206,6 +242,41 @@ export default function AppointmentDetailsPage() {
              })}
           </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Ações</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+                <Button variant="outline"><Edit className="mr-2" />Editar</Button>
+                <Button variant="outline"><CalendarPlus className="mr-2" />Reagendar</Button>
+                <Button variant="default" onClick={() => handleUpdateStatus('confirmed')}><CheckCircle className="mr-2" />Confirmar</Button>
+                <Button variant="destructive" onClick={() => setCancelAlertOpen(true)}><XCircle className="mr-2" />Cancelar</Button>
+            </CardContent>
+        </Card>
     </div>
+     <AlertDialog open={isCancelAlertOpen} onOpenChange={setCancelAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Agendamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                handleUpdateStatus('cancelled');
+                setCancelAlertOpen(false);
+              }}
+              className="bg-destructive hover:bg-destructive/80"
+            >
+              Sim, Cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
