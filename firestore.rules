@@ -113,10 +113,7 @@ service cloud.firestore {
 
        // Generic rule for all subcollections within a barberShop
       match /{subcollection}/{docId} {
-        allow get: if isShopOwner(shopId) || isAdmin();
-        allow list: if isShopOwner(shopId) || isAdmin();
-        allow create: if isShopOwner(shopId) || isAdmin();
-        allow update, delete: if isShopOwner(shopId) || isAdmin();
+        allow read, write: if isShopOwner(shopId) || isAdmin();
       }
     }
     
