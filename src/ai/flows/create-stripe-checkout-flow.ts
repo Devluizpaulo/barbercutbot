@@ -47,7 +47,7 @@ const createStripeCheckoutFlow = ai.defineFlow(
         throw new Error('Stripe Secret Key is not configured. Please set the STRIPE_SECRET_KEY environment variable.');
     }
     
-    const { shopId, priceId, userId, userEmail } = input;
+    const { shopId, priceId, userId, userEmail, planId } = input;
 
     try {
         const session = await stripe.checkout.sessions.create({
@@ -61,15 +61,22 @@ const createStripeCheckoutFlow = ai.defineFlow(
             ],
             // Important: Pre-fill customer email to link accounts
             customer_email: userEmail,
+            // Allow associating with an existing customer by email
+            customer_update: {
+              name: 'auto',
+              address: 'auto',
+            },
             // Attach metadata to link the Stripe session to our internal data
             metadata: {
                 shopId: shopId,
                 userId: userId,
+                planId: planId,
             },
             subscription_data: {
                 metadata: {
                     shopId: shopId,
                     userId: userId,
+                    planId: planId,
                 },
             },
             // Define the success and cancel URLs

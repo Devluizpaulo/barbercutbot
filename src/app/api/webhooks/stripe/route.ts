@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       try {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === 'subscription') {
-          const { shopId, userId } = session.metadata || {};
+          const { shopId, userId, planId } = session.metadata || {};
           if (!shopId || !userId) {
             console.error('❌ Metadata (shopId or userId) missing in checkout session');
             break;
@@ -78,6 +78,7 @@ export async function POST(req: Request) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const shopRef = firestore.doc(`barberShops/${shopId}`);
           await shopRef.update({
+              'subscription.plan': planId,
               'subscription.status': subscription.status,
               'subscription.stripeSubscriptionId': subscription.id,
               'subscription.stripeCustomerId': subscription.customer,
@@ -103,6 +104,7 @@ export async function POST(req: Request) {
           }
           const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
           await shopRef.update({
+              'subscription.plan': subscription.metadata.planId || null,
               'subscription.status': 'active',
               'subscription.currentPeriodEnd': Timestamp.fromMillis(subscription.current_period_end * 1000),
           });
@@ -134,6 +136,23 @@ export async function POST(req: Request) {
       }
       break;
     
+    case 'customer.subscription.deleted':
+      try {
+          const subscription = event.data.object as Stripe.Subscription;
+          if (!subscription.metadata.shopId) {
+              console.error(`❌ shopId not found in subscription metadata for subscription ${subscription.id}`);
+              break;
+          }
+          const shopRef = firestore.doc(`barberShops/${subscription.metadata.shopId}`);
+          await shopRef.update({
+              'subscription.status': 'canceled',
+          });
+          console.log(`✅ Subscription for shop ${subscription.metadata.shopId} was canceled.`);
+      } catch (e) {
+          console.error('❌ Error processing customer.subscription.deleted', e);
+      }
+      break;
+
     // ... handle other event types
     default:
       console.log(`Unhandled event type ${event.type}`);

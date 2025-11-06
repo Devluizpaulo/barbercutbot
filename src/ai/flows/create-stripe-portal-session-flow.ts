@@ -49,7 +49,7 @@ const createStripePortalSessionFlow = ai.defineFlow(
     try {
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: stripeCustomerId,
-            return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cpanel/shops`,
+            return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${shopId}/settings`,
         });
 
         if (!portalSession.url) {
