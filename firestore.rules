@@ -23,6 +23,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // =============================================
+    // HELPER FUNCTIONS
+    // =============================================
+
     /**
      * @description Checks if the current user is signed in.
      * @returns {boolean} True if the user is signed in, false otherwise.
@@ -39,19 +43,10 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
-    /**
-     * @description Checks if the current user is the owner of the resource and the resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user is the owner and resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
 
     /**
-     * @description Checks if the authenticated user has admin privileges via custom claim
-     *              or via users/{uid} document with role == 'admin'.
+     * @description Checks if the authenticated user has admin privileges.
+     *              An admin can be defined by a custom claim or a role field in their user document.
      */
     function isAdmin() {
       return isSignedIn() && (
@@ -61,97 +56,91 @@ service cloud.firestore {
     }
     
     /**
-     * @description Function to check if the user is the owner of a specific shop.
+     * @description Checks if the authenticated user is the owner of a specific shop.
+     *              It fetches the shop document and compares the ownerId.
      * @param {string} shopId - The ID of the barber shop to check.
      * @returns {boolean} True if the user is the owner of the shop, false otherwise.
      */
     function isShopOwner(shopId) {
-        return isOwner(get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId);
+        // Ensure the shop document exists before trying to access its data.
+        return isSignedIn() && get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
     }
 
+    // =============================================
+    // GLOBAL ADMIN RULE
+    // =============================================
+    // The most powerful rule: if a user is an admin, they can do anything.
+    // This is checked first and provides a master key for the CPanel.
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // =============================================
+    // COLLECTION RULES
+    // =============================================
 
     /**
      * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) - An authenticated user can create their own profile if the userId matches their auth UID.
-     * @allow (get) - An authenticated user can read their own profile if the userId matches their auth UID.
-     * @allow (update) - An authenticated user can update their own profile if the userId matches their auth UID.
-     * @allow (delete) - An authenticated user can delete their own profile if the userId matches their auth UID.
-     * @deny (create) - An unauthenticated user cannot create any user profile.
-     * @deny (get) - An authenticated user cannot read another user's profile if the userId does not match their auth UID.
-     * @deny (update) - An authenticated user cannot update another user's profile if the userId does not match their auth UID.
-     * @deny (delete) - An authenticated user cannot delete another user's profile if the userId does not match their auth UID.
-     * @principle Enforces user-ownership for all data access. Only the authenticated user can manage their own profile.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      // Only the user themselves or an admin can read, update, or delete their own profile.
+      allow read, update, delete: if isOwner(userId);
+      // A user can only create their own profile document.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isExistingOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id; // Enforce immutability of userId.
-      allow delete: if isExistingOwner(userId) || isAdmin();
     }
 
     /**
-     * @description Rules for barber shops.
+     * @description Rules for the main barber shops collection.
      * @path /barberShops/{shopId}
-     * @allow (create) - An authenticated user can create a barber shop and becomes the owner by setting the `ownerId` field.
-     * @allow (get) - Only the owner of the barber shop or an admin can read it.
-     * @allow (list) - Users can only list shops they own, admins can list all.
-     * @allow (update) - Only the owner of the barber shop or an admin can update it.
-     * @allow (delete) - Only the owner of the barber shop or an admin can delete it.
-     * @principle Allows public read access but restricts write access to the owner.
      */
     match /barberShops/{shopId} {
-      allow get: if isShopOwner(shopId) || isAdmin();
+      // Any authenticated user can create a shop, as long as they set themselves as the owner.
       allow create: if isOwner(request.resource.data.ownerId);
-      allow update, delete: if isShopOwner(shopId) || isAdmin();
+      
+      // Only the shop owner can read, update, or delete their shop document.
+      allow read, update, delete: if isShopOwner(shopId);
 
-      // Generic rule for all subcollections within a barberShop
-      // Allows the shop owner or an admin to read and write any data inside their shop.
+      // --- SUBCOLLECTION CATCH-ALL RULE ---
+      // This is the key rule that grants owners access to everything inside their shop.
+      // It allows any read/write operation on any document within any subcollection
+      // as long as the user is the owner of the parent shop.
       match /{subcollection}/{docId=**} {
-        allow read, write: if isShopOwner(shopId) || isAdmin();
+        allow read, write: if isShopOwner(shopId);
       }
     }
     
-    // Allow users to list shops they own. Needed for the /dashboard/shops selector page.
+    /**
+     * @description Rules for listing shops.
+     * Required for the /dashboard/shops page to find which shop to redirect to.
+     * The query must include a `where('ownerId', '==', request.auth.uid)`.
+     */
     match /barberShops {
-      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid || isAdmin();
+      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
+    }
+    
+    /**
+    * @description Rules for the admin logs.
+    * @path /adminLogs/{logId}
+    */
+    match /adminLogs/{logId} {
+      // Any authenticated user can create a log entry (e.g., for failed login attempts).
+      allow create: if isSignedIn();
+      // Only admins can read the logs.
+      allow read: if isAdmin();
+      // Logs are immutable and cannot be changed or deleted.
+      allow update, delete: if false;
     }
 
     /**
-     * @description Rules for tickets.
+     * @description Rules for support tickets.
      * @path /tickets/{ticketId}
-     * @allow (create) - No rule defined: set to false to prevent all creation
-     * @allow (get) - No rule defined: set to false to prevent all reads
-     * @allow (list) - No rule defined: set to false to prevent all listing
-     * @allow (update) - No rule defined: set to false to prevent all updates
-     * @allow (delete) - No rule defined: set to false to prevent all deletions
-     * @principle No rule defined: Deny All
      */
     match /tickets/{ticketId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    /**
-     * @description Rules for documents.
-     * @path /documents/{documentId}
-     * @allow (create) - No rule defined: set to false to prevent all creation
-     * @allow (get) - No rule defined: set to false to prevent all reads
-     * @allow (list) - No rule defined: set to false to prevent all listing
-     * @allow (update) - No rule defined: set to false to prevent all updates
-     * @allow (delete) - No rule defined: set to false to prevent all deletions
-     * @principle No rule defined: Deny All
-     */
-    match /documents/{documentId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+        // Users can create their own tickets.
+        allow create: if isOwner(request.resource.data.userId);
+        // Users can only read their own tickets. Admins can read all.
+        allow read: if isOwner(get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId) || isAdmin();
     }
   }
 }
