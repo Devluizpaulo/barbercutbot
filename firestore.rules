@@ -28,8 +28,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
     }
 
-    function getShopOwnerId(shopId) {
-      return get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId;
+    // NEW: Checks if the user is the owner OR a registered team member of the shop
+    function isShopMember(shopId) {
+      return isShopOwner(shopId) || 
+             (isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)/team/$(request.auth.uid)));
     }
 
     // =============================================
@@ -49,69 +51,19 @@ service cloud.firestore {
     }
 
     match /barberShops/{shopId} {
-      // Operações na própria barbearia
+      // Shop owner can create, read, update, delete their own shop document
       allow create: if isOwner(request.resource.data.ownerId);
       allow read, update, delete: if isShopOwner(shopId);
       
-      // REGRAS ESPECÍFICAS PARA SUBCOLEÇÕES
-      match /appointments/{appointmentId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /appointments {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /clients/{clientId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /clients {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /barbers/{barberId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /barbers {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /services/{serviceId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /services {
-        allow list: if isShopOwner(shopId);
-      }
-
-      match /products/{productId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /products {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /financialRecords/{recordId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /financialRecords {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /suppliers/{supplierId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /suppliers {
-        allow list: if isShopOwner(shopId);
-      }
-      
-      match /team/{memberId} {
-        allow read, write: if isShopOwner(shopId);
-      }
-      match /team {
-        allow list: if isShopOwner(shopId);
+      // ✅ Any team member can READ data within the shop
+      match /{subcollection}/{docId=**} {
+        allow read: if isShopMember(shopId);
+        // Only the shop owner can WRITE data within the shop
+        allow write: if isShopOwner(shopId);
       }
     }
     
-    // Regra para listar barbearias
+    // Rule for a user to list only their own shops
     match /barberShops {
       allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
