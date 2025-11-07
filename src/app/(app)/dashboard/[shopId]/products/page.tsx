@@ -45,7 +45,7 @@ import {
 import { AddProductForm } from './add-product-form';
 import type { Product } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -65,7 +65,10 @@ export default function ProductsPage() {
   const { user } = useUser();
 
   const productsQuery = useMemoFirebase(
-    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'products') : null,
+    () => (user && shopId) ? query(
+        collection(firestore, 'barberShops', shopId, 'products'),
+        where('barberShopId', '==', shopId) // Regra de segurança
+    ) : null,
     [firestore, shopId, user]
   );
   const { data: products, isLoading } = useCollection<Product>(productsQuery);

@@ -61,18 +61,28 @@ export default function FinancePage() {
 
   const financialRecordsQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'financialRecords'),
+      where('barberShopId', '==', shopId), // Regra de segurança
       where('date', '>=', start),
       where('date', '<=', end)
   ) : null, [firestore, shopId, user, start, end]);
   const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
 
-  const allFinancialRecordsQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'financialRecords') : null, [firestore, user, shopId]);
+  const allFinancialRecordsQuery = useMemoFirebase(() => user ? query(
+      collection(firestore, 'barberShops', shopId, 'financialRecords'),
+      where('barberShopId', '==', shopId) // Regra de segurança
+  ) : null, [firestore, user, shopId]);
   const { data: allFinancialRecords, isLoading: isLoadingAllFinancials } = useCollection<FinancialRecord>(allFinancialRecordsQuery);
 
-  const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'appointments') : null, [firestore, shopId, user]);
+  const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
+      collection(firestore, 'barberShops', shopId, 'appointments'),
+      where('barberShopId', '==', shopId) // Regra de segurança
+  ) : null, [firestore, shopId, user]);
   const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
-  const barbersQuery = useMemoFirebase(() => user ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, user, shopId]);
+  const barbersQuery = useMemoFirebase(() => user ? query(
+      collection(firestore, 'barberShops', shopId, 'barbers'),
+      where('barberShopId', '==', shopId) // Regra de segurança
+  ) : null, [firestore, user, shopId]);
   const { data: barbers, isLoading: isLoadingBarbers } = useCollection<Barber>(barbersQuery);
 
   const annualChartRef = useRef<HTMLDivElement>(null);

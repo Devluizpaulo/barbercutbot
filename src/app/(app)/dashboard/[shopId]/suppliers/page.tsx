@@ -44,7 +44,7 @@ import {
 import { AddSupplierForm } from './add-supplier-form';
 import type { Supplier } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -62,7 +62,10 @@ export default function SuppliersPage() {
   const { user } = useUser();
 
   const suppliersQuery = useMemoFirebase(
-    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'suppliers') : null,
+    () => (user && shopId) ? query(
+        collection(firestore, 'barberShops', shopId, 'suppliers'),
+        where('barberShopId', '==', shopId) // Regra de segurança
+    ) : null,
     [firestore, shopId, user]
   );
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersQuery);

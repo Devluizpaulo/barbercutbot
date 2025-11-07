@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,11 +9,13 @@ import type { BarberShop } from '@/lib/types';
 import { LoaderCircle } from 'lucide-react';
 import { ensureUserExists } from '@/lib/google-auth-utils';
 import { seedDemoData } from '@/lib/dev-seed';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardRedirectPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const userShopsQuery = useMemoFirebase(
     () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), where('status', '==', 'active')) : null),

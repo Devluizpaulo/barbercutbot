@@ -45,6 +45,7 @@ export default function IncomePage() {
 
   const transactionsQuery = useMemoFirebase(() => user ? query(
     collection(firestore, 'barberShops', shopId, 'financialRecords'),
+    where('barberShopId', '==', shopId), // Regra de segurança
     where('date', '>=', start),
     where('date', '<=', end)
   ) : null, [firestore, shopId, user, start, end]);

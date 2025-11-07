@@ -45,7 +45,7 @@ import { AddBarberForm } from './add-barber-form';
 import type { Barber } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -70,7 +70,10 @@ export default function BarbersPage() {
   const { user } = useUser();
 
   const barbersQuery = useMemoFirebase(
-    () => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null,
+    () => (user && shopId) ? query(
+        collection(firestore, 'barberShops', shopId, 'barbers'),
+        where('barberShopId', '==', shopId) // Regra de segurança
+    ) : null,
     [firestore, shopId, user]
   );
   const { data: barbers, isLoading } = useCollection<Barber>(barbersQuery);
