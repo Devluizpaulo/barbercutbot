@@ -170,22 +170,31 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
   };
 
   const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
-    collection(firestore, 'barberShops', shopId, 'appointments'), where('startTime', '>=', startOfToday())
+    collection(firestore, 'barberShops', shopId, 'appointments'),
+    where('barberShopId', '==', shopId),
+    where('startTime', '>=', startOfToday())
   ) : null, [firestore, shopId, user]);
   const { data: allAppointments } = useCollection<Appointment>(appointmentsQuery);
   
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
+    }
+    return new Date(timestamp);
+  }
+  
   const todayAppointments = allAppointments?.filter(appt => isSameDay(toDate(appt.startTime), new Date()));
 
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
+  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'services'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: allServices } = useCollection<Service>(servicesQuery);
   
-  const productsQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'products') : null, [firestore, shopId, user]);
+  const productsQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'products'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: allProducts } = useCollection<Product>(productsQuery);
 
-  const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
+  const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'barbers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: allBarbers } = useCollection<Barber>(barbersQuery);
   
-  const customersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'customers') : null, [firestore, shopId, user]);
+  const customersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'customers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
   const { data: allCustomers } = useCollection<Customer>(customersQuery);
 
   const getAssociatedData = (appt: Appointment) => {
@@ -193,13 +202,6 @@ export function CashierDialog({ open, onOpenChange, shopId }: CashierDialogProps
     const customer = allCustomers?.find(c => c.id === appt.customerId);
     return { barber, customer };
   };
-
-  const toDate = (timestamp: Timestamp | Date | string): Date => {
-    if (timestamp instanceof Timestamp) {
-      return timestamp.toDate();
-    }
-    return new Date(timestamp);
-  }
 
   const renderChecklist = (items: ChecklistItem[], state: Record<string, boolean>, setState: (state: Record<string, boolean>) => void) => (
     <div className="space-y-3">

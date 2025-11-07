@@ -22,13 +22,11 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { DollarSign, Users, Calendar, Scissors, Store, ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react"
-import { LoaderCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
+import { DollarSign, Users, Calendar, Scissors, Store, PlusCircle } from "lucide-react"
+import { format, getMonth, isWithinInterval, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
-import { CashierDialog } from "./cashier-dialog";
+import { CashierDialog } from "./CashierDialog";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
@@ -50,7 +48,6 @@ export default function ShopDashboardPage() {
   const params = useParams();
   const shopId = params.shopId as string;
   const [isCashierOpen, setCashierOpen] = useState(false);
-  const [isFabOpen, setFabOpen] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const firestore = useFirestore();
   const { user } = useUser();
@@ -58,25 +55,25 @@ export default function ShopDashboardPage() {
   // --- Data Fetching ---
   const financialRecordsQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'financialRecords'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
 
   const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'customers'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
   
   const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'appointments'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
   
   const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'services'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
   
@@ -401,70 +398,14 @@ export default function ShopDashboardPage() {
       onOpenChange={setCashierOpen}
       shopId={shopId} 
     />
-    <div className="fixed bottom-8 right-8 flex flex-col items-end gap-3">
-      {/* Children actions */}
-      <div className={`flex flex-col items-end gap-3 transition-all duration-200 ${isFabOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href={`/dashboard/${shopId}/appointments`} className="inline-flex">
-                <Button size="icon" className="h-12 w-12 rounded-full shadow-md"> 
-                  <Calendar className="h-5 w-5" />
-                  <span className="sr-only">Novo Agendamento</span>
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={10}>Novo agendamento</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link href={`/dashboard/${shopId}/clients`} className="inline-flex">
-                <Button size="icon" className="h-12 w-12 rounded-full shadow-md">
-                  <Users className="h-5 w-5" />
-                  <span className="sr-only">Adicionar Cliente</span>
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={10}>Adicionar cliente</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" onClick={() => setCashierOpen(true)} className="h-12 w-12 rounded-full shadow-md">
-                <Store className="h-5 w-5" />
-                <span className="sr-only">Abrir caixa</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={10}>Abrir caixa</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Main FAB */}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setFabOpen((v) => !v)}
-              className="h-16 w-16 rounded-full shadow-lg"
-              size="icon"
-            >
-              {isFabOpen ? (
-                <span className="text-xl leading-none">×</span>
-              ) : (
-                <span className="text-2xl leading-none">＋</span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left" sideOffset={10}>{isFabOpen ? 'Fechar atalhos' : 'Abrir atalhos'}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
+     <Button
+        onClick={() => setCashierOpen(true)}
+        className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
+        size="icon"
+    >
+        <Store className="h-8 w-8" />
+        <span className="sr-only">Abrir Caixa</span>
+    </Button>
 </>
   );
 }

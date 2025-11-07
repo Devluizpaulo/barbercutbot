@@ -49,7 +49,7 @@ service cloud.firestore {
     
     // Rule for listing shops: Only allow users to list the shops they own.
     match /barberShops {
-      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
+      allow list: if isSignedIn() && request.query.keys().hasAll(['ownerId']);
     }
     
     // =============================================
@@ -59,7 +59,7 @@ service cloud.firestore {
     match /barberShops/{shopId}/{subcollection}/{docId} {
       // READ: Allow if the user is the shop owner. For `list`, the query must filter by shopId.
       allow get: if isShopOwner(shopId);
-      allow list: if isShopOwner(shopId) && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
+      allow list: if isShopOwner(shopId) && request.query.keys().hasAll(['barberShopId']);
 
       // WRITE: Allow only if the user is the shop owner.
       allow write: if isShopOwner(shopId);
