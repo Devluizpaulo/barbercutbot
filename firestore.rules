@@ -11,7 +11,7 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
@@ -20,36 +20,68 @@ service cloud.firestore {
       );
     }
     
+    function isShopOwner(shopId) {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
+        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
     // =============================================
-    // ADMIN GOD-MODE RULE (Highest Priority)
+    // ADMIN GOD-MODE (HIGHEST PRIORITY)
     // =============================================
-    // O Administrador tem acesso irrestrito a todos os documentos.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
-
+    
     // =============================================
-    // GENERAL USER RULES
+    // USER AND SHOP RULES
     // =============================================
-    // Qualquer usuário autenticado (isSignedIn) pode ler e escrever nos seus próprios dados
-    // dentro de uma loja. A UI é responsável por garantir que um 'owner' só veja/edite
-    // os dados da sua própria loja.
-    // Esta regra é mais permissiva, confiando que o frontend fará as queries corretas.
 
     match /users/{userId} {
-      allow read, create, update, delete: if isSignedIn();
-    }
-    
-    match /barberShops/{shopId}/{document=**} {
-      allow read, write: if isSignedIn();
+      allow create: if request.auth.uid == userId;
+      allow read, update: if request.auth.uid == userId;
     }
 
     match /barberShops/{shopId} {
-      allow read, write: if isSignedIn();
+      // Dono pode criar e gerenciar a própria loja
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow read, update, delete: if isShopOwner(shopId);
     }
     
+    // Lista apenas as lojas do usuário logado
+    match /barberShops {
+        allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
+    }
+    
+    // =============================================
+    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE)
+    // =============================================
+
+    match /barberShops/{shopId}/{subcollection}/{docId} {
+      // READ: Dono da loja pode ler documentos individuais.
+      allow get: if isShopOwner(shopId);
+
+      // LIST: Dono da loja só pode listar se a query tiver um filtro explícito.
+      // Isso é ESSENCIAL para a performance e para evitar erros.
+      allow list: if isShopOwner(shopId) && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
+
+      // WRITE: Dono da loja pode escrever.
+      allow write: if isShopOwner(shopId);
+    }
+    
+    // =============================================
+    // PLATFORM-WIDE COLLECTIONS
+    // =============================================
+
+    match /adminLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read, write: if isAdmin();
+    }
+
     match /tickets/{ticketId} {
-      allow read, write: if isSignedIn();
+      // Dono do ticket ou admin podem interagir
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
     }
   }
 }
