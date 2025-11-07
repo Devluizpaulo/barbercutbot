@@ -12,6 +12,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
+      // Admin check prioritizes custom claims for performance.
       return isSignedIn() && (
         request.auth.token.admin == true ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -20,8 +21,8 @@ service cloud.firestore {
     }
     
     function isShopOwner(shopId) {
-      // This function uses `get`, so it's NOT suitable for `list` rules.
-      // It's safe for `get`, `create`, `update`, `delete`.
+      // This function uses `get`, so it's NOT suitable for broad `list` rules on the top-level collection.
+      // It is safe for operations within a specific shop's path.
       return isSignedIn() && 
         exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
         get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
@@ -35,34 +36,34 @@ service cloud.firestore {
     }
     
     // =============================================
-    // USER AND SHOP RULES
+    // USER & SHOP-LEVEL RULES
     // =============================================
 
     match /users/{userId} {
-      allow create: if request.auth.uid == userId;
-      allow read, update: if request.auth.uid == userId;
+      // A user can create their own profile document and then read/update it.
+      allow create, read, update: if request.auth.uid == userId;
     }
 
     match /barberShops/{shopId} {
-      // Owner can create and manage their own shop document.
+      // A user can create a shop only if they set themselves as the owner.
       allow create: if request.auth.uid == request.resource.data.ownerId;
+      
+      // The shop owner can read, update, or delete their own shop document.
       allow read, update, delete: if isShopOwner(shopId);
       
-      // Rule for listing shops: Only allow users to list the shops they own.
+      // A user can only list shops that they own. This requires a client-side query constraint.
       allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
     
-    // =============================================
-    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE AND SECURITY)
-    // =============================================
-
+    // ====================================================================
+    // SIMPLIFIED SUB-COLLECTION RULE (THE FINAL FIX)
+    // ====================================================================
+    // This rule now applies to all operations within a shop's sub-collection,
+    // including `list`. By using `isShopOwner`, we ensure that only the shop
+    // owner can access their data, but we remove the complex client-side query
+    // constraints that were causing the permission errors.
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // For single document operations, we can afford the `get` call in `isShopOwner`.
-      allow get, create, update, delete: if isShopOwner(shopId);
-
-      // For `list` operations, the query MUST filter by `barberShopId`.
-      // This avoids the `get` call and makes the query scalable and secure.
-      allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
+      allow read, write: if isShopOwner(shopId);
     }
     
     // =============================================
@@ -70,8 +71,9 @@ service cloud.firestore {
     // =============================================
 
     match /adminLogs/{logId} {
+      // Creating logs is allowed for any signed-in user to capture failed auth attempts.
       allow create: if isSignedIn();
-      // Admins can do anything with logs
+      // Only admins can read or write (in practice, only create via helper function)
       allow read, write: if isAdmin();
     }
 
@@ -83,7 +85,7 @@ service cloud.firestore {
     }
 
     match /stripeEventsProcessed/{eventId} {
-      // Accessible only by the trusted webhook server process (which uses admin credentials)
+      // Only the trusted server process (with admin credentials) can write here.
       allow create: if isAdmin();
     }
   }
