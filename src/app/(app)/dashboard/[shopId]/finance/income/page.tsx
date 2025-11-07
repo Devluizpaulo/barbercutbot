@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Search } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, Timestamp, query } from 'firebase/firestore';
+import { collection, doc, Timestamp, query, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { TransactionsTable } from '../transactions-table';
@@ -44,7 +44,8 @@ export default function IncomePage() {
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
 
   const transactionsQuery = useMemoFirebase(() => user ? query(
-    collection(firestore, 'barberShops', shopId, 'financialRecords')
+    collection(firestore, 'barberShops', shopId, 'financialRecords'),
+    where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
 
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);

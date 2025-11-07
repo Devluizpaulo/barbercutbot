@@ -42,31 +42,30 @@ service cloud.firestore {
     }
 
     match /barberShops/{shopId} {
-      // Owner can create and manage their own shop document.
+      // Owner can create their own shop.
       allow create: if request.auth.uid == request.resource.data.ownerId;
       
-      // Let shop owner do anything to their own shop document.
-      // This covers read, update, delete for the main doc.
+      // Let shop owner read, update, or delete their own shop document.
+      // This is safe because get() is allowed for non-list operations.
       allow read, update, delete: if isShopOwner(shopId);
 
-      // A user can only list shops that they own.
-      // The query on the client MUST include `where('ownerId', '==', request.auth.uid)`
+      // A user can ONLY list shops that they own.
+      // The query on the client MUST include `where('ownerId', '==', request.auth.uid)`.
+      // This rule is valid because it does NOT use get() or exists().
       allow list: if isSignedIn() && request.query.ownerId == request.auth.uid;
     }
     
     // =============================================
-    // SUB-COLLECTION RULES (SIMPLIFIED)
+    // SUB-COLLECTION RULES (CORRECTED)
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-        // The owner of the shop can do anything (read, list, write)
-        // in any subcollection of their shop.
-        // The `get()` call is allowed for `read` and `write` operations.
-        // It is NOT allowed for `list`, but since we are not defining a separate `list` rule,
-        // Firestore falls back to the `read` rule. This can be inefficient for large
-        // collections but guarantees functionality. The client-side queries SHOULD
-        // still include `where('barberShopId', '==', shopId)` for performance.
-        allow read, write: if isShopOwner(shopId);
+        // GET, CREATE, UPDATE, DELETE: Safe to use isShopOwner because it operates on a single document.
+        allow get, write: if isShopOwner(shopId);
+
+        // LIST: NOT safe to use isShopOwner. Must rely on query constraints.
+        // The client query MUST contain `where('barberShopId', '==', shopId)` for this to work.
+        allow list: if isSignedIn() && request.query.barberShopId == shopId;
     }
     
     // =============================================
@@ -75,14 +74,11 @@ service cloud.firestore {
 
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
-      // Admins can do anything with logs
       allow read, write: if isAdmin();
     }
 
     match /tickets/{ticketId} {
-      // User can create their own ticket.
       allow create: if request.auth.uid == request.resource.data.userId;
-      // Owner of ticket or admin can read/write.
       allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
     }
   }

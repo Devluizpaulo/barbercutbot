@@ -44,7 +44,8 @@ export default function ExpensesPage() {
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
 
   const transactionsQuery = useMemoFirebase(() => user ? query(
-    collection(firestore, 'barberShops', shopId, 'financialRecords')
+    collection(firestore, 'barberShops', shopId, 'financialRecords'),
+    where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
 
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);

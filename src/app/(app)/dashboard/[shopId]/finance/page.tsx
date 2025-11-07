@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo, useRef } from 'react';
@@ -76,7 +77,7 @@ export default function FinancePage() {
       collection(firestore, 'barberShops', shopId, 'appointments'),
       where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
-  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(allAppointments);
 
   const barbersQuery = useMemoFirebase(() => user ? query(
       collection(firestore, 'barberShops', shopId, 'barbers'),

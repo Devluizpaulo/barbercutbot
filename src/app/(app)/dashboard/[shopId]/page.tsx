@@ -54,22 +54,26 @@ export default function ShopDashboardPage() {
 
   // --- Data Fetching ---
   const financialRecordsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'financialRecords')
+      collection(firestore, 'barberShops', shopId, 'financialRecords'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
 
   const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'customers')
+      collection(firestore, 'barberShops', shopId, 'customers'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
   
   const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'appointments')
+      collection(firestore, 'barberShops', shopId, 'appointments'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
   
   const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'services')
+      collection(firestore, 'barberShops', shopId, 'services'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
   

@@ -43,7 +43,7 @@ import {
 import { AddAppointmentForm } from './add-appointment-form';
 
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, Timestamp, doc, updateDoc, query } from 'firebase/firestore';
+import { collection, Timestamp, doc, updateDoc, query, where } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
@@ -77,24 +77,28 @@ export default function AppointmentsPage() {
 
   const appointmentsQuery = useMemoFirebase(
     () => (user && shopId) ? query(
-        collection(firestore, 'barberShops', shopId, 'appointments')
+        collection(firestore, 'barberShops', shopId, 'appointments'),
+        where('barberShopId', '==', shopId)
     ) : null,
     [firestore, shopId, user]
   );
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
   const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'customers')
+      collection(firestore, 'barberShops', shopId, 'customers'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: customers, isLoading: areCustomersLoading } = useCollection<Customer>(customersQuery);
 
   const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'barbers')
+      collection(firestore, 'barberShops', shopId, 'barbers'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: barbers, isLoading: areBarbersLoading } = useCollection<Barber>(barbersQuery);
 
   const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'services')
+      collection(firestore, 'barberShops', shopId, 'services'),
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: services, isLoading: areServicesLoading } = useCollection<Service>(servicesQuery);
 
