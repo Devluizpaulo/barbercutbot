@@ -29,11 +29,12 @@ export function initializeFirebase() {
   return getSdks(getApp());
 }
 
-export function getSdks(firebaseApp: FirebaseApp) {
+export function getSdks(firebaseApp?: FirebaseApp) {
+  const app = firebaseApp || (getApps().length ? getApp() : initializeApp(firebaseConfig));
   return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firebaseApp: app,
+    auth: getAuth(app),
+    firestore: getFirestore(app)
   };
 }
 
@@ -44,4 +45,3 @@ export * from './firestore/use-doc';
 export * from './non-blocking-updates';
 export * from './errors';
 export * from './error-emitter';
-

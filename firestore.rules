@@ -44,9 +44,9 @@ service cloud.firestore {
     match /barberShops/{shopId} {
       // Owner can create and manage their own shop document.
       allow create: if request.auth.uid == request.resource.data.ownerId;
+      // Allow read, update, delete for the shop owner.
       allow read, update, delete: if isShopOwner(shopId);
-
-      // Rule for listing shops: Only allow users to list the shops they own.
+      // For listing shops, ensure the user is the owner.
       allow list: if isSignedIn() && request.query.ownerId == request.auth.uid;
     }
     
@@ -55,14 +55,15 @@ service cloud.firestore {
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // Allow single doc reads/writes if the user owns the shop. This is secure.
-      allow get, write: if isShopOwner(shopId);
+        // GET, CREATE, UPDATE, DELETE rules remain unchanged.
+        // They operate on a single document, so using `get` is allowed and secure.
+        allow get, write: if isShopOwner(shopId);
 
-      // Allow LIST operations (queries) only if the user is signed in.
-      // The actual security is enforced by the client-side queries,
-      // which MUST include `where('barberShopId', '==', shopId)`.
-      // This rule avoids the prohibited `get` call in a list operation.
-      allow list: if isSignedIn();
+        // LIST (queries) must be handled differently.
+        // This rule enforces that any query on a subcollection MUST include a `where`
+        // clause filtering by 'barberShopId'. This is the recommended pattern.
+        allow list: if isSignedIn()
+                    && request.query.keys().hasAny(['barberShopId']) && request.query.barberShopId == shopId;
     }
     
     // =============================================

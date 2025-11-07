@@ -47,7 +47,7 @@ import { collection, Timestamp, doc, updateDoc, query, where } from 'firebase/fi
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -59,7 +59,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 export default function AppointmentsPage() {

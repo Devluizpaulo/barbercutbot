@@ -26,7 +26,7 @@ import { DollarSign, Users, Calendar, Scissors, Store, PlusCircle } from "lucide
 import { format, getMonth, isWithinInterval, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
-import { CashierDialog } from "./CashierDialog";
+import { CashierDialog } from "./cashier-dialog";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
@@ -364,7 +364,7 @@ export default function ShopDashboardPage() {
                         <TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell>
                     </TableRow>
                 ))}
-                {filteredData.appointments?.slice(0, 5).map((appointment: Appointment) => (
+                {filteredData.appointments?.filter(a => isWithinInterval(toDate(a.startTime), { start: startOfDay(new Date()), end: endOfDay(new Date()) })).slice(0, 5).map((appointment: Appointment) => (
                   <TableRow key={appointment.id}>
                     <TableCell>
                       <div className="font-medium">{customers?.find(c => c.id === appointment.customerId)?.firstName}</div>
