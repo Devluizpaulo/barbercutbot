@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -69,7 +68,7 @@ export default function ServicesPage() {
   const servicesQuery = useMemoFirebase(
     () => (user && shopId) ? query(
         collection(firestore, 'barberShops', shopId, 'services'),
-        where('barberShopId', '==', shopId) // Regra de segurança
+        where('barberShopId', '==', shopId)
     ) : null,
     [firestore, shopId, user]
   );
@@ -306,7 +305,6 @@ export default function ServicesPage() {
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }

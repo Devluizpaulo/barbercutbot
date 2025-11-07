@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -64,7 +63,7 @@ export default function SuppliersPage() {
   const suppliersQuery = useMemoFirebase(
     () => (user && shopId) ? query(
         collection(firestore, 'barberShops', shopId, 'suppliers'),
-        where('barberShopId', '==', shopId) // Regra de segurança
+        where('barberShopId', '==', shopId)
     ) : null,
     [firestore, shopId, user]
   );

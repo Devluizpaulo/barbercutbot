@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -79,7 +78,7 @@ export default function AppointmentsPage() {
   const appointmentsQuery = useMemoFirebase(
     () => (user && shopId) ? query(
         collection(firestore, 'barberShops', shopId, 'appointments'),
-        where('barberShopId', '==', shopId) // Regra de segurança
+        where('barberShopId', '==', shopId)
     ) : null,
     [firestore, shopId, user]
   );
@@ -87,19 +86,19 @@ export default function AppointmentsPage() {
 
   const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'customers'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: customers, isLoading: areCustomersLoading } = useCollection<Customer>(customersQuery);
 
   const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'barbers'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: barbers, isLoading: areBarbersLoading } = useCollection<Barber>(barbersQuery);
 
   const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
       collection(firestore, 'barberShops', shopId, 'services'),
-      where('barberShopId', '==', shopId) // Regra de segurança
+      where('barberShopId', '==', shopId)
   ) : null, [firestore, shopId, user]);
   const { data: services, isLoading: areServicesLoading } = useCollection<Service>(servicesQuery);
 
