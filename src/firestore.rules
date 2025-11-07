@@ -62,7 +62,8 @@ service cloud.firestore {
 
       // ✅ LIST: Anyone signed in can list, BUT the query from the client MUST filter by barberShopId.
       // This is fast and secure because the rule only checks the query, not every doc.
-      allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
+      // ❗️IMPORTANT: This rule was not working because it was too generic. Now it's more specific.
+      allow list: if isShopOwner(shopId);
     }
     
     // =============================================

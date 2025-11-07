@@ -80,9 +80,9 @@ export default function ClientDetailsPage() {
     useCollection<Appointment>(appointmentsQuery);
 
   // Fetch services and barbers to map names
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'services'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
   const { data: services } = useCollection<Service>(servicesQuery);
-  const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'barbers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
   const { data: barbers } = useCollection<Barber>(barbersQuery);
 
   const getServiceName = (serviceId: string) => {
