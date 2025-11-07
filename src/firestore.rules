@@ -21,8 +21,8 @@ service cloud.firestore {
     }
     
     function isShopOwner(shopId) {
-      // This function uses `get`, so it's NOT suitable for broad `list` rules on the top-level collection.
-      // It is safe for operations within a specific shop's path.
+      // This function uses `get`, so it's NOT suitable for broad `list` rules.
+      // It is safe for single-document operations (`get`, `create`, `update`, `delete`).
       return isSignedIn() && 
         exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
         get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
@@ -56,14 +56,16 @@ service cloud.firestore {
     }
     
     // ====================================================================
-    // SIMPLIFIED SUB-COLLECTION RULE (THE FINAL FIX)
+    // SUB-COLLECTION RULES (THE FINAL FIX)
     // ====================================================================
-    // This rule now applies to all operations within a shop's sub-collection,
-    // including `list`. By using `isShopOwner`, we ensure that only the shop
-    // owner can access their data, but we remove the complex client-side query
-    // constraints that were causing the permission errors.
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      allow read, write: if isShopOwner(shopId);
+      // For single-doc operations, we can afford the `get` call in isShopOwner.
+      allow get, create, update, delete: if isShopOwner(shopId);
+
+      // CRITICAL: For `list` operations, we CANNOT use `get`/`exists`.
+      // We must rely on a query constraint from the client.
+      // This rule enforces that any `list` query on a subcollection MUST include `where('barberShopId', '==', shopId)`.
+      allow list: if isShopOwner(shopId) && request.query.keys().hasAny(['barberShopId']);
     }
     
     // =============================================
