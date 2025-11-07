@@ -32,8 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
-import { useDoc, useFirestore, useMemoFirebase, useUser, useCollection, setDocumentNonBlocking } from '@/firebase';
-import { doc, Timestamp, query, collection, where, updateDoc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useUser, setDocumentNonBlocking, useAuth } from '@/firebase';
+import { doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -55,6 +55,7 @@ export default function AppointmentDetailsPage() {
   const appointmentId = params.appointmentId as string;
   const firestore = useFirestore();
   const { user } = useUser();
+  const auth = useAuth();
   const [isCancelAlertOpen, setCancelAlertOpen] = useState(false);
 
   const appointmentRef = useMemoFirebase(() => (user && shopId && appointmentId) ? doc(firestore, 'barberShops', shopId, 'appointments', appointmentId) : null, [firestore, shopId, appointmentId, user]);
@@ -63,11 +64,30 @@ export default function AppointmentDetailsPage() {
   const customerRef = useMemoFirebase(() => (user && shopId && appointment) ? doc(firestore, 'barberShops', shopId, 'customers', appointment.customerId) : null, [firestore, shopId, appointment, user]);
   const { data: customer } = useDoc<Customer>(customerRef);
   
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'services') : null, [firestore, shopId, user]);
-  const { data: allServices } = useCollection<Service>(servicesQuery);
-
-  const barbersQuery = useMemoFirebase(() => (user && shopId) ? collection(firestore, 'barberShops', shopId, 'barbers') : null, [firestore, shopId, user]);
-  const { data: allBarbers } = useCollection<Barber>(barbersQuery);
+  const [allServices, setAllServices] = useState<Service[] | null>(null);
+  const [allBarbers, setAllBarbers] = useState<Barber[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        if (!auth?.currentUser || !shopId) { setAllServices([]); setAllBarbers([]); return; }
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [s, b] = await Promise.all([
+          fetch(`/api/shops/${shopId}/services`, { headers }),
+          fetch(`/api/shops/${shopId}/barbers`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [sj, bj] = await Promise.all([s.json(), b.json()]);
+        setAllServices(sj.items || []);
+        setAllBarbers(bj.items || []);
+      } catch {
+        if (!cancelled) { setAllServices([]); setAllBarbers([]); }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [auth, shopId]);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {

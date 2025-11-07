@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -27,8 +27,8 @@ import { format, getMonth, isWithinInterval, startOfDay, endOfDay, startOfWeek, 
 import { ptBR } from "date-fns/locale"
 import { Button } from "@/components/ui/button";
 import { CashierDialog } from "./cashier-dialog";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser } from "@/firebase";
+import { Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, FinancialRecord, Service } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,31 +51,49 @@ export default function ShopDashboardPage() {
   const [period, setPeriod] = useState<Period>('month');
   const firestore = useFirestore();
   const { user } = useUser();
+  const auth = useAuth();
 
-  // --- Data Fetching ---
-  const financialRecordsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'financialRecords'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
+  // --- Data Fetching via API ---
+  const [financialRecords, setFinancialRecords] = useState<FinancialRecord[] | null>(null);
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [allAppointments, setAllAppointments] = useState<Appointment[] | null>(null);
+  const [services, setServices] = useState<Service[] | null>(null);
+  const [isLoadingLists, setIsLoadingLists] = useState<boolean>(true);
 
-  const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'customers'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersQuery);
-  
-  const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'appointments'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
-  
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'services'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: services, isLoading: isServicesLoading } = useCollection<Service>(servicesQuery);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user || !auth?.currentUser || !shopId) { 
+        setFinancialRecords([]); setCustomers([]); setAllAppointments([]); setServices([]); setIsLoadingLists(false);
+        return; 
+      }
+      setIsLoadingLists(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [fr, cu, ap, sv] = await Promise.all([
+          fetch(`/api/shops/${shopId}/financial-records`, { headers }),
+          fetch(`/api/shops/${shopId}/customers`, { headers }),
+          fetch(`/api/shops/${shopId}/appointments`, { headers }),
+          fetch(`/api/shops/${shopId}/services`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [frj, cuj, apj, svj] = await Promise.all([fr.json(), cu.json(), ap.json(), sv.json()]);
+        setFinancialRecords(frj.items || []);
+        setCustomers(cuj.items || []);
+        setAllAppointments(apj.items || []);
+        setServices(svj.items || []);
+      } catch (e) {
+        if (!cancelled) {
+          setFinancialRecords([]); setCustomers([]); setAllAppointments([]); setServices([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingLists(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user, auth, shopId]);
   
   const toDate = (timestamp: Timestamp | Date | string): Date => {
     if (timestamp instanceof Timestamp) {
@@ -162,7 +180,7 @@ export default function ShopDashboardPage() {
     return revenueData;
   }, [financialRecords]);
 
-  const isLoading = isFinancialLoading || isCustomersLoading || isAppointmentsLoading || isServicesLoading;
+  const isLoading = isLoadingLists;
 
   return (
     <>

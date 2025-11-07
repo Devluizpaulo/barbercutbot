@@ -1,5 +1,5 @@
 // IMPORTANT: This file should ONLY be imported in server-side code (Route Handlers, Server Actions, etc.)
-import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { firebaseConfig } from './config';
@@ -16,13 +16,12 @@ function getFirebaseAdminServices() {
   }
 
   // Initialize Firebase Admin
+  // Prefer Application Default Credentials. In development, set the env var
+  // GOOGLE_APPLICATION_CREDENTIALS to the path of your service account JSON.
+  // In production (Cloud), the environment provides credentials automatically.
   const app = initializeApp({
     projectId: firebaseConfig.projectId,
-    // Use default credentials in production (Firebase App Hosting)
-    // Use service account in development
-    ...(process.env.NODE_ENV === 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS 
-      ? { credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS) }
-      : {}),
+    credential: applicationDefault(),
   });
 
   return {

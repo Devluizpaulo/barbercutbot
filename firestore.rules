@@ -18,11 +18,24 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
-    
-    function isShopOwner(shopId) {
-      return isSignedIn() && 
-        exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
-        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+
+    // Members subcollection: barberShops/{shopId}/members/{uid} -> { role: 'owner'|'manager'|'barber'|'staff' }
+    function isShopMember(shopId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/barberShops/$(shopId)/members/$(request.auth.uid));
+    }
+
+    function getRole(shopId) {
+      return isShopMember(shopId)
+        ? get(/databases/$(database)/documents/barberShops/$(shopId)/members/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function hasRole(shopId, role) {
+      return isShopMember(shopId) && getRole(shopId) == role;
+    }
+
+    function isOwnerOrManager(shopId) {
+      return hasRole(shopId, 'owner') || hasRole(shopId, 'manager');
     }
 
     // =============================================
@@ -38,34 +51,54 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow create: if request.auth.uid == userId;
-      allow read, update: if request.auth.uid == userId;
+      allow get, update: if request.auth.uid == userId;
+      allow list: if false; // block all list operations
     }
 
     match /barberShops/{shopId} {
-      // Owner can create their own shop.
-      allow create: if request.auth.uid == request.resource.data.ownerId;
-      
-      // Let shop owner read, update, or delete their own shop document.
-      // This is safe because get() is allowed for non-list operations.
-      allow read, update, delete: if isShopOwner(shopId);
+      // Shop document CRUD guarded by roles
+      allow create: if isSignedIn();
+      allow get: if isShopMember(shopId);
+      allow update, delete: if hasRole(shopId, 'owner');
 
-      // A user can ONLY list shops that they own.
-      // The query on the client MUST include `where('ownerId', '==', request.auth.uid)`.
-      // This rule is valid because it does NOT use get() or exists().
-      allow list: if isSignedIn() && request.query.ownerId == request.auth.uid;
+      // Block lists entirely at this level. Use server-side endpoints instead.
+      allow list: if false;
     }
     
     // =============================================
-    // SUB-COLLECTION RULES (CORRECTED)
+    // SUB-COLLECTION RULES WITH ROLES
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-        // GET, CREATE, UPDATE, DELETE: Safe to use isShopOwner because it operates on a single document.
-        allow get, write: if isShopOwner(shopId);
+        // Generic default: members can read single docs; writes reserved to owner/manager unless overridden below
+        allow get: if isShopMember(shopId);
+        allow create, update, delete: if isOwnerOrManager(shopId);
+        allow list: if false; // all lists blocked
+    }
 
-        // LIST: NOT safe to use isShopOwner. Must rely on query constraints.
-        // The client query MUST contain `where('barberShopId', '==', shopId)` for this to work.
-        allow list: if isSignedIn() && request.query.barberShopId == shopId;
+    // Appointments with finer controls
+    match /barberShops/{shopId}/appointments/{appointmentId} {
+      allow get: if isShopMember(shopId);
+
+      // owner/manager can write any appointment
+      allow create, update, delete: if isOwnerOrManager(shopId);
+
+      // staff can create/update (not delete)
+      allow create: if hasRole(shopId, 'staff');
+      allow update: if hasRole(shopId, 'staff');
+
+      // barber can update only if involved in the appointment (barberIds contains their uid)
+      allow update: if hasRole(shopId, 'barber') && (
+        (request.resource.data.barberIds is list && request.auth.uid in request.resource.data.barberIds) ||
+        (resource.data.barberIds is list && request.auth.uid in resource.data.barberIds)
+      );
+
+      // Data validation basics
+      allow create, update: if
+        request.resource.data.barberShopId == shopId
+        && request.resource.data.startTime is timestamp
+        && request.resource.data.endTime is timestamp
+        && request.resource.data.status in ['pending','confirmed','completed','cancelled','no-show'];
     }
     
     // =============================================
@@ -74,12 +107,14 @@ service cloud.firestore {
 
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
-      allow read, write: if isAdmin();
+      allow get, update, delete: if isAdmin();
+      allow list: if false;
     }
 
     match /tickets/{ticketId} {
       allow create: if request.auth.uid == request.resource.data.userId;
-      allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
+      allow get, update, delete: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
+      allow list: if false;
     }
   }
 }

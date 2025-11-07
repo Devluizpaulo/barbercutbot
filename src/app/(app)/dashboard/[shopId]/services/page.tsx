@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { useParams } from 'next/navigation';
@@ -47,8 +47,8 @@ import {
 import { AddServiceForm } from './add-service-form';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -65,14 +65,33 @@ export default function ServicesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
+  const auth = useAuth();
 
-  const servicesQuery = useMemoFirebase(
-    () => (user && shopId) ? query(
-        collection(firestore, 'barberShops', shopId, 'services')
-    ) : null,
-    [firestore, shopId, user]
-  );
-  const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+  const [services, setServices] = useState<Service[] | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user || !auth?.currentUser || !shopId) {
+        setServices([]); setIsLoading(false); return;
+      }
+      setIsLoading(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`/api/shops/${shopId}/services`, { headers: { Authorization: `Bearer ${token}` } });
+        if (cancelled) return;
+        const json = await res.json();
+        setServices(json.items || []);
+      } catch (e) {
+        if (!cancelled) setServices([]);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user, auth, shopId]);
 
   const filteredServices = useMemo(() => {
     if (!services) return [];
@@ -305,6 +324,7 @@ export default function ServicesPage() {
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

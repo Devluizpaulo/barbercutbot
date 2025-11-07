@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { FinancialRecord, Service, Barber, Appointment } from '@/lib/types';
 // Dynamically import heavy libs when needed to reduce initial bundle
@@ -21,8 +21,8 @@ import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, 
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { CashierDialog } from "../cashier-dialog";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser } from "@/firebase";
+import { Timestamp } from 'firebase/firestore';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddTransactionForm } from './add-transaction-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -53,37 +53,56 @@ export default function FinancePage() {
   const [period, setPeriod] = useState<Period>('month');
   const [dateOffset, setDateOffset] = useState(0);
 
-  const firestore = useFirestore();
   const { user } = useUser();
+  const auth = useAuth();
 
-  // --- Data Fetching ---
+  // --- Data Fetching via API ---
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
+  const [financialRecords, setFinancialRecords] = useState<FinancialRecord[] | null>(null);
+  const [allFinancialRecords, setAllFinancialRecords] = useState<FinancialRecord[] | null>(null);
+  const [allAppointments, setAllAppointments] = useState<Appointment[] | null>(null);
+  const [barbers, setBarbers] = useState<Barber[] | null>(null);
+  const [loadingLists, setLoadingLists] = useState<boolean>(true);
 
-  const financialRecordsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'financialRecords'),
-      where('barberShopId', '==', shopId),
-      where('date', '>=', start),
-      where('date', '<=', end)
-  ) : null, [firestore, shopId, user, start, end]);
-  const { data: financialRecords, isLoading: isFinancialLoading } = useCollection<FinancialRecord>(financialRecordsQuery);
-
-  const allFinancialRecordsQuery = useMemoFirebase(() => user ? query(
-      collection(firestore, 'barberShops', shopId, 'financialRecords'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, user, shopId]);
-  const { data: allFinancialRecords, isLoading: isLoadingAllFinancials } = useCollection<FinancialRecord>(allFinancialRecordsQuery);
-
-  const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'appointments'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(allAppointments);
-
-  const barbersQuery = useMemoFirebase(() => user ? query(
-      collection(firestore, 'barberShops', shopId, 'barbers'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, user, shopId]);
-  const { data: barbers, isLoading: isLoadingBarbers } = useCollection<Barber>(barbersQuery);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user || !auth?.currentUser || !shopId) {
+        setFinancialRecords([]); setAllFinancialRecords([]); setAllAppointments([]); setBarbers([]); setLoadingLists(false);
+        return;
+      }
+      setLoadingLists(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [frAll, ap, bb] = await Promise.all([
+          fetch(`/api/shops/${shopId}/financial-records`, { headers }),
+          fetch(`/api/shops/${shopId}/appointments`, { headers }),
+          fetch(`/api/shops/${shopId}/barbers`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [frAllJson, apJson, bbJson] = await Promise.all([frAll.json(), ap.json(), bb.json()]);
+        setAllFinancialRecords(frAllJson.items || []);
+        setAllAppointments(apJson.items || []);
+        setBarbers(bbJson.items || []);
+        // Filter financialRecords by period locally (date is a Firestore Timestamp-like object when returned via Admin SDK)
+        const inRange = (d: any) => {
+          const dt = (d?.toDate ? d.toDate() : new Date(d)) as Date;
+          return dt >= start && dt <= end;
+        };
+        const frPeriod = (frAllJson.items || []).filter((r: any) => inRange(r.date));
+        setFinancialRecords(frPeriod);
+      } catch (e) {
+        if (!cancelled) {
+          setFinancialRecords([]); setAllFinancialRecords([]); setAllAppointments([]); setBarbers([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingLists(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user, auth, shopId, start.getTime(), end.getTime()]);
 
   const annualChartRef = useRef<HTMLDivElement>(null);
   const barberChartRef = useRef<HTMLDivElement>(null);
@@ -205,7 +224,7 @@ export default function FinancePage() {
     setDateOffset(0);
   };
   
-  const isLoading = isFinancialLoading || isAppointmentsLoading || isLoadingBarbers || isLoadingAllFinancials;
+  const isLoading = loadingLists;
 
   return (
     <>

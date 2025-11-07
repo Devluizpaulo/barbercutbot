@@ -2,8 +2,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { useAuth, useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import type { BarberShop, Appointment, Barber } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,31 +30,32 @@ export function TimeSlotPicker({
     excludeAppointmentId,
 }: TimeSlotPickerProps) {
   const firestore = useFirestore();
+  const auth = useAuth();
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
   // Use a local state for shop data to avoid re-renders from useDoc
   const [shop, setShop] = useState<BarberShop | null>(null);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   
   useEffect(() => {
       const fetchShopAndBarbers = async () => {
-          if (shopRef) {
-              const shopSnap = await getDocs(query(collection(firestore, 'barberShops'), where('id', '==', shopId)));
-              if (!shopSnap.empty) setShop(shopSnap.docs[0].data() as BarberShop);
-          }
-          if (barberIds.length > 0) {
-              const barbersRef = collection(firestore, `barberShops/${shopId}/barbers`);
-              const q = query(barbersRef, where('barberShopId', '==', shopId), where('id', 'in', barberIds));
-              const barbersSnap = await getDocs(q);
-              setBarbers(barbersSnap.docs.map(d => d.data() as Barber));
-          } else {
-              setBarbers([]);
+          try {
+            const shopDoc = await getDoc(doc(firestore, 'barberShops', shopId));
+            if (shopDoc.exists()) setShop(shopDoc.data() as BarberShop);
+          } catch {}
+          try {
+            if (!auth?.currentUser) { setBarbers([]); return; }
+            const token = await auth.currentUser.getIdToken();
+            const res = await fetch(`/api/shops/${shopId}/barbers`, { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json();
+            setBarbers((json.items || []) as Barber[]);
+          } catch {
+            setBarbers([]);
           }
       };
       fetchShopAndBarbers();
-  }, [firestore, shopId, barberIds, shopRef]);
+  }, [firestore, shopId, auth]);
 
 
   const toDate = (ts: Timestamp | Date | string): Date => {
@@ -117,22 +118,20 @@ export function TimeSlotPicker({
       
       let existingAppointments: Appointment[] = [];
       try {
-        if (barberIds.length > 0) {
-            const appointmentsRef = collection(firestore, 'barberShops', shopId, 'appointments');
-            const q = query(
-                appointmentsRef,
-                where('barberShopId', '==', shopId), // Regra de Segurança OBRIGATÓRIA
-                where('barberIds', 'array-contains-any', barberIds),
-                where('startTime', '>=', Timestamp.fromDate(startDateTime)),
-                where('startTime', '<=', Timestamp.fromDate(endDateTime))
-            );
-            const querySnapshot = await getDocs(q);
-            const allAppointments = querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Appointment));
-            
+        if (barberIds.length > 0 && auth?.currentUser) {
+            const token = await auth.currentUser.getIdToken();
+            const params = new URLSearchParams({
+              start: startDateTime.toISOString(),
+              end: endDateTime.toISOString(),
+              barberIds: barberIds.join(','),
+            });
+            const res = await fetch(`/api/shops/${shopId}/appointments?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json();
+            const allAppointments = (json.items || []) as Appointment[];
             existingAppointments = allAppointments.filter(appt => {
-              const status = (appt.status || 'confirmed');
+              const status = (appt as any).status || 'confirmed';
               const isBlocking = status !== 'cancelled';
-              const isSameAsEditing = excludeAppointmentId && appt.id === excludeAppointmentId;
+              const isSameAsEditing = excludeAppointmentId && (appt as any).id === excludeAppointmentId;
               return isBlocking && !isSameAsEditing;
             });
         }

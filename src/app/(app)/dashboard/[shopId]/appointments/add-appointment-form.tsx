@@ -56,8 +56,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Appointment, Customer, Barber, Service, AppointmentItem } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, Timestamp, doc, serverTimestamp, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { collection, Timestamp, doc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
@@ -105,19 +105,49 @@ export function AddAppointmentForm({
 }: AddAppointmentFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
 
   const [isClientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [isQuickAddClientOpen, setQuickAddClientOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
 
-  const customersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'customers'), [firestore, shopId]);
-  const { data: customers, isLoading: isLoadingCustomers, refresh: refreshCustomers } = useCollection<Customer>(customersQuery);
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [availableServices, setAvailableServices] = useState<Service[] | null>(null);
+  const [availableBarbers, setAvailableBarbers] = useState<Barber[] | null>(null);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(true);
 
-  const servicesQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'services'), [firestore, shopId]);
-  const { data: availableServices } = useCollection<Service>(servicesQuery);
-
-  const barbersQuery = useMemoFirebase(() => collection(firestore, 'barberShops', shopId, 'barbers'), [firestore, shopId]);
-  const { data: availableBarbers } = useCollection<Barber>(barbersQuery);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLists() {
+      try {
+        if (!auth?.currentUser) {
+          setCustomers([]); setAvailableServices([]); setAvailableBarbers([]); setIsLoadingCustomers(false);
+          return;
+        }
+        setIsLoadingCustomers(true);
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [c, s, b] = await Promise.all([
+          fetch(`/api/shops/${shopId}/customers`, { headers }),
+          fetch(`/api/shops/${shopId}/services`, { headers }),
+          fetch(`/api/shops/${shopId}/barbers`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [cj, sj, bj] = await Promise.all([c.json(), s.json(), b.json()]);
+        setCustomers(cj.items || []);
+        setAvailableServices(sj.items || []);
+        setAvailableBarbers(bj.items || []);
+      } catch (e) {
+        if (!cancelled) {
+          setCustomers([]); setAvailableServices([]); setAvailableBarbers([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingCustomers(false);
+      }
+    }
+    loadLists();
+    return () => { cancelled = true; };
+  }, [auth, shopId]);
 
   const appointmentForm = useForm<AddAppointmentFormValues>({
     resolver: zodResolver(appointmentFormSchema),
@@ -200,8 +230,15 @@ export function AddAppointmentForm({
             title: 'Cliente Adicionado!',
             description: `${values.firstName} foi adicionado com sucesso.`
         });
-        
-        await refreshCustomers();
+        // Reload customers list via API
+        try {
+          if (auth?.currentUser) {
+            const token = await auth.currentUser.getIdToken();
+            const res = await fetch(`/api/shops/${shopId}/customers`, { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json();
+            setCustomers(json.items || []);
+          }
+        } catch {}
         appointmentForm.setValue('customerId', newCustomerDoc.id);
         setQuickAddClientOpen(false);
         setClientPopoverOpen(false);

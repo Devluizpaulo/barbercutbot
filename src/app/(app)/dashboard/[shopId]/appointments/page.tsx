@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   PlusCircle,
@@ -42,8 +42,8 @@ import {
 
 import { AddAppointmentForm } from './add-appointment-form';
 
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, Timestamp, doc, updateDoc, query, where } from 'firebase/firestore';
+import { useFirestore, useUser, useAuth } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
@@ -73,36 +73,57 @@ export default function AppointmentsPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { user } = useUser();
+  const auth = useAuth();
   const { toast } = useToast();
 
-  const appointmentsQuery = useMemoFirebase(
-    () => (user && shopId) ? query(
-        collection(firestore, 'barberShops', shopId, 'appointments'),
-        where('barberShopId', '==', shopId)
-    ) : null,
-    [firestore, shopId, user]
-  );
-  const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+  const [appointments, setAppointments] = useState<Appointment[] | null>(null);
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [barbers, setBarbers] = useState<Barber[] | null>(null);
+  const [services, setServices] = useState<Service[] | null>(null);
+  const [listsLoading, setListsLoading] = useState<boolean>(true);
 
-  const customersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'customers'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: customers, isLoading: areCustomersLoading } = useCollection<Customer>(customersQuery);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user || !shopId || !auth?.currentUser) {
+        setAppointments(null);
+        setCustomers(null);
+        setBarbers(null);
+        setServices(null);
+        setListsLoading(false);
+        return;
+      }
+      setListsLoading(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [a, c, b, s] = await Promise.all([
+          fetch(`/api/shops/${shopId}/appointments`, { headers }),
+          fetch(`/api/shops/${shopId}/customers`, { headers }),
+          fetch(`/api/shops/${shopId}/barbers`, { headers }),
+          fetch(`/api/shops/${shopId}/services`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [aj, cj, bj, sj] = await Promise.all([a.json(), c.json(), b.json(), s.json()]);
+        setAppointments(aj.items || []);
+        setCustomers(cj.items || []);
+        setBarbers(bj.items || []);
+        setServices(sj.items || []);
+      } catch (err) {
+        console.error('Erro ao carregar listas', err);
+        setAppointments([]);
+        setCustomers([]);
+        setBarbers([]);
+        setServices([]);
+      } finally {
+        if (!cancelled) setListsLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user, shopId, auth]);
 
-  const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'barbers'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: barbers, isLoading: areBarbersLoading } = useCollection<Barber>(barbersQuery);
-
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(
-      collection(firestore, 'barberShops', shopId, 'services'),
-      where('barberShopId', '==', shopId)
-  ) : null, [firestore, shopId, user]);
-  const { data: services, isLoading: areServicesLoading } = useCollection<Service>(servicesQuery);
-
-  const isLoading = areAppointmentsLoading || areCustomersLoading || areBarbersLoading || areServicesLoading;
+  const isLoading = listsLoading;
 
 
   const handleAddNew = () => {

@@ -1,8 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+
 import {
   ArrowLeft,
   Edit,
@@ -29,22 +29,21 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
+  TableHead,
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  useCollection,
   useDoc,
   useFirestore,
-  useMemoFirebase,
-  useUser
+  useUser,
+  useAuth,
 } from '@/firebase';
-import { collection, doc, query, where, Timestamp, orderBy } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AddClientForm } from '../add-client-form';
 
@@ -55,34 +54,47 @@ export default function ClientDetailsPage() {
   const firestore = useFirestore();
   const [isFormOpen, setFormOpen] = useState(false);
   const { user } = useUser();
+  const auth = useAuth();
 
-
-  const clientRef = useMemoFirebase(
-    () => (user && shopId && clientId) ? doc(firestore, 'barberShops', shopId, 'customers', clientId) : null,
-    [firestore, shopId, clientId, user]
-  );
+  const clientRef = (user && shopId && clientId) ? doc(firestore, 'barberShops', shopId, 'customers', clientId) : null as any;
   const { data: client, isLoading: isClientLoading } = useDoc<Customer>(clientRef);
 
-  const appointmentsQuery = useMemoFirebase(
-    () =>
-      user && client && shopId
-        ? query(
-            collection(firestore, 'barberShops', shopId, 'appointments'),
-            where('barberShopId', '==', shopId), // Regra de Segurança OBRIGATÓRIA
-            where('customerId', '==', client.id),
-            orderBy('startTime', 'desc')
-          )
-        : null,
-    [firestore, shopId, client, user]
-  );
-  const { data: clientAppointments, isLoading: areAppointmentsLoading } =
-    useCollection<Appointment>(appointmentsQuery);
+  const [clientAppointments, setClientAppointments] = useState<Appointment[] | null>(null);
+  const [services, setServices] = useState<Service[] | null>(null);
+  const [barbers, setBarbers] = useState<Barber[] | null>(null);
+  const [areAppointmentsLoading, setAreAppointmentsLoading] = useState<boolean>(true);
 
-  // Fetch services and barbers to map names
-  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'services'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
-  const { data: services } = useCollection<Service>(servicesQuery);
-  const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'barbers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
-  const { data: barbers } = useCollection<Barber>(barbersQuery);
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user || !auth?.currentUser || !shopId || !clientId) {
+        setClientAppointments([]); setServices([]); setBarbers([]); setAreAppointmentsLoading(false);
+        return;
+      }
+      if (!client) return; // wait until client is loaded to get id
+      setAreAppointmentsLoading(true);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
+        const [ap, sv, bb] = await Promise.all([
+          fetch(`/api/shops/${shopId}/appointments?customerId=${client.id}`, { headers }),
+          fetch(`/api/shops/${shopId}/services`, { headers }),
+          fetch(`/api/shops/${shopId}/barbers`, { headers }),
+        ]);
+        if (cancelled) return;
+        const [apj, svj, bbj] = await Promise.all([ap.json(), sv.json(), bb.json()]);
+        setClientAppointments(apj.items || []);
+        setServices(svj.items || []);
+        setBarbers(bbj.items || []);
+      } catch (e) {
+        if (!cancelled) { setClientAppointments([]); setServices([]); setBarbers([]); }
+      } finally {
+        if (!cancelled) setAreAppointmentsLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user, auth, shopId, clientId, client]);
 
   const getServiceName = (serviceId: string) => {
     return services?.find(s => s.id === serviceId)?.name || serviceId;
