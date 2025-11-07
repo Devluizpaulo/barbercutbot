@@ -68,7 +68,7 @@ export default function ClientDetailsPage() {
       user && client && shopId
         ? query(
             collection(firestore, 'barberShops', shopId, 'appointments'),
-            where('barberShopId', '==', shopId),
+            where('barberShopId', '==', shopId), // Regra de Segurança OBRIGATÓRIA
             where('customerId', '==', client.id),
             orderBy('startTime', 'desc')
           )

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, getDocs, getDoc, Timestamp } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import type { BarberShop, Appointment, Barber } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,10 +33,10 @@ export function TimeSlotPicker({
   const [isLoading, setIsLoading] = useState(true);
 
   const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
-  const { data: shop } = useDoc<BarberShop>(shopRef);
+  const { data: shop } = useMemoFirebase(() => shopRef ? { data: null, isLoading: false } : { data: null, isLoading: true }, [shopRef]);
 
-  const barbersQuery = useMemoFirebase(() => barberIds.length > 0 ? query(collection(firestore, `barberShops/${shopId}/barbers`), where('barberShopId', '==', shopId)) : null, [firestore, shopId, barberIds.length > 0]);
-  const {data: barbers} = useCollection<Barber>(barbersQuery);
+  const barbersQuery = useMemoFirebase(() => barberIds.length > 0 ? query(collection(firestore, `barberShops/${shopId}/barbers`), where('barberShopId', '==', shopId)) : null, [firestore, shopId, barberIds]);
+  const {data: barbers} = useMemoFirebase(() => barbersQuery ? { data: [], isLoading: false } : { data: [], isLoading: true }, [barbersQuery]);
 
   const toDate = (ts: Timestamp | Date | string): Date => {
     if ((ts as any)?.toDate) return (ts as any).toDate();
@@ -63,7 +63,6 @@ export function TimeSlotPicker({
   };
 
   const subtractSegments = (base: Array<[number, number]>, removes: Array<[number, number]>) => {
-    // subtract each remove interval from base
     let result = base.slice();
     for (const r of removes) {
       const tmp: Array<[number, number]> = [];
@@ -85,7 +84,6 @@ export function TimeSlotPicker({
       setIsLoading(true);
 
       const dayOfWeek = selectedDate.toLocaleDateString('pt-BR', { weekday: 'long' }).split(',')[0];
-      // Fallback working hours when shop or day config is missing
       const defaultWH = { day: dayOfWeek, open: '08:00', close: '20:00', enabled: true };
       const workingHours = shop?.workingHours?.find(wh => wh.day.toLowerCase() === dayOfWeek.toLowerCase()) || defaultWH as any;
 
@@ -98,14 +96,13 @@ export function TimeSlotPicker({
       const startDateTime = startOfDay(selectedDate);
       const endDateTime = endOfDay(selectedDate);
       
-      const appointmentsRef = collection(firestore, 'barberShops', shopId, 'appointments');
-      
       let existingAppointments: Appointment[] = [];
       try {
         if (barberIds.length > 0) {
+            const appointmentsRef = collection(firestore, 'barberShops', shopId, 'appointments');
             const q = query(
                 appointmentsRef,
-                where('barberShopId', '==', shopId),
+                where('barberShopId', '==', shopId), // Regra de Segurança OBRIGATÓRIA
                 where('barberIds', 'array-contains-any', barberIds),
                 where('startTime', '>=', Timestamp.fromDate(startDateTime)),
                 where('startTime', '<=', Timestamp.fromDate(endDateTime))
@@ -135,10 +132,8 @@ export function TimeSlotPicker({
         };
       });
 
-      // 1) Compute base availability from shop hours
       const shopSeg: Array<[number, number]> = [[toMinutes(workingHours.open), toMinutes(workingHours.close)]];
 
-      // 2) Load barbers and build per-barber segments (intersect with shop)
       let intersectionSeg = shopSeg;
       if (barberIds.length > 0 && barbers) {
         const selectedBarbers = barbers.filter(b => barberIds.includes(b.id));
@@ -159,7 +154,6 @@ export function TimeSlotPicker({
         }
       }
 
-      // 3) Generate slots inside intersection segments only
       const effectiveDuration = (serviceDuration && serviceDuration > 0) ? serviceDuration : ((shop as any)?.defaultSlotDuration || 30);
       const slots: string[] = [];
       const dayStart = new Date(selectedDate);
