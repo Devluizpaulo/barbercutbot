@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -46,7 +47,7 @@ import { collection, Timestamp, doc, updateDoc, query, where } from 'firebase/fi
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
