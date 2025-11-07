@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search, Users, Shield, Store } from 'lucide-react';
-import { useCPanel } from '../../context';
-import { TeamTable } from '../team/team-table'; // Reutilizando a tabela da equipe
+import { useCPanel } from '@/app/cpanel/context';
+import { TeamTable } from '@/app/cpanel/(cpanel)/team/team-table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
