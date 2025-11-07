@@ -1,10 +1,11 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, firestore } from '@/firebase/server';
 import { authorize } from '@/app/api/_authz';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ shopId: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { shopId: string } }) {
   try {
-    const { shopId } = await params;
+    const { shopId } = params;
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

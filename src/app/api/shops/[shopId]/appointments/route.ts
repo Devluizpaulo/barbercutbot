@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, firestore } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -11,9 +12,9 @@ async function ensureAuthorized(uid: string, shopId: string, claims: any) {
   return data?.ownerId === uid;
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ shopId: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { shopId: string } }) {
   try {
-    const { shopId } = await params;
+    const { shopId } = params;
     const url = new URL(req.url);
     const start = url.searchParams.get('start');
     const end = url.searchParams.get('end');
