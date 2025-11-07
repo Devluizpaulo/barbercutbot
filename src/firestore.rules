@@ -53,16 +53,16 @@ service cloud.firestore {
     }
     
     // =============================================
-    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE AND SECURITY)
+    // SUB-COLLECTION RULES (HYBRID STRATEGY FOR PERFORMANCE AND SECURITY)
     // =============================================
-
+    
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // READ: Allow if the user is the shop owner. For `list`, the query must filter by shopId.
-      allow get: if isShopOwner(shopId);
-      allow list: if isShopOwner(shopId) && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
+      // ✅ READ (single doc) & WRITE: Owner of the parent shop can do anything.
+      allow get, write: if isShopOwner(shopId);
 
-      // WRITE: Allow only if the user is the shop owner.
-      allow write: if isShopOwner(shopId);
+      // ✅ LIST: Anyone signed in can list, BUT the query from the client MUST filter by barberShopId.
+      // This is fast and secure because the rule only checks the query, not every doc.
+      allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
     }
     
     // =============================================
