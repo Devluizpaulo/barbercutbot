@@ -31,7 +31,7 @@ export default function CPanelLayout({
     // If a user is logged in but is NOT an admin, they have no access here.
     // Redirect them to their appropriate dashboard.
     if (user.role !== 'admin') {
-      router.replace('/dashboard');
+      router.replace('/login'); // Redirect to the general login, which will handle their role.
       return;
     }
 
