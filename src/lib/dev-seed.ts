@@ -1,5 +1,5 @@
 
-import { Firestore, collection, addDoc, serverTimestamp, Timestamp, writeBatch, getDocs, query, limit } from 'firebase/firestore'
+import { Firestore, collection, addDoc, serverTimestamp, Timestamp, writeBatch, getDocs, query, limit, doc } from 'firebase/firestore'
 import { subDays, addDays, setHours, startOfHour } from 'date-fns';
 
 /**
@@ -36,15 +36,6 @@ export async function seedDemoData(db: Firestore, shopId: string) {
   const batch = writeBatch(db);
   const now = new Date();
 
-  // --- COLLECTIONS ---
-  const servicesCol = collection(db, 'barberShops', shopId, 'services');
-  const customersCol = collection(db, 'barberShops', shopId, 'customers');
-  const barbersCol = collection(db, 'barberShops', shopId, 'barbers');
-  const appointmentsCol = collection(db, 'barberShops', shopId, 'appointments');
-  const financialCol = collection(db, 'barberShops', shopId, 'financialRecords');
-  const productsCol = collection(db, 'barberShops', shopId, 'products');
-  const suppliersCol = collection(db, 'barberShops', shopId, 'suppliers');
-
   // --- DATA CREATION ---
 
   // 1. Services
@@ -56,7 +47,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
     { name: 'Hidratação Capilar', price: 60, duration: 45, ativo: false, cost: 15, partnership: { isCommissionEnabled: true, commissionType: 'fixed', commissionValue: 20 } },
   ];
   const serviceIds = serviceData.map(s => {
-    const docRef = collection(db, `barberShops/${shopId}/services`).doc();
+    const docRef = doc(collection(db, `barberShops/${shopId}/services`));
     batch.set(docRef, { ...s, id: docRef.id, barberShopId: shopId, createdAt: serverTimestamp() });
     return { id: docRef.id, ...s };
   });
@@ -77,7 +68,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
     ]},
   ];
    const barberIds = barberData.map(b => {
-    const docRef = collection(db, `barberShops/${shopId}/barbers`).doc();
+    const docRef = doc(collection(db, `barberShops/${shopId}/barbers`));
     batch.set(docRef, { ...b, id: docRef.id, barberShopId: shopId, createdAt: serverTimestamp() });
     return { id: docRef.id, ...b };
   });
@@ -89,7 +80,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
       { firstName: 'Pedro', lastName: 'Henrique', phone: '(31) 98888-1234', email: 'pedro.h@example.com' },
   ];
    const customerIds = customerData.map(c => {
-    const docRef = collection(db, `barberShops/${shopId}/customers`).doc();
+    const docRef = doc(collection(db, `barberShops/${shopId}/customers`));
     batch.set(docRef, { ...c, id: docRef.id, barberShopId: shopId, createdAt: serverTimestamp() });
     return { id: docRef.id, ...c };
   });
@@ -112,7 +103,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
   ];
 
   appointmentsData.forEach(appt => {
-    const appointmentDocRef = collection(db, `barberShops/${shopId}/appointments`).doc();
+    const appointmentDocRef = doc(collection(db, `barberShops/${shopId}/appointments`));
     const startTime = startOfHour(setHours(appt.date, appt.hour));
     const appointmentPayload = {
       id: appointmentDocRef.id,
@@ -129,7 +120,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
     batch.set(appointmentDocRef, appointmentPayload);
 
     if (appt.status === 'completed') {
-      const financialDocRef = collection(db, `barberShops/${shopId}/financialRecords`).doc();
+      const financialDocRef = doc(collection(db, `barberShops/${shopId}/financialRecords`));
       batch.set(financialDocRef, {
         id: financialDocRef.id,
         barberShopId: shopId,
@@ -154,7 +145,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
   });
   
   // 5. Products & Suppliers
-  const supplierDocRef = collection(db, `barberShops/${shopId}/suppliers`).doc();
+  const supplierDocRef = doc(collection(db, `barberShops/${shopId}/suppliers`));
   batch.set(supplierDocRef, {
       id: supplierDocRef.id,
       barberShopId: shopId,
@@ -171,7 +162,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
       { name: 'Shampoo Anti-Queda', price: 80, cost: 45, stockQuantity: 8, sku: 'SHP-003', ativo: true },
   ];
    productData.forEach(p => {
-    const docRef = collection(db, `barberShops/${shopId}/products`).doc();
+    const docRef = doc(collection(db, `barberShops/${shopId}/products`));
     batch.set(docRef, { ...p, id: docRef.id, barberShopId: shopId, createdAt: serverTimestamp() });
   });
 
@@ -182,7 +173,7 @@ export async function seedDemoData(db: Firestore, shopId: string) {
        { description: 'Compra de Produtos', amount: 850, category: 'Fornecedores', isRecurring: false, date: startOfHour(setHours(subDays(now, 5), 10)) },
    ];
     expenseData.forEach(e => {
-    const docRef = collection(db, `barberShops/${shopId}/financialRecords`).doc();
+    const docRef = doc(collection(db, `barberShops/${shopId}/financialRecords`));
     batch.set(docRef, {
         ...e,
         id: docRef.id,
