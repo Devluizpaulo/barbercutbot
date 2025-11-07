@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -44,7 +45,7 @@ import {
 import { AddProductForm } from './add-product-form';
 import type { Product } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -65,8 +66,7 @@ export default function ProductsPage() {
 
   const productsQuery = useMemoFirebase(
     () => (user && shopId) ? query(
-        collection(firestore, 'barberShops', shopId, 'products'),
-        where('barberShopId', '==', shopId)
+        collection(firestore, 'barberShops', shopId, 'products')
     ) : null,
     [firestore, shopId, user]
   );

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from 'react';
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Search } from "lucide-react"
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, Timestamp, query, where } from 'firebase/firestore';
+import { collection, doc, Timestamp, query } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { TransactionsTable } from '../transactions-table';
@@ -43,11 +44,8 @@ export default function IncomePage() {
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
 
   const transactionsQuery = useMemoFirebase(() => user ? query(
-    collection(firestore, 'barberShops', shopId, 'financialRecords'),
-    where('barberShopId', '==', shopId),
-    where('date', '>=', start),
-    where('date', '<=', end)
-  ) : null, [firestore, shopId, user, start, end]);
+    collection(firestore, 'barberShops', shopId, 'financialRecords')
+  ) : null, [firestore, shopId, user]);
 
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
@@ -61,16 +59,17 @@ export default function IncomePage() {
   const incomeRecords = useMemo(() => {
     if (!transactions) return [];
     
-    let filtered = transactions.filter(t => t.type === 'income');
+    let filteredByDate = transactions.filter(t => isWithinInterval(toDate(t.date), { start, end }));
+    let filteredByType = filteredByDate.filter(t => t.type === 'income');
 
-    if (!searchTerm) return filtered;
+    if (!searchTerm) return filteredByType;
 
     const lowercasedTerm = searchTerm.toLowerCase();
-    return filtered.filter(t => 
+    return filteredByType.filter(t => 
       t.description.toLowerCase().includes(lowercasedTerm) ||
       t.category.toLowerCase().includes(lowercasedTerm)
     );
-  }, [transactions, searchTerm]);
+  }, [transactions, searchTerm, start, end]);
   
   const totalIncome = useMemo(() => {
     return incomeRecords.reduce((acc, record) => acc + record.amount, 0)

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -47,7 +48,7 @@ import { AddServiceForm } from './add-service-form';
 import type { Service } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -67,8 +68,7 @@ export default function ServicesPage() {
 
   const servicesQuery = useMemoFirebase(
     () => (user && shopId) ? query(
-        collection(firestore, 'barberShops', shopId, 'services'),
-        where('barberShopId', '==', shopId)
+        collection(firestore, 'barberShops', shopId, 'services')
     ) : null,
     [firestore, shopId, user]
   );

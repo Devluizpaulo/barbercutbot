@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -10,7 +11,7 @@ import {
   useMemoFirebase,
   useUser
 } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 
 import type { Customer } from '@/lib/types';
 
@@ -45,7 +46,7 @@ export default function ClientsPage() {
   const { user } = useUser();
 
   const customersQuery = useMemoFirebase(
-    () => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'customers'), where('barberShopId', '==', shopId)) : null,
+    () => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'customers')) : null,
     [firestore, shopId, user]
   );
   const { data: clients, isLoading } = useCollection<Customer>(customersQuery);

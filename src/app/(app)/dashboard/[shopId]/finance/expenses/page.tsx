@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from 'react';
@@ -43,11 +44,8 @@ export default function ExpensesPage() {
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
 
   const transactionsQuery = useMemoFirebase(() => user ? query(
-    collection(firestore, 'barberShops', shopId, 'financialRecords'),
-    where('barberShopId', '==', shopId),
-    where('date', '>=', start),
-    where('date', '<=', end)
-  ) : null, [firestore, shopId, user, start, end]);
+    collection(firestore, 'barberShops', shopId, 'financialRecords')
+  ) : null, [firestore, shopId, user]);
 
   const { data: transactions, isLoading } = useCollection<FinancialRecord>(transactionsQuery);
 
@@ -61,16 +59,17 @@ export default function ExpensesPage() {
   const expenseRecords = useMemo(() => {
     if (!transactions) return [];
     
-    let filtered = transactions.filter(t => t.type === 'expense');
+    let filteredByDate = transactions.filter(t => isWithinInterval(toDate(t.date), { start, end }));
+    let filteredByType = filteredByDate.filter(t => t.type === 'expense');
 
-    if (!searchTerm) return filtered;
+    if (!searchTerm) return filteredByType;
 
     const lowercasedTerm = searchTerm.toLowerCase();
-    return filtered.filter(t => 
+    return filteredByType.filter(t => 
       t.description.toLowerCase().includes(lowercasedTerm) ||
       t.category.toLowerCase().includes(lowercasedTerm)
     );
-  }, [transactions, searchTerm]);
+  }, [transactions, searchTerm, start, end]);
 
   const totalExpense = useMemo(() => {
     return expenseRecords.reduce((acc, record) => acc + record.amount, 0)

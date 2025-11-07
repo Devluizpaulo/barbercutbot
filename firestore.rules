@@ -44,26 +44,29 @@ service cloud.firestore {
     match /barberShops/{shopId} {
       // Owner can create and manage their own shop document.
       allow create: if request.auth.uid == request.resource.data.ownerId;
-      // Allow read, update, delete for the shop owner.
+      
+      // Let shop owner do anything to their own shop document.
+      // This covers read, update, delete for the main doc.
       allow read, update, delete: if isShopOwner(shopId);
-      // For listing shops, ensure the user is the owner.
+
+      // A user can only list shops that they own.
+      // The query on the client MUST include `where('ownerId', '==', request.auth.uid)`
       allow list: if isSignedIn() && request.query.ownerId == request.auth.uid;
     }
     
     // =============================================
-    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE AND SECURITY)
+    // SUB-COLLECTION RULES (SIMPLIFIED)
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-        // GET, CREATE, UPDATE, DELETE rules remain unchanged.
-        // They operate on a single document, so using `get` is allowed and secure.
-        allow get, write: if isShopOwner(shopId);
-
-        // LIST (queries) must be handled differently.
-        // This rule enforces that any query on a subcollection MUST include a `where`
-        // clause filtering by 'barberShopId'. This is the recommended pattern.
-        allow list: if isSignedIn()
-                    && request.query.keys().hasAny(['barberShopId']) && request.query.barberShopId == shopId;
+        // The owner of the shop can do anything (read, list, write)
+        // in any subcollection of their shop.
+        // The `get()` call is allowed for `read` and `write` operations.
+        // It is NOT allowed for `list`, but since we are not defining a separate `list` rule,
+        // Firestore falls back to the `read` rule. This can be inefficient for large
+        // collections but guarantees functionality. The client-side queries SHOULD
+        // still include `where('barberShopId', '==', shopId)` for performance.
+        allow read, write: if isShopOwner(shopId);
     }
     
     // =============================================
