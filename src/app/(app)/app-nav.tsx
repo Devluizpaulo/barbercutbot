@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -39,7 +38,8 @@ export function AppNav({ shopId }: AppNavProps) {
 
     useEffect(() => {
         // Acessa o tema do localStorage no lado do cliente
-        setTheme(localStorage.getItem('theme'));
+        const storedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(storedTheme);
     }, []);
 
     const toggleTheme = () => {

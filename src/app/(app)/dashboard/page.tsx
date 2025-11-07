@@ -45,7 +45,7 @@ export default function DashboardRedirectPage() {
           .catch(() => setBootstrapping(false));
       }
     }
-  }, [isLoading, user, shops, router]);
+  }, [isLoading, user, shops, router, firestore, bootstrapping, refresh]);
 
 
   // Exibe uma tela de carregamento enquanto o usuário e as lojas estão sendo carregados

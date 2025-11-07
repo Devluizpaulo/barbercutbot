@@ -25,11 +25,30 @@ export default function AppLayout({
   })();
 
   useEffect(() => {
-    // If loading is finished and there's no user, redirect to login.
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    if (isUserLoading) {
+      return; // Still checking, do nothing yet.
     }
-  }, [user, isUserLoading, router]);
+
+    if (!user) {
+      // If no user is found after loading, redirect to the main login page.
+      router.replace('/login');
+      return;
+    }
+    
+    // If the user is an admin, they should not be in the app layout. Redirect them to the CPanel.
+    if (user.role === 'admin') {
+      router.replace('/cpanel');
+      return;
+    }
+
+    // If the user is an owner but somehow landed outside the /dashboard routes,
+    // redirect them to their main dashboard page.
+    if (user.role === 'owner' && !pathname.startsWith('/dashboard')) {
+        router.replace('/dashboard');
+        return;
+    }
+
+  }, [user, isUserLoading, router, pathname]);
 
   // Show a loading spinner while the user's auth state is being determined.
   if (isUserLoading) {
@@ -46,9 +65,9 @@ export default function AppLayout({
     );
   }
 
-  // If there is a user, render the main app layout.
-  // We also check if the user is an owner, otherwise they have no business here.
-  if (user && (user.role === 'owner' || user.role === 'admin')) {
+  // If there is a user and they are an owner, render the main app layout.
+  // This check prevents non-owners from seeing a flash of the app layout before redirection.
+  if (user && user.role === 'owner') {
     return (
       <SidebarProvider>
         <AppNav shopId={shopId} />
@@ -61,7 +80,7 @@ export default function AppLayout({
     );
   }
 
-  // Fallback for the brief moment before redirect happens when no user is found.
+  // This is a fallback loading state, typically seen during the brief moment of redirection.
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

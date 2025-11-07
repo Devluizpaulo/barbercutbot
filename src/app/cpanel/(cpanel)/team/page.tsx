@@ -1,15 +1,19 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlusCircle, Users, Search } from 'lucide-react';
+import { PlusCircle, Users, Search, Shield } from 'lucide-react';
 import { AddTeamMemberForm } from './add-team-member-form';
-import { useCPanel } from '../../context';
+import { useCPanel } from '@/app/cpanel/context';
 import { Input } from '@/components/ui/input';
 import { TeamTable } from './team-table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 export default function CPanelTeamPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -34,7 +38,7 @@ export default function CPanelTeamPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-            <Users />
+            <Shield />
             Equipe da Plataforma
           </h1>
           <p className="text-muted-foreground">
@@ -60,20 +64,23 @@ export default function CPanelTeamPage() {
         </Dialog>
       </div>
 
-       <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, email ou perfil..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-       <div className="border rounded-lg">
-          {isLoading && <Skeleton className="h-[200px] w-full" />}
-          {!isLoading && <TeamTable users={teamMembers} isLoading={isLoading}/>}
-       </div>
+       <Card>
+            <CardHeader>
+              <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome, email ou perfil..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading && <Skeleton className="h-[200px] w-full" />}
+                {!isLoading && <TeamTable users={teamMembers} isLoading={isLoading}/>}
+            </CardContent>
+          </Card>
     </div>
   );
 }

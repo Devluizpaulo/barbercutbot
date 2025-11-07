@@ -15,22 +15,17 @@ export default function AuthLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; // Wait until user status is resolved.
+    // This effect now only handles redirecting an already logged-in user away from auth pages.
+    // It no longer decides WHERE to redirect. That logic is centralized in the (app) layout.
+    if (!isUserLoading && user) {
+      // Determine the base path based on role and redirect.
+      const destination = user.role === 'admin' ? '/cpanel' : '/dashboard';
+      router.replace(destination);
     }
-
-    if (user) {
-      // User is logged in, redirect based on role.
-      if (user.role === 'admin') {
-        router.replace('/cpanel');
-      } else {
-        router.replace('/dashboard');
-      }
-    }
-    // If no user and loading is complete, do nothing (render the login/signup page).
   }, [user, isUserLoading, router]);
 
-  // While checking auth or if a user is found and we are about to redirect, show a loading screen.
+  // While checking auth status OR if a user is found (and we are about to redirect),
+  // show a loading screen. This prevents flashing the login page for an already auth'd user.
   if (isUserLoading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
@@ -45,6 +40,6 @@ export default function AuthLayout({
     );
   }
   
-  // If loading is done and there's no user, show the auth page (login, signup, etc.).
+  // If loading is done and there's no user, show the auth page content (login, signup, etc.).
   return <>{children}</>;
 }

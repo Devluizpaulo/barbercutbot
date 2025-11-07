@@ -18,16 +18,21 @@ export default function CPanelLayout({
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait until user status is resolved
+    if (isUserLoading) {
+      return; // Wait until user status is resolved
+    }
 
     if (!user) {
+      // If no user, they must go to the admin login.
       router.replace('/cpanel/login');
       return;
     }
     
+    // If a user is logged in but is NOT an admin, they have no access here.
+    // Redirect them to their appropriate dashboard.
     if (user.role !== 'admin') {
-      // If user is not an admin, deny access and redirect.
       router.replace('/dashboard');
+      return;
     }
 
   }, [user, isUserLoading, router]);
@@ -47,8 +52,8 @@ export default function CPanelLayout({
     );
   }
 
-  // If user is a confirmed admin, render the layout. Otherwise, render a loader
-  // while the redirect is in progress.
+  // If user is a confirmed admin, render the layout.
+  // This check prevents non-admins from seeing a flash of the CPanel layout before redirection.
   if (user && user.role === 'admin') {
     return (
       <SidebarProvider>
@@ -66,7 +71,7 @@ export default function CPanelLayout({
     );
   }
 
-  // Fallback loading screen while redirecting non-admins
+  // This is a fallback loading state, typically seen during the brief moment of redirection.
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary">
       <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

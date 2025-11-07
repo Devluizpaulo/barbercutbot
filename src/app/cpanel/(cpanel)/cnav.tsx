@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -24,7 +25,8 @@ import { useRouter } from "next/navigation";
 const menuItems = [
     { id: 'home', label: 'Início', icon: Home, href: '/cpanel' },
     { id: 'shops', label: 'Lojas', icon: Store, href: '/cpanel/shops' },
-    { id: 'team', label: 'Usuários & Equipe', icon: Users, href: '/cpanel/team' },
+    { id: 'users', label: 'Usuários', icon: Users, href: '/cpanel/users' },
+    { id: 'team', label: 'Equipe', icon: Shield, href: '/cpanel/team' },
     { id: 'tickets', label: 'Tickets', icon: Ticket, href: '/cpanel/tickets' },
     { id: 'documents', label: 'Documentos', icon: FileText, href: '/cpanel/documents' },
     { id: 'settings', label: 'Configurações', icon: Settings, href: '/cpanel/settings' },
@@ -96,22 +98,30 @@ export function CPanelNav() {
 }
 
 function ThemeToggle() {
-  if (typeof document === 'undefined') return null;
-  const isDark = document.documentElement.classList.contains('dark');
-  const label = isDark ? 'Claro' : 'Escuro';
+  const [theme, setTheme] = React.useState('light');
+  
+  React.useEffect(() => {
+    // Only run on client
+    const storedTheme = localStorage.getItem('theme');
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    setTheme(storedTheme || systemTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    localStorage.setItem('theme', newTheme);
+    setTheme(newTheme);
+  };
+  
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={() => {
-        const el = document.documentElement;
-        const willDark = !el.classList.contains('dark');
-        el.classList.toggle('dark', willDark);
-        try { localStorage.setItem('theme', willDark ? 'dark' : 'light'); } catch {}
-        el.setAttribute('data-theme', willDark ? 'dark' : 'light');
-      }}
+      onClick={toggleTheme}
+      aria-label={`Mudar para tema ${theme === 'dark' ? 'claro' : 'escuro'}`}
     >
-      {label}
+      {theme === 'dark' ? 'Claro' : 'Escuro'}
     </Button>
   );
 }
