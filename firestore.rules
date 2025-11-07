@@ -43,29 +43,26 @@ service cloud.firestore {
     }
 
     match /barberShops/{shopId} {
-      // Dono pode criar e gerenciar a própria loja
+      // Owner can create and manage their own shop document.
       allow create: if request.auth.uid == request.resource.data.ownerId;
       allow read, update, delete: if isShopOwner(shopId);
     }
     
-    // Lista apenas as lojas do usuário logado
+    // Rule for listing shops: Only allow users to list the shops they own.
     match /barberShops {
-        allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
     
     // =============================================
-    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE)
+    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE AND SECURITY)
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // READ: Dono da loja pode ler documentos individuais.
+      // READ: Allow if the user is the shop owner. For `list`, the query must filter by shopId.
       allow get: if isShopOwner(shopId);
-
-      // LIST: Dono da loja só pode listar se a query tiver um filtro explícito.
-      // Isso é ESSENCIAL para a performance e para evitar erros.
       allow list: if isShopOwner(shopId) && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
 
-      // WRITE: Dono da loja pode escrever.
+      // WRITE: Allow only if the user is the shop owner.
       allow write: if isShopOwner(shopId);
     }
     
@@ -75,12 +72,14 @@ service cloud.firestore {
 
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
+      // Only admins can perform any action on logs after creation.
       allow read, write: if isAdmin();
     }
 
     match /tickets/{ticketId} {
-      // Dono do ticket ou admin podem interagir
+      // User can create their own ticket.
       allow create: if request.auth.uid == request.resource.data.userId;
+      // Owner of ticket or admin can read/write.
       allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
     }
   }
