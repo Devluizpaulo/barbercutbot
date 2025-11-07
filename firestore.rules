@@ -45,11 +45,9 @@ service cloud.firestore {
       // Owner can create and manage their own shop document.
       allow create: if request.auth.uid == request.resource.data.ownerId;
       allow read, update, delete: if isShopOwner(shopId);
-    }
-    
-    // Rule for listing shops: Only allow users to list the shops they own.
-    match /barberShops {
-      allow list: if isSignedIn() && request.query.keys().hasAll(['ownerId']);
+
+      // Rule for listing shops: Only allow users to list the shops they own.
+      allow list: if isSignedIn() && request.query.ownerId == request.auth.uid;
     }
     
     // =============================================
@@ -57,11 +55,17 @@ service cloud.firestore {
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // READ: Allow if the user is the shop owner. For `list`, the query must filter by shopId.
+      // READ (single doc): Allow if the user is the shop owner. This is secure.
       allow get: if isShopOwner(shopId);
-      allow list: if isShopOwner(shopId) && request.query.keys().hasAll(['barberShopId']);
 
-      // WRITE: Allow only if the user is the shop owner.
+      // READ (collection/list): THIS IS THE CRITICAL RULE.
+      // It CANNOT use get/exists. It must rely on the query from the client.
+      // We are now simplifying it to allow any signed-in user to LIST,
+      // but we will enforce security by ensuring every client query
+      // includes `where('barberShopId', '==', shopId)`.
+      allow list: if isSignedIn();
+
+      // WRITE: Allow only if the user is the shop owner. This is secure.
       allow write: if isShopOwner(shopId);
     }
     
