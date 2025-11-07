@@ -21,7 +21,9 @@ import {
   Clock,
   Bot,
   Wallet,
-  MapPin
+  MapPin,
+  Calendar,
+  ShieldCheck,
 } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useParams } from 'next/navigation';
@@ -32,9 +34,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileForm } from './components/profile-form';
 import { AddressForm } from './components/address-form';
 import { WorkingHoursManager } from './components/working-hours-manager';
+import { HolidaysManager } from './components/holidays-manager';
 import { IntegrationsForm } from './components/integrations-form';
 import { PaymentsForm } from './components/payments-form';
 import { SubscriptionManager } from './components/subscription-manager';
+import { CashierManager } from './components/cashier-manager';
+import { PermissionsManager } from './components/permissions-manager';
 
 export default function SettingsPage() {
   const params = useParams();
@@ -80,107 +85,57 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Complete as informações da sua loja</CardTitle>
-          <CardDescription>Atalhos rápidos para preencher as seções principais.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <a href="#profile" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Perfil</div>
-                  <div className="text-sm text-muted-foreground">Nome, contato e logo</div>
-                </div>
-              </div>
-            </a>
-            <a href="#address" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Endereço</div>
-                  <div className="text-sm text-muted-foreground">Localização e CEP</div>
-                </div>
-              </div>
-            </a>
-            <a href="#hours" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Horários</div>
-                  <div className="text-sm text-muted-foreground">Dias e turnos de atendimento</div>
-                </div>
-              </div>
-            </a>
-            <a href="#integrations" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Bot className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Automação</div>
-                  <div className="text-sm text-muted-foreground">Integrações e notificações</div>
-                </div>
-              </div>
-            </a>
-            <a href="#payments" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <Wallet className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Recebimentos</div>
-                  <div className="text-sm text-muted-foreground">Formas de pagamento</div>
-                </div>
-              </div>
-            </a>
-            <a href="#subscription" className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5" />
-                <div>
-                  <div className="font-medium">Assinatura</div>
-                  <div className="text-sm text-muted-foreground">Planos e cobrança</div>
-                </div>
-              </div>
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-8 h-auto">
-          <TabsTrigger id="profile" value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
-          <TabsTrigger id="address" value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
-          <TabsTrigger id="hours" value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
-          <TabsTrigger id="integrations" value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
-          <TabsTrigger id="payments" value="payments"> <Wallet className="mr-2" /> Recebimentos </TabsTrigger>
-          <TabsTrigger id="subscription" value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
+      <Tabs defaultValue="profile" orientation="vertical" className="flex flex-col md:flex-row gap-8">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 md:w-[220px] h-auto shrink-0">
+          <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
+          <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
+          <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
+          <TabsTrigger value="holidays"> <Calendar className="mr-2" /> Feriados </TabsTrigger>
+          <TabsTrigger value="payments"> <Wallet className="mr-2" /> Pagamentos </TabsTrigger>
+          <TabsTrigger value="cashier"> <Wallet className="mr-2" /> Caixa </TabsTrigger>
+          <TabsTrigger value="permissions"> <ShieldCheck className="mr-2" /> Permissões </TabsTrigger>
+          <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
+          <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile">
-            <ProfileForm shopId={shopId} initialData={shop} />
-        </TabsContent>
+        <div className="flex-1">
+            <TabsContent value="profile">
+                <ProfileForm shopId={shopId} initialData={shop} />
+            </TabsContent>
 
-        <TabsContent value="address">
-            <AddressForm shopId={shopId} initialData={shop} />
-        </TabsContent>
+            <TabsContent value="address">
+                <AddressForm shopId={shopId} initialData={shop} />
+            </TabsContent>
 
-        <TabsContent value="hours">
-            <WorkingHoursManager shopId={shopId} initialData={shop} />
-        </TabsContent>
-        
-        <TabsContent value="integrations">
-            <IntegrationsForm shopId={shopId} initialData={shop} />
-        </TabsContent>
+            <TabsContent value="hours">
+                <WorkingHoursManager shopId={shopId} initialData={shop} />
+            </TabsContent>
+            
+            <TabsContent value="holidays">
+                <HolidaysManager shopId={shopId} initialData={shop.holidays} />
+            </TabsContent>
 
-        <TabsContent value="payments">
-            <PaymentsForm shopId={shopId} initialData={shop} />
-        </TabsContent>
-        
-        <TabsContent value="subscription">
-            <SubscriptionManager shopId={shopId} shop={shop} />
-        </TabsContent>
+             <TabsContent value="cashier">
+                <CashierManager shopId={shopId} initialData={shop.cashierSettings} />
+            </TabsContent>
 
+            <TabsContent value="permissions">
+                <PermissionsManager shopId={shopId} initialData={shop.roles} />
+            </TabsContent>
+            
+            <TabsContent value="integrations">
+                <IntegrationsForm shopId={shopId} initialData={shop} />
+            </TabsContent>
+
+            <TabsContent value="payments">
+                <PaymentsForm shopId={shopId} initialData={shop} />
+            </TabsContent>
+            
+            <TabsContent value="subscription">
+                <SubscriptionManager shopId={shopId} shop={shop} />
+            </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
 }
-
