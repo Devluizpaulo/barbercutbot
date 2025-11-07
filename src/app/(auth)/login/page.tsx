@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -30,9 +29,12 @@ import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Lock, Menu, Shield, Mail, Scissors } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, type User } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { ensureUserExists } from '@/lib/google-auth-utils';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import type { BarberShop } from '@/lib/types';
+
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -67,14 +69,41 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
+  // Centralized function to handle successful login and redirection
+  const handleSuccessfulLogin = async (user: User) => {
+    // 1. Ensure user and shop exist
+    await ensureUserExists(firestore, user);
+
+    // 2. Find the user's shop
+    const shopsQuery = query(
+      collection(firestore, 'barberShops'), 
+      where('ownerId', '==', user.uid), 
+      limit(1)
+    );
+    const shopSnapshot = await getDocs(shopsQuery);
+
+    if (shopSnapshot.empty) {
+      // This is a fallback and shouldn't happen if ensureUserExists works correctly.
+      toast({
+        variant: 'destructive',
+        title: 'Nenhum negócio encontrado',
+        description: 'Não foi possível encontrar um negócio associado. Tente novamente ou contate o suporte.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // 3. Redirect directly to the shop dashboard
+    const shop = shopSnapshot.docs[0].data() as BarberShop;
+    router.push(`/dashboard/${shop.id}`);
+  };
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validação básica
     if (!email || !password) {
       toast({
         variant: 'destructive',
@@ -83,68 +112,36 @@ export default function LoginPage() {
       });
       return;
     }
-
     setIsLoading(true);
-
     try {
-        await signInWithEmailAndPassword(auth, email, password);
-        if (auth.currentUser) {
-          await ensureUserExists(firestore, auth.currentUser);
-        }
-        toast({
-          title: 'Login bem-sucedido!',
-          description: 'Redirecionando para seu dashboard...',
-        });
-        router.push('/dashboard');
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
-        console.error("Firebase Auth Error:", error);
-        let title = 'Falha no login';
         let description = 'Ocorreu um erro ao tentar fazer login.';
-        
         if (error.code === 'auth/user-not-found' || 
             error.code === 'auth/invalid-credential' || 
             error.code === 'auth/wrong-password') {
             description = 'E-mail ou senha inválidos. Por favor, verifique suas credenciais.';
-        } else if (error.code === 'auth/too-many-requests') {
-            title = 'Conta temporariamente bloqueada';
-            description = 'Muitas tentativas de login falhadas. Tente novamente em alguns minutos ou redefina sua senha.';
-        } else if (error.code === 'auth/user-disabled') {
-            title = 'Conta desativada';
-            description = 'Esta conta foi desativada. Entre em contato com o suporte.';
-        } else if (error.code === 'auth/invalid-email') {
-            description = 'O endereço de e-mail não é válido.';
-        } else if (error.code === 'auth/network-request-failed') {
-            title = 'Erro de conexão';
-            description = 'Verifique sua conexão com a internet e tente novamente.';
         }
-        
         toast({
           variant: 'destructive',
-          title,
+          title: 'Falha no login',
           description,
         });
-    } finally {
         setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+    setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    
     provider.addScope('email');
     provider.addScope('profile');
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    });
+    provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-        await signInWithPopup(auth, provider);
-        if (auth.currentUser) {
-          await ensureUserExists(firestore, auth.currentUser);
-        }
-        toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
-        router.push('/dashboard');
+        const userCredential = await signInWithPopup(auth, provider);
+        await handleSuccessfulLogin(userCredential.user);
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({
@@ -152,8 +149,7 @@ export default function LoginPage() {
             title: "Erro no Login com Google",
             description: "Não foi possível fazer login. Tente novamente."
         });
-    } finally {
-        setIsGoogleLoading(false);
+        setIsLoading(false);
     }
   };
 
@@ -177,7 +173,6 @@ export default function LoginPage() {
         setIsResetDialogOpen(false);
         setResetEmail('');
     } catch (error: any) {
-        console.error("Password Reset Error:", error);
         toast({
             variant: 'destructive',
             title: 'Falha ao enviar e-mail',
@@ -254,8 +249,8 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
-                     <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                        {isGoogleLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                     <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading}>
+                        {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                         Entrar com Google
                     </Button>
                     <div className="relative">
@@ -280,7 +275,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="pl-10 bg-white/5 border-white/20"
-                                disabled={isGoogleLoading}
+                                disabled={isLoading}
                             />
                         </div>
                     </div>
@@ -308,13 +303,13 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="pl-10 bg-white/5 border-white/20"
-                                disabled={isGoogleLoading}
+                                disabled={isLoading}
                             />
                         </div>
                     </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
-                        <Button className="w-full" type="submit" disabled={isLoading || isGoogleLoading}>
+                        <Button className="w-full" type="submit" disabled={isLoading}>
                             {isLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                             Entrar
                         </Button>
@@ -381,5 +376,3 @@ export default function LoginPage() {
      </>
   );
 }
-
-    

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
@@ -41,13 +40,6 @@ export default function AppLayout({
       return;
     }
 
-    // If the user is an owner but somehow landed outside the /dashboard routes,
-    // redirect them to their main dashboard page.
-    if (user.role === 'owner' && !pathname.startsWith('/dashboard')) {
-        router.replace('/dashboard');
-        return;
-    }
-
   }, [user, isUserLoading, router, pathname]);
 
   // Show a loading spinner while the user's auth state is being determined.
@@ -66,7 +58,7 @@ export default function AppLayout({
   }
 
   // If there is a user and they are an owner, render the main app layout.
-  // This check prevents non-owners from seeing a flash of the app layout before redirection.
+  // This check prevents non-admins from seeing a flash of the app layout before redirection.
   if (user && user.role === 'owner') {
     return (
       <SidebarProvider>
