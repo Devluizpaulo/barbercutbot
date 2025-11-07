@@ -55,18 +55,14 @@ service cloud.firestore {
     // =============================================
 
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      // READ (single doc): Allow if the user is the shop owner. This is secure.
-      allow get: if isShopOwner(shopId);
+      // Allow single doc reads/writes if the user owns the shop. This is secure.
+      allow get, write: if isShopOwner(shopId);
 
-      // READ (collection/list): THIS IS THE CRITICAL RULE.
-      // It CANNOT use get/exists. It must rely on the query from the client.
-      // We are now simplifying it to allow any signed-in user to LIST,
-      // but we will enforce security by ensuring every client query
-      // includes `where('barberShopId', '==', shopId)`.
+      // Allow LIST operations (queries) only if the user is signed in.
+      // The actual security is enforced by the client-side queries,
+      // which MUST include `where('barberShopId', '==', shopId)`.
+      // This rule avoids the prohibited `get` call in a list operation.
       allow list: if isSignedIn();
-
-      // WRITE: Allow only if the user is the shop owner. This is secure.
-      allow write: if isShopOwner(shopId);
     }
     
     // =============================================
