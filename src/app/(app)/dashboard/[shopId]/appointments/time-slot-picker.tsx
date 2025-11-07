@@ -34,10 +34,28 @@ export function TimeSlotPicker({
   const [isLoading, setIsLoading] = useState(true);
 
   const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
-  const { data: shop } = useMemoFirebase(() => shopRef ? { data: null, isLoading: false } : { data: null, isLoading: true }, [shopRef]);
+  // Use a local state for shop data to avoid re-renders from useDoc
+  const [shop, setShop] = useState<BarberShop | null>(null);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  
+  useEffect(() => {
+      const fetchShopAndBarbers = async () => {
+          if (shopRef) {
+              const shopSnap = await getDocs(query(collection(firestore, 'barberShops'), where('id', '==', shopId)));
+              if (!shopSnap.empty) setShop(shopSnap.docs[0].data() as BarberShop);
+          }
+          if (barberIds.length > 0) {
+              const barbersRef = collection(firestore, `barberShops/${shopId}/barbers`);
+              const q = query(barbersRef, where('barberShopId', '==', shopId), where('id', 'in', barberIds));
+              const barbersSnap = await getDocs(q);
+              setBarbers(barbersSnap.docs.map(d => d.data() as Barber));
+          } else {
+              setBarbers([]);
+          }
+      };
+      fetchShopAndBarbers();
+  }, [firestore, shopId, barberIds, shopRef]);
 
-  const barbersQuery = useMemoFirebase(() => barberIds.length > 0 ? query(collection(firestore, `barberShops/${shopId}/barbers`), where('barberShopId', '==', shopId)) : null, [firestore, shopId, barberIds]);
-  const {data: barbers} = useMemoFirebase(() => barbersQuery ? { data: [], isLoading: false } : { data: [], isLoading: true }, [barbersQuery]);
 
   const toDate = (ts: Timestamp | Date | string): Date => {
     if ((ts as any)?.toDate) return (ts as any).toDate();
