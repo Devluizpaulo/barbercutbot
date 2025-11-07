@@ -7,7 +7,6 @@ service cloud.firestore {
     // =============================================
     // HELPER FUNCTIONS
     // =============================================
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -72,7 +71,7 @@ service cloud.firestore {
 
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
-      // Only admins can perform any action on logs after creation.
+      // Admins can do anything with logs
       allow read, write: if isAdmin();
     }
 
