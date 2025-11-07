@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Search, Shield } from 'lucide-react';
 import { AddTeamMemberForm } from './add-team-member-form';
-import { useCPanel } from '../context';
+import { useCPanel } from '@/app/cpanel/context';
 import { Input } from '@/components/ui/input';
 import { TeamTable } from './team-table';
 import { Skeleton } from '@/components/ui/skeleton';
