@@ -6,15 +6,9 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onIdTokenChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import type { UserRole } from '@/lib/types';
 
-interface FirebaseProviderProps {
-  children: ReactNode;
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
-}
-
-export type UserWithRole = User & { role: 'admin' | 'owner' | 'staff' | 'unknown' };
+export type UserWithRole = User & { role: UserRole | 'unknown' };
 
 interface UserAuthState {
   user: UserWithRole | null;
