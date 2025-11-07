@@ -17,7 +17,7 @@ export default function DashboardRedirectPage() {
   const router = useRouter();
 
   const userShopsQuery = useMemoFirebase(
-    () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid)) : null),
+    () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), where('status', '==', 'active')) : null),
     [firestore, user]
   );
   const { data: shops, isLoading: areShopsLoading, refresh } = useCollection<BarberShop>(userShopsQuery);
@@ -28,21 +28,28 @@ export default function DashboardRedirectPage() {
   useEffect(() => {
     if (!isLoading && user) {
       if (shops && shops.length > 0) {
-        router.push(`/dashboard/${shops[0].id}`);
+        // We have shops, let's redirect to the first one.
+        const firstShopId = shops[0].id;
+        router.push(`/dashboard/${firstShopId}`);
         return;
       }
-      // Se não há lojas, garanta criação da loja padrão e force refresh
+      
+      // If we are here, it means no shops were found.
+      // We trigger the bootstrapping process to create one if it doesn't exist.
       if (!bootstrapping) {
         setBootstrapping(true);
         ensureUserExists(firestore, user)
           .then(() => {
-            // dá um pequeno tempo para propagação e então força novo snapshot
+            // After attempting to create the user/shop, we force a refresh of the shops query.
             setTimeout(() => {
               refresh();
               setBootstrapping(false);
-            }, 800);
+            }, 1200); // A slightly longer delay to ensure data propagation
           })
-          .catch(() => setBootstrapping(false));
+          .catch((err) => {
+            console.error("Error during bootstrapping:", err);
+            setBootstrapping(false);
+          });
       }
     }
   }, [isLoading, user, shops, router, firestore, bootstrapping, refresh]);
@@ -91,18 +98,14 @@ export default function DashboardRedirectPage() {
               <button
                 className="mt-2 rounded bg-secondary px-4 py-2 text-secondary-foreground"
                 onClick={async () => {
-                  if (!user) return;
+                  if (!user || !shops || shops.length === 0) return;
                   setBootstrapping(true);
                   try {
-                    // Garante a loja e popula coleções com dados exemplo
-                    await ensureUserExists(firestore, user);
-                    // Após criação, a query de shops pega o ID; ainda assim popular no primeiro shop após refresh
-                    setTimeout(async () => {
-                      refresh();
-                      // sem o id ainda aqui, o seed será chamado a partir das páginas de collection
-                      setBootstrapping(false);
-                    }, 600);
-                  } catch {
+                    await seedDemoData(firestore, shops[0].id);
+                    toast({title: "Dados de Exemplo Criados!", description: "Recarregue a página para ver as mudanças."});
+                  } catch (e) {
+                     console.error("Failed to seed data:", e);
+                  } finally {
                     setBootstrapping(false);
                   }
                 }}
