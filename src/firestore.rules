@@ -19,6 +19,14 @@ service cloud.firestore {
       );
     }
     
+    function isShopOwner(shopId) {
+      // This function uses `get`, so it's NOT suitable for `list` rules.
+      // It's safe for `get`, `create`, `update`, `delete`.
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/barberShops/$(shopId)) &&
+        get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
     // =============================================
     // ADMIN GOD-MODE (HIGHEST PRIORITY)
     // =============================================
@@ -36,11 +44,25 @@ service cloud.firestore {
     }
 
     match /barberShops/{shopId} {
-      allow read, write: if isSignedIn();
+      // Owner can create and manage their own shop document.
+      allow create: if request.auth.uid == request.resource.data.ownerId;
+      allow read, update, delete: if isShopOwner(shopId);
+      
+      // Rule for listing shops: Only allow users to list the shops they own.
+      allow list: if isSignedIn() && request.query.where[0] == 'ownerId' && request.query.where[2] == request.auth.uid;
     }
     
+    // =============================================
+    // SUB-COLLECTION RULES (CRITICAL FOR PERFORMANCE AND SECURITY)
+    // =============================================
+
     match /barberShops/{shopId}/{subcollection}/{docId} {
-      allow read, write: if isSignedIn();
+      // For single document operations, we can afford the `get` call in `isShopOwner`.
+      allow get, create, update, delete: if isShopOwner(shopId);
+
+      // For `list` operations, the query MUST filter by `barberShopId`.
+      // This avoids the `get` call and makes the query scalable and secure.
+      allow list: if isSignedIn() && request.query.where[0] == 'barberShopId' && request.query.where[2] == shopId;
     }
     
     // =============================================
@@ -49,17 +71,20 @@ service cloud.firestore {
 
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
+      // Admins can do anything with logs
       allow read, write: if isAdmin();
     }
 
     match /tickets/{ticketId} {
+      // User can create their own ticket.
       allow create: if request.auth.uid == request.resource.data.userId;
+      // Owner of ticket or admin can read/write.
       allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
     }
 
     match /stripeEventsProcessed/{eventId} {
-      allow create: if true; // Accessible by webhook
+      // Accessible only by the trusted webhook server process (which uses admin credentials)
+      allow create: if isAdmin();
     }
   }
 }
-

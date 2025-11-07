@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, getDocs, getDoc, Timestamp } from 'firebase/firestore';
-import type { BarberShop, Appointment } from '@/lib/types';
+import type { BarberShop, Appointment, Barber } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -35,6 +34,9 @@ export function TimeSlotPicker({
 
   const shopRef = useMemoFirebase(() => doc(firestore, 'barberShops', shopId), [firestore, shopId]);
   const { data: shop } = useDoc<BarberShop>(shopRef);
+
+  const barbersQuery = useMemoFirebase(() => barberIds.length > 0 ? query(collection(firestore, `barberShops/${shopId}/barbers`), where('barberShopId', '==', shopId)) : null, [firestore, shopId, barberIds.length > 0]);
+  const {data: barbers} = useCollection<Barber>(barbersQuery);
 
   const toDate = (ts: Timestamp | Date | string): Date => {
     if ((ts as any)?.toDate) return (ts as any).toDate();
@@ -97,35 +99,28 @@ export function TimeSlotPicker({
       const endDateTime = endOfDay(selectedDate);
       
       const appointmentsRef = collection(firestore, 'barberShops', shopId, 'appointments');
-      // Query all appointments of the day, we'll filter by selected barbers client-side
-      const q = query(
-        appointmentsRef,
-        where('startTime', '>=', Timestamp.fromDate(startDateTime)),
-        where('startTime', '<=', Timestamp.fromDate(endDateTime))
-      );
-
+      
       let existingAppointments: Appointment[] = [];
       try {
-        const querySnapshot = await getDocs(q);
-        const allAppointments = querySnapshot.docs.map(d => {
-          const data = d.data() as Appointment;
-          return { ...data, id: (data as any).id || d.id } as Appointment;
-        });
-        if (barberIds.length === 0) {
-          // Quando nenhum barbeiro foi selecionado, não bloqueamos por conflitos
-          existingAppointments = [];
-        } else {
-          existingAppointments = allAppointments.filter(appt => {
-            const apptBarberIds: string[] = (appt as any).barberIds || (appt.items || []).map(it => it.barberId);
-            const involvesSelected = apptBarberIds.some(id => barberIds.includes(id));
-            const status = (appt.status || 'confirmed');
-            const isBlocking = status !== 'cancelled';
-            const isSameAsEditing = excludeAppointmentId && appt.id === excludeAppointmentId;
-            return involvesSelected && isBlocking && !isSameAsEditing;
-          });
+        if (barberIds.length > 0) {
+            const q = query(
+                appointmentsRef,
+                where('barberShopId', '==', shopId),
+                where('barberIds', 'array-contains-any', barberIds),
+                where('startTime', '>=', Timestamp.fromDate(startDateTime)),
+                where('startTime', '<=', Timestamp.fromDate(endDateTime))
+            );
+            const querySnapshot = await getDocs(q);
+            const allAppointments = querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Appointment));
+            
+            existingAppointments = allAppointments.filter(appt => {
+              const status = (appt.status || 'confirmed');
+              const isBlocking = status !== 'cancelled';
+              const isSameAsEditing = excludeAppointmentId && appt.id === excludeAppointmentId;
+              return isBlocking && !isSameAsEditing;
+            });
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('[TimeSlotPicker] Falha ao buscar agendamentos, usando slots sem bloqueios:', err);
         existingAppointments = [];
       }
@@ -145,23 +140,21 @@ export function TimeSlotPicker({
 
       // 2) Load barbers and build per-barber segments (intersect with shop)
       let intersectionSeg = shopSeg;
-      if (barberIds.length > 0) {
-        const barberDocs = await Promise.all(barberIds.map(id => getDoc(doc(firestore, 'barberShops', shopId, 'barbers', id))));
-        for (const bdoc of barberDocs) {
-          if (!bdoc.exists()) continue;
-          const bdata: any = bdoc.data();
-          // working hours
+      if (barberIds.length > 0 && barbers) {
+        const selectedBarbers = barbers.filter(b => barberIds.includes(b.id));
+
+        for (const bdata of selectedBarbers) {
           const dayName = selectedDate.toLocaleDateString('pt-BR', { weekday: 'long' }).split(',')[0]?.toLowerCase();
-          const bwh = (bdata.workingHours || []).find((wh: any) => wh.day?.toLowerCase() === dayName);
+          const bwh = (bdata as any).workingHours?.find((wh: any) => wh.day?.toLowerCase() === dayName);
           let segs: Array<[number, number]> = shopSeg;
           if (bwh?.enabled !== false && bwh?.open && bwh?.close) {
             segs = intersectSegments(shopSeg, [[toMinutes(bwh.open), toMinutes(bwh.close)]]);
           }
-          // breaks
-          const bbreaks = (bdata.breaks || []).filter((br: any) => !br.day || br.day?.toLowerCase() === dayName)
+          
+          const bbreaks = ((bdata as any).breaks || []).filter((br: any) => !br.day || br.day?.toLowerCase() === dayName)
             .map((br: any) => [toMinutes(br.start), toMinutes(br.end)]) as Array<[number, number]>;
           segs = subtractSegments(segs, bbreaks);
-          // Intersect with cumulative
+          
           intersectionSeg = intersectSegments(intersectionSeg, segs);
         }
       }
@@ -169,18 +162,18 @@ export function TimeSlotPicker({
       // 3) Generate slots inside intersection segments only
       const effectiveDuration = (serviceDuration && serviceDuration > 0) ? serviceDuration : ((shop as any)?.defaultSlotDuration || 30);
       const slots: string[] = [];
-      // iterate from opening to closing in 15-min steps
       const dayStart = new Date(selectedDate);
       dayStart.setHours(0,0,0,0);
       for (let minutes = 0; minutes <= 24*60; minutes += 15) {
         const slotStartMin = minutes;
         const slotEndMin = minutes + effectiveDuration;
-        // must be inside at least one intersection segment
+        
         const inside = intersectionSeg.some(([s,e]) => slotStartMin >= s && slotEndMin <= e);
         if (!inside) continue;
+        
         const slotStart = dayStart.getTime() + slotStartMin*60000;
         const slotEnd = dayStart.getTime() + slotEndMin*60000;
-        // must not overlap busy
+        
         const isOverlapping = busySlots.some(busy => slotStart < busy.end && slotEnd > busy.start);
         if (!isOverlapping) {
           const date = new Date(slotStart);
@@ -193,7 +186,7 @@ export function TimeSlotPicker({
     };
 
     calculateAvailableSlots();
-  }, [selectedDate, barberIds, serviceDuration, shop, firestore, shopId]);
+  }, [selectedDate, barberIds, serviceDuration, shop, firestore, shopId, barbers, excludeAppointmentId]);
   
   if (isLoading) {
     return (
