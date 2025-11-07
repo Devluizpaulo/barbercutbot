@@ -47,7 +47,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { setDocumentNonBlocking, useFirestore } from '@/firebase';
 import { getMonth, format } from 'date-fns';
 import { Timestamp, doc } from 'firebase/firestore';
-import { useCPanel } from './context'; 
+import { useCPanel } from '../context'; 
 
 const initialChartData = Array.from({ length: 12 }, (_, i) => ({
   month: format(new Date(2024, i, 1), 'MMM'),
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
                     <Link href="/cpanel/shops">Gerenciar Lojas</Link>
                   </Button>
                   <Button variant="outline" asChild>
-                    <Link href="/cpanel/team">Gerenciar Equipe</Link>
+                    <Link href="/cpanel/users">Gerenciar Usuários</Link>
                   </Button>
                    <Button variant="outline" asChild>
                     <Link href="/cpanel/logs">Ver Logs</Link>

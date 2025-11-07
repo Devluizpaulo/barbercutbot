@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PlusCircle, Users, Search } from 'lucide-react';
 import { AddTeamMemberForm } from './add-team-member-form';
-import { useCPanel } from '../context';
+import { useCPanel } from '../../context';
 import { Input } from '@/components/ui/input';
-import { TeamTable } from './TeamTable';
+import { TeamTable } from './team-table';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CPanelTeamPage() {
@@ -16,12 +16,12 @@ export default function CPanelTeamPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const { users, isLoading } = useCPanel();
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    if (!searchTerm) return users;
+  const teamMembers = useMemo(() => {
+    const allTeam = users?.filter(u => u.role === 'admin' || u.role === 'support') || [];
+    if (!searchTerm) return allTeam;
 
     const lowercasedTerm = searchTerm.toLowerCase();
-    return users.filter(user =>
+    return allTeam.filter(user =>
         (user.firstName && user.firstName.toLowerCase().includes(lowercasedTerm)) ||
         (user.lastName && user.lastName.toLowerCase().includes(lowercasedTerm)) ||
         user.email.toLowerCase().includes(lowercasedTerm) ||
@@ -35,10 +35,10 @@ export default function CPanelTeamPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
             <Users />
-            Usuários e Equipe
+            Equipe da Plataforma
           </h1>
           <p className="text-muted-foreground">
-            Gerencie todos os usuários da plataforma, incluindo administradores e donos de lojas.
+            Gerencie os administradores e a equipe de suporte do sistema.
           </p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -52,7 +52,7 @@ export default function CPanelTeamPage() {
             <DialogHeader>
               <DialogTitle>Adicionar Novo Membro da Equipe</DialogTitle>
               <DialogDescription>
-                Crie uma nova conta de usuário e atribua um perfil de acesso. Apenas para administradores e equipe de suporte.
+                Crie uma nova conta de usuário e atribua um perfil de acesso.
               </DialogDescription>
             </DialogHeader>
             <AddTeamMemberForm onSuccess={() => setIsFormOpen(false)} />
@@ -72,7 +72,7 @@ export default function CPanelTeamPage() {
 
        <div className="border rounded-lg">
           {isLoading && <Skeleton className="h-[200px] w-full" />}
-          {!isLoading && <TeamTable users={filteredUsers} isLoading={isLoading}/>}
+          {!isLoading && <TeamTable users={teamMembers} isLoading={isLoading}/>}
        </div>
     </div>
   );
