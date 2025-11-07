@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   PlusCircle,
@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -48,11 +48,25 @@ import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { CashierDialog } from '../cashier-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
   const [isCashierOpen, setIsCashierOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
 
@@ -60,6 +74,7 @@ export default function AppointmentsPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const appointmentsQuery = useMemoFirebase(
     () => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'appointments'), where('barberShopId', '==', shopId)) : null,
@@ -90,7 +105,7 @@ export default function AppointmentsPage() {
   };
 
   const changeDate = (amount: number) => {
-    setSelectedDate(prev => new Date(prev.setDate(prev.getDate() + amount)));
+    setSelectedDate(prev => addDays(prev, amount));
   };
 
   const goToday = () => setSelectedDate(new Date());
@@ -105,14 +120,17 @@ export default function AppointmentsPage() {
     setFormOpen(true);
   };
 
-  const handleCancel = async (appointment: Appointment) => {
-    const confirmed = typeof window !== 'undefined' ? window.confirm('Tem certeza que deseja cancelar este agendamento?') : true;
-    if (!confirmed) return;
+  const handleCancel = async () => {
+    if (!appointmentToCancel) return;
     try {
-      const apptRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
+      const apptRef = doc(firestore, 'barberShops', shopId, 'appointments', appointmentToCancel.id);
       await updateDoc(apptRef, { status: 'cancelled' });
+      toast({ title: "Agendamento Cancelado", description: "O agendamento foi marcado como cancelado." });
     } catch (err) {
       console.error('Erro ao cancelar agendamento', err);
+      toast({ variant: 'destructive', title: "Erro", description: "Não foi possível cancelar o agendamento." });
+    } finally {
+      setAppointmentToCancel(null);
     }
   };
 
@@ -120,8 +138,10 @@ export default function AppointmentsPage() {
     try {
       const apptRef = doc(firestore, 'barberShops', shopId, 'appointments', appointment.id);
       await updateDoc(apptRef, { status: 'completed' });
+      toast({ title: "Agendamento Concluído", description: "O agendamento foi marcado como concluído." });
     } catch (err) {
       console.error('Erro ao concluir agendamento', err);
+       toast({ variant: 'destructive', title: "Erro", description: "Não foi possível concluir o agendamento." });
     }
   };
 
@@ -308,7 +328,7 @@ export default function AppointmentsPage() {
                 selectedBarberId={selectedBarberId}
                 onEdit={handleEdit}
                 onReschedule={handleReschedule}
-                onCancel={handleCancel}
+                onCancel={(appt) => setAppointmentToCancel(appt)}
                 onComplete={handleComplete}
             />
         </div>
@@ -333,6 +353,23 @@ export default function AppointmentsPage() {
           <TooltipContent side="left" sideOffset={10}>Abrir caixa</TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      <AlertDialog open={!!appointmentToCancel} onOpenChange={(isOpen) => !isOpen && setAppointmentToCancel(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar Agendamento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/80">
+                      Sim, Cancelar
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
