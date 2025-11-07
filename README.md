@@ -1,296 +1,146 @@
-# 💈 BarberCut Bot - SaaS de Gerenciamento de Barbearias
+# 💈 BarberCut Bot - SaaS para Barbearias
 
-Sistema completo de gerenciamento para barbearias com agendamentos, controle financeiro, gestão de clientes e muito mais.
+Uma plataforma SaaS completa para gerenciamento de barbearias, construída com Next.js, Firebase e Stripe. O sistema oferece agendamentos, CRM, controle financeiro e um painel administrativo robusto.
+
+---
 
 ## 🚀 Início Rápido
 
-### **1. Clone o Repositório**
-```bash
-git clone [seu-repo-url]
-cd BarberCutBot-SaaS
-```
-
-### **2. Instale as Dependências**
+### **1. Instale as Dependências**
 ```bash
 npm install
 ```
 
-### **3. Configure as Variáveis de Ambiente**
-Crie um arquivo `.env.local` na raiz do projeto com suas credenciais do Firebase e da Stripe:
+### **2. Configure as Variáveis de Ambiente**
+Crie um arquivo `.env.local` na raiz do projeto. As credenciais do Firebase e da Stripe são essenciais.
 
 ```env
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=sua-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=seu-projeto-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seu-projeto.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-NEXT_PUBLIC_FIREBASE_APP_ID=seu-app-id
+# Firebase Admin (Necessário para rodar o script de setup local)
+# Baixe o arquivo JSON no Console do Firebase > Config. do Projeto > Contas de Serviço
+# E cole o CONTEÚDO do JSON aqui.
+GOOGLE_APPLICATION_CREDENTIALS='{ "type": "service_account", ... }'
 
-# Stripe
-# Obtenha suas chaves em: https://dashboard.stripe.com/apikeys
+# Chaves da Stripe (Obtenha em dashboard.stripe.com/apikeys)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# URL Base para Webhooks
+# URL base para webhooks e redirecionamentos
 NEXT_PUBLIC_BASE_URL=http://localhost:9002
+
+# Chave de API da Gemini (para o chatbot com IA)
+GEMINI_API_KEY=AIza...
 ```
 
-### **4. Deploy das Regras do Firestore**
-```bash
-firebase deploy --only firestore:rules
-```
-
-### **5. Inicie o Servidor**
+### **3. Inicie o Servidor de Desenvolvimento**
 ```bash
 npm run dev
 ```
 
-Acesse: `http://localhost:9002`
+Acesse a aplicação em `http://localhost:9002`.
 
----
-
-## 🔧 Configuração Inicial: Criando o Primeiro Administrador (Manual)
-
-Para ter acesso total ao sistema, o primeiro passo é criar um usuário administrador manualmente no Firebase. Siga os passos abaixo.
-
-### **Passo 1: Criar Usuário no Firebase Authentication**
-
-1.  Acesse o **[Firebase Console](https://console.firebase.google.com/)** e vá para o seu projeto.
-2.  No menu lateral, vá para **Build > Authentication**.
-3.  Clique na aba **Users** e depois em **Add user**.
-4.  Preencha:
-    - **Email**: `admin@barbercutbot.com` (ou um email de sua preferência).
-    - **Password**: Crie uma senha segura (ex: `SenhaAdmin123!`).
-5.  Clique em **Add user**.
-6.  Na lista de usuários, encontre o que você acabou de criar e **copie o UID** (User ID) dele. Você precisará disso no próximo passo.
-
-### **Passo 2: Criar Documento no Firestore com a Role de Admin**
-
-1.  Ainda no Firebase Console, vá para **Build > Firestore Database**.
-2.  Selecione (ou crie) a coleção `users`.
-3.  Clique em **Add document**.
-4.  No campo **Document ID**, **cole o UID** que você copiou do Authentication.
-5.  Adicione os seguintes campos ao documento:
-    - `id` (string): **Cole o UID novamente aqui.**
-    - `firstName` (string): `Admin`
-    - `lastName` (string): `Sistema`
-    - `email` (string): `admin@barbercutbot.com` (o mesmo email que você usou)
-    - `role` (string): `admin`  **<-- ⚠️ ESTE É O PASSO MAIS IMPORTANTE!**
-    - `createdAt` (timestamp): Escolha a data e hora atuais.
-6.  Clique em **Save**.
-
-### **Passo 3: Fazer Login**
-
-1.  Acesse a página de login administrativo: `http://localhost:9002/admin`
-2.  Use o email e a senha que você acabou de criar.
-3.  Você será redirecionado para o painel de controle (`/cpanel`).
-
-**Pronto!** Agora você tem controle total sobre a plataforma e pode adicionar outros membros da equipe através do painel, se necessário.
+### **4. Setup do Primeiro Administrador**
+Acesse `http://localhost:9002/setup` para criar o primeiro usuário com perfil de `admin`. **Esta página só funciona se nenhum administrador existir no sistema.**
 
 ---
 
 ## 📁 Estrutura do Projeto
 
+A arquitetura utiliza o App Router do Next.js com Route Groups para organizar as seções da aplicação.
+
 ```
 src/
 ├── app/
-│   ├── (auth)/              # Páginas de autenticação
-│   │   ├── login/           # Login de usuários
-│   │   ├── signup/          # Cadastro de usuários
-│   │   └── admin/           # Login administrativo
-│   ├── (app)/               # Páginas da aplicação (dashboard)
-│   └── cpanel/              # Painel administrativo
-│       └── (cpanel)/
-│           ├── logs/        # Logs administrativos
-│           ├── shops/       # Gerenciar lojas
-│           ├── users/       # Gerenciar usuários
-│           └── team/        # Equipe & acessos
-├── components/              # Componentes React
-│   └── ui/                  # Componentes Shadcn UI
-├── lib/
-│   ├── admin-logs.ts        # Sistema de logs
-│   └── types.ts             # Tipos TypeScript
-└── firebase/                # Configuração Firebase
-    ├── config.ts
-    └── provider.tsx
+│   ├── (app)/                  # Rotas do Dashboard do Cliente (Dono da Loja)
+│   │   ├── dashboard/
+│   │   │   ├── [shopId]/       # Painel específico da loja
+│   │   │   └── page.tsx        # Página de redirecionamento para a loja do usuário
+│   │   └── layout.tsx          # Layout principal do app (com sidebar, etc.)
+│   ├── (auth)/                 # Rotas de Autenticação (Login, Cadastro)
+│   │   ├── login/
+│   │   └── signup/
+│   ├── cpanel/                 # Rotas do Painel Administrativo (Superusuário)
+│   │   ├── (cpanel)/           # Grupo de rotas com layout de admin
+│   │   │   ├── layout.tsx      # Layout do CPanel
+│   │   │   ├── page.tsx        # Dashboard do Admin
+│   │   │   └── ... (shops, users, etc.)
+│   │   └── login/              # Página de login específica para admins
+│   ├── api/                    # Rotas de API (ex: webhooks)
+│   └── layout.tsx              # Layout raiz da aplicação
+├── components/                 # Componentes React (UI e lógicos)
+├── firebase/                   # Configuração e hooks do Firebase
+├── hooks/                      # Hooks customizados
+├── lib/                        # Funções utilitárias, tipos, etc.
+└── functions/                  # Cloud Functions for Firebase
+    └── src/
+        └── index.ts            # Funções de backend (ex: criar admin)
 
-docs/                        # Documentação
-├── PRIMEIRO-ADMIN-SETUP.md  # Guia de setup inicial
-├── ADMIN-LOGS-IMPLEMENTATION.md  # Sistema de logs
-└── FIRESTORE-SECURITY-LOGS.md   # Segurança dos logs
-
-firestore.rules              # Regras de segurança
+docs/                           # Documentação técnica
+firestore.rules                 # Regras de Segurança do Firestore
 ```
 
 ---
 
-## 🎯 Principais Funcionalidades
+## 🎯 Arquitetura e Funcionalidades
 
-### **Para Proprietários de Barbearias**
-- ✅ Gestão completa de agendamentos
-- ✅ Controle financeiro (receitas e despesas)
-- ✅ Cadastro de clientes e histórico
-- ✅ Gerenciamento de barbeiros
-- ✅ Catálogo de serviços e produtos
-- ✅ Relatórios e estatísticas
-- ✅ Calendário visual de agendamentos
+### **Frontend**
+- **Framework:** Next.js 15 (App Router)
+- **UI:** Shadcn/UI + Tailwind CSS
+- **Estado Global:** React Context para o Firebase (`useUser`, `useCPanel`)
+- **Formulários:** Zod + React Hook Form
+- **Gráficos:** Recharts
 
-### **Para Administradores da Plataforma**
-- 🔐 Login administrativo separado (`/admin`)
-- 📊 Dashboard com métricas gerais
-- 🏪 Gerenciamento de todas as lojas
-- 👥 Gerenciamento de usuários
-- 📋 Sistema de logs e auditoria
-- ⚙️ Configurações globais da plataforma
-- 🎫 Sistema de suporte (tickets)
+### **Backend & Infraestrutura**
+- **Autenticação:** Firebase Authentication (Email/Senha, Google, Custom Claims)
+- **Banco de Dados:** Firestore (NoSQL)
+- **Backend Logic:** Cloud Functions for Firebase (TypeScript)
+- **Pagamentos:** Stripe (Subscriptions & Webhooks)
+- **IA (Chatbot):** Genkit (Google AI Studio)
+- **Deployment:** Vercel / Firebase App Hosting
+
+### **Lógica de Acesso**
+- **Administrador (`admin`):** Acesso total ao `/cpanel` para gerenciar lojas, usuários e configurações da plataforma.
+- **Dono de Loja (`owner`):** Acesso ao `/dashboard/[shopId]` para gerenciar seu próprio negócio.
+- **Não autenticado:** Acesso apenas às páginas de marketing e autenticação.
 
 ---
 
 ## 🔐 Segurança
 
-### **Sistema de Logs Administrativos**
+### **Regras do Firestore (`firestore.rules`)**
+- **Acesso de Admin:** Um `match /{document=**}` concede acesso irrestrito a administradores (verificados via Custom Claim ou `role` no documento do usuário).
+- **Isolamento de Tenant (Multi-Tenancy):** Donos de loja (`owner`) só podem ler e escrever nos documentos de sua própria loja (`isShopOwner(shopId)`).
+- **Otimização para Listagem:** Regras de `list` exigem que as consultas do frontend incluam filtros específicos (ex: `where('ownerId', '==', request.auth.uid)`), garantindo performance e segurança.
+- **Imutabilidade de Logs:** A coleção `adminLogs` permite apenas criação (`allow create`), tornando os registros de auditoria imutáveis.
 
-Todos os acessos e ações administrativas são registrados automaticamente:
-
-- ✅ Login bem-sucedido
-- ❌ Tentativas de login falhadas
-- ⚠️ Alertas de segurança
-- 🚪 Logout administrativo
-- ⚡ Ações administrativas importantes
-
-**Visualizar logs:** Faça login como admin e acesse `/cpanel/logs`
-
-### **Regras de Segurança do Firestore**
-
-- Usuários só acessam seus próprios dados
-- Proprietários só gerenciam suas lojas
-- Admins têm acesso controlado e auditado
-- Logs são imutáveis (não podem ser alterados/deletados)
+### **Tratamento de Erros de Permissão**
+- **`FirestorePermissionError`:** Um erro customizado que é lançado quando uma operação no Firestore falha por permissão.
+- **`error-emitter`:** Um event emitter global que captura esses erros.
+- **`FirebaseErrorListener`:** Um componente no layout raiz que "ouve" os eventos e lança o erro para a overlay de desenvolvimento do Next.js, facilitando a depuração.
 
 ---
 
-## 🌐 Rotas Principais
+## 📚 Documentação Técnica
 
-### **Públicas**
-- `/` - Página inicial (landing page)
-- `/login` - Login de usuários
-- `/signup` - Cadastro de novos usuários
-- `/admin` - Login administrativo
+Para detalhes aprofundados sobre a implementação, consulte a pasta `/docs`:
 
-### **Autenticadas (Proprietários)**
-- `/dashboard/shops` - Selecionar loja
-- `/dashboard/[shopId]` - Dashboard da loja
-- `/dashboard/[shopId]/appointments` - Agendamentos
-- `/dashboard/[shopId]/clients` - Clientes
-- `/dashboard/[shopId]/finance` - Financeiro
-- `/dashboard/[shopId]/barbers` - Barbeiros
-- `/dashboard/[shopId]/services` - Serviços
-- `/dashboard/[shopId]/products` - Produtos
-
-### **Admin (Administradores)**
-- `/cpanel` - Dashboard administrativo
-- `/cpanel/shops` - Gerenciar lojas
-- `/cpanel/users` - Gerenciar usuários
-- `/cpanel/logs` - Logs do sistema
-- `/cpanel/team` - Equipe de admins
-- `/cpanel/tickets` - Suporte
-- `/cpanel/documents` - Documentos legais
-
----
-
-## 🛠️ Tecnologias
-
-- **Framework:** Next.js 15 (App Router)
-- **Linguagem:** TypeScript
-- **UI:** Shadcn/UI + Tailwind CSS
-- **Backend:** Firebase (Auth + Firestore)
-- **Pagamentos:** Stripe
-- **Validação:** Zod + React Hook Form
-- **Gráficos:** Recharts
-- **Datas:** date-fns
-- **Ícones:** Lucide React
-
----
-
-## 📚 Documentação
-
-- **[Primeiro Admin Setup](docs/PRIMEIRO-ADMIN-SETUP.md)** - Como criar o primeiro administrador
-- **[Sistema de Logs](docs/ADMIN-LOGS-IMPLEMENTATION.md)** - Implementação completa de logs
-- **[Segurança dos Logs](docs/FIRESTORE-SECURITY-LOGS.md)** - Regras de segurança
-- **[Estrutura do Backend](docs/backend.json)** - Schema do Firestore
-- **[Regras de Segurança](docs/04-SECURITY-RULES-EXPLAINED.md)** - Explicação das regras
-
----
-
-## 📦 Build e Deploy
-
-### **Build de Produção**
-```bash
-npm run build
-```
-
-### **Deploy Firebase**
-```bash
-# Deploy completo
-firebase deploy
-
-# Apenas Firestore rules
-firebase deploy --only firestore:rules
-
-# Apenas Functions
-firebase deploy --only functions
-
-# Apenas Hosting
-firebase deploy --only hosting
-```
-
----
-
-## 🔍 Solução de Problemas
-
-### **Erro ao fazer login como admin**
-- Verifique no Firestore se o usuário tem o campo `role` com o valor exato de `"admin"` (minúsculas).
-- Verifique se o UID do documento no Firestore corresponde ao UID do usuário no Authentication.
-- Limpe o cache do navegador e tente novamente.
-- Verifique o console do navegador (F12) para erros.
-
-### **"Permission Denied" no Firestore**
-- Verifique se as regras do Firestore foram implantadas: `firebase deploy --only firestore:rules`
-- Verifique se o usuário está autenticado com a conta correta.
-- Consulte os logs do Firebase Console para mais detalhes.
+- **[01-SETUP-INICIAL.md](./docs/01-SETUP-INICIAL.md)**: Guia completo para configurar o primeiro administrador.
+- **[02-ARQUITETURA-AUTH.md](./docs/02-ARQUITETURA-AUTH.md)**: Explicação detalhada do fluxo de autenticação e layouts.
+- **[03-CRUD-LOGIC.md](./docs/03-CRUD-LOGIC.md)**: Detalhes sobre a estratégia de leitura e escrita de dados.
+- **[04-SECURITY-RULES.md](./docs/04-SECURITY-RULES.md)**: Análise das regras de segurança do Firestore.
+- **[05-ADMIN-LOGS.md](./docs/05-ADMIN-LOGS.md)**: Implementação do sistema de logs de auditoria.
+- **[06-PAGAMENTOS-STRIPE.md](./docs/06-PAGAMENTOS-STRIPE.md)**: Fluxo de operação da integração com a Stripe.
 
 ---
 
 ## 🤝 Contribuindo
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+1. Faça um Fork do projeto.
+2. Crie uma branch para sua feature (`git checkout -b feature/NovaFuncionalidade`).
+3. Faça commit de suas mudanças (`git commit -m 'Adiciona NovaFuncionalidade'`).
+4. Dê push para a branch (`git push origin feature/NovaFuncionalidade`).
+5. Abra um Pull Request.
 
 ---
-
-## 📄 Licença
-
-Este projeto é proprietário. Todos os direitos reservados.
-
----
-
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-- Consulte a documentação em `/docs`
-- Verifique os logs em `/cpanel/logs` (se admin)
-- Abra uma issue no repositório
-
----
-
-## 🎉 Créditos
-
-Desenvolvido com ❤️ para transformar o gerenciamento de barbearias.
 
 **Versão:** 1.0.0  
-**Status:** ✅ Produção  
-**Última atualização:** 12/10/2025
+**Status:** ✅ Produção

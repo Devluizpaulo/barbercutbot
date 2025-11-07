@@ -1,220 +1,103 @@
-# 🔧 Correção do Login com Google Auth
+# ✅ Lógica de Login/Cadastro com Provedor Google
 
-## Problema Identificado
+A integração com o "Sign in with Google" requer um fluxo cuidadoso para garantir que o usuário seja criado tanto no Firebase Authentication quanto na coleção `users` do Firestore, além de ter sua primeira loja (`barberShop`) configurada.
 
-O login com Google não estava criando usuários na coleção `users` do Firestore devido a duas questões principais:
+---
 
-### 1. **Regras do Firestore Bloqueando Criação**
+## 1. Problema Original
 
-As regras de segurança estavam impedindo completamente a criação de usuários:
+O login com Google criava um usuário no Firebase Auth, mas o documento correspondente no Firestore (`/users/{uid}`) não era criado. Isso acontecia porque:
+1.  As regras de segurança iniciais eram muito restritivas e bloqueavam a criação de documentos na coleção `users`.
+2.  Não havia uma lógica clara no frontend para garantir a criação desse documento após um login bem-sucedido com Google.
 
-```javascript
-// ANTES - Regra problemática
-match /users/{userId} {
-  allow create, delete: if false; // ❌ Bloqueava TODA criação
-}
-```
+---
 
-### 2. **Implementações Inconsistentes**
+## 2. A Solução: `ensureUserExists`
 
-- **Login**: Tentava criar usuário diretamente no Firestore
-- **Signup**: Confiava apenas na Cloud Function `onUserCreate`
-- **Cloud Function**: Só executava para novos usuários do Firebase Auth
+A solução foi centralizar a lógica pós-login em uma função utilitária chamada `ensureUserExists` em `src/lib/google-auth-utils.ts`.
 
-### 3. **Fluxo do Google Auth**
+### **Como Funciona:**
 
-Quando um usuário fazia login com Google pela primeira vez:
-1. Firebase Auth criava o usuário automaticamente
-2. Cloud Function `onUserCreate` **NÃO** era disparada (usuário já existia)
-3. Código tentava criar documento no Firestore, mas regras bloqueavam
+Esta função é chamada **sempre** que um usuário faz login (seja via Google, seja via email/senha).
 
-## Solução Implementada
+1.  **Recebe o `user`**: A função recebe o objeto `user` do Firebase Auth.
+2.  **Verifica o Firestore**: Ela tenta buscar um documento em `/users/{user.uid}`.
+3.  **Cenário 1: Usuário NÃO Existe (`!userDoc.exists()`)**
+    -   Isso significa que é o primeiro login deste usuário no sistema.
+    -   **Ação 1: Criar Documento do Usuário**: Cria um novo documento em `/users/{user.uid}` com os dados do perfil (nome, email) e define sua `role` como `'owner'`.
+    -   **Ação 2: Criar Loja Padrão**: Chama a função `createDefaultShop`, que cria um novo documento na coleção `/barberShops` associado a este `ownerId`.
+    -   **Retorno**: Retorna `true`, indicando que um novo usuário foi configurado.
 
-### 1. **Correção das Regras do Firestore**
+4.  **Cenário 2: Usuário JÁ Existe (`userDoc.exists()`)**
+    -   Isso significa que é um login de um usuário que está retornando.
+    -   **Ação de Verificação**: O código chama `userHasShops()` para garantir que, caso algo tenha dado errado no passado, o usuário tenha pelo menos uma loja. Se não tiver, ele cria a loja padrão mesmo para um usuário existente.
+    -   **Retorno**: Retorna `false`, indicando que o usuário já existia.
 
-```javascript
-// DEPOIS - Regra corrigida
-match /users/{userId} {
-  allow create: if isOwner(userId); // ✅ Permite criação do próprio usuário
-}
-```
-
-### 2. **Função Utilitária Centralizada**
-
-Criada função `ensureUserExists()` em `src/lib/google-auth-utils.ts`:
+### **Código Chave (`ensureUserExists`)**
 
 ```typescript
+// src/lib/google-auth-utils.ts
+
 export async function ensureUserExists(firestore: Firestore, user: User): Promise<boolean> {
   const userDocRef = doc(firestore, "users", user.uid);
   const userDoc = await getDoc(userDocRef);
 
   if (!userDoc.exists()) {
-    // Cria usuário com dados do Google
-    await setDoc(userDocRef, {
-      id: user.uid,
-      firstName: firstName,
-      lastName: lastName,
-      email: user.email,
-      role: 'owner',
-      createdAt: serverTimestamp(),
-    });
-    return true; // Usuário foi criado
+    // 1. Criar o documento do usuário
+    await setDoc(userDocRef, { /* ...dados do usuário... */, role: 'owner' });
+
+    // 2. Criar uma loja padrão para o novo usuário
+    await createDefaultShop(firestore, user);
+    
+    return true; // Novo usuário criado
   }
+
+  // Verificação de segurança para usuários existentes
+  const hasShops = await userHasShops(firestore, user.uid);
+  if (!hasShops) {
+    await createDefaultShop(firestore, user);
+  }
+  
   return false; // Usuário já existia
 }
 ```
 
-### 3. **Implementação Padronizada**
+---
 
-Ambos os arquivos (`login/page.tsx` e `signup/page.tsx`) agora usam a mesma lógica:
+## 3. Integração no Frontend
+
+As páginas de login (`login/page.tsx`) e cadastro (`signup/page.tsx`) foram atualizadas para usar esta função.
+
+### **Fluxo no `handleGoogleSignIn`:**
 
 ```typescript
+// src/app/(auth)/login/page.tsx
+
 const handleGoogleSignIn = async () => {
-  // ... autenticação Google ...
-  const wasCreated = await ensureUserExists(firestore, user);
-  
-  if (wasCreated) {
-    toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
-  } else {
-    toast({ title: "Login bem-sucedido!", description: "Redirecionando..." });
+  // 1. Tenta fazer login com o popup do Google
+  await signInWithPopup(auth, provider);
+
+  if (auth.currentUser) {
+    // 2. Chama a função para garantir que o usuário e a loja existam
+    const wasCreated = await ensureUserExists(firestore, auth.currentUser);
+    
+    // 3. Exibe uma mensagem de boas-vindas se for um novo usuário
+    if (wasCreated) {
+      toast({ title: "Bem-vindo(a)!", description: "Sua conta e sua loja foram criadas!" });
+    }
   }
+
+  // 4. Redireciona para o dashboard (o AuthLayout cuidará disso)
+  router.push('/dashboard');
 };
 ```
 
-## Problemas Adicionais Encontrados
+---
 
-Após a implementação inicial, foram identificados dois problemas adicionais:
+## 4. Correções Adicionais
 
-### 4. **Erro de Cross-Origin-Opener-Policy**
-O popup do Google Auth estava sendo bloqueado por políticas de segurança do navegador.
+-   **Regras do Firestore:** A regra para `/users/{userId}` foi ajustada para permitir que um usuário crie seu próprio documento (`allow create: if request.auth.uid == userId;`).
+-   **Criação de Loja:** A função `createDefaultShop` foi tornada mais robusta, usando `addDoc` com um fallback para `setDoc` para evitar erros de permissão em cenários de borda.
+-   **Experiência do Usuário:** O `dashboard/page.tsx` agora tem uma lógica de "bootstrapping" que detecta se um usuário está sem loja e aciona a criação, garantindo que ninguém fique "preso" sem um destino.
 
-### 5. **Erro de Permissões do Firestore**
-Usuários não conseguiam listar suas próprias lojas (`barberShops`) devido a regras restritivas.
-
-## Soluções Adicionais Implementadas
-
-### 4. **Configuração do Google Auth Provider**
-
-Adicionadas configurações para resolver problemas de CORS:
-
-```typescript
-const provider = new GoogleAuthProvider();
-
-// Configure the provider to handle CORS properly
-provider.addScope('email');
-provider.addScope('profile');
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
-```
-
-### 5. **Headers CORS no Next.js**
-
-Configurado `next.config.mjs` para permitir popups:
-
-```javascript
-async headers() {
-  return [
-    {
-      source: '/(.*)',
-      headers: [
-        {
-          key: 'Cross-Origin-Opener-Policy',
-          value: 'same-origin-allow-popups',
-        },
-        {
-          key: 'Cross-Origin-Embedder-Policy',
-          value: 'unsafe-none',
-        },
-      ],
-    },
-  ];
-}
-```
-
-### 6. **Regras do Firestore para Listagem**
-
-Adicionada regra para permitir listagem de lojas próprias:
-
-```javascript
-// Allow users to list their own shops (needed for dashboard/shops page)
-match /barberShops {
-  allow list: if isSignedIn() && request.query.where.ownerId == request.auth.uid;
-}
-```
-
-### 7. **Criação Automática de Loja Padrão**
-
-Atualizada função `ensureUserExists()` para criar também uma loja padrão:
-
-```typescript
-// 2. Criar uma loja padrão para o usuário
-const shopRef = await addDoc(collection(firestore, 'barberShops'), {
-  name: `Meu Negócio`,
-  ownerId: user.uid,
-  status: 'active',
-  createdAt: serverTimestamp(),
-});
-```
-
-## Resultado Final
-
-✅ **Login com Google funciona corretamente**
-✅ **Usuários são criados na coleção `users`**
-✅ **Lojas padrão são criadas automaticamente**
-✅ **Permissões do Firestore funcionam corretamente**
-✅ **Problemas de CORS resolvidos**
-✅ **Implementação consistente entre login e signup**
-✅ **Regras de segurança mantidas**
-✅ **Código reutilizável e manutenível**
-
-## Arquivos Modificados
-
-1. `firestore.rules` - Correção das regras de segurança + regra de listagem
-2. `src/lib/google-auth-utils.ts` - Função utilitária + criação de loja padrão
-3. `src/app/(auth)/login/page.tsx` - Implementação padronizada + configuração CORS
-4. `src/app/(auth)/signup/page.tsx` - Implementação padronizada + configuração CORS
-5. `next.config.mjs` - Headers CORS para popups
-6. `docs/GOOGLE-AUTH-FIX.md` - Documentação completa da correção
-
-### 8. **Correção Adicional: Criação de Loja Padrão**
-
-Problema identificado: Usuários Google existentes não tinham lojas criadas.
-
-**Solução implementada:**
-
-```typescript
-// Verifica se usuário existente tem lojas, cria se necessário
-const hasShops = await userHasShops(firestore, user.uid);
-if (!hasShops) {
-  const shopId = await createDefaultShop(firestore, user);
-}
-```
-
-**Melhorias na criação de lojas:**
-
-- Função `createDefaultShop()` com fallback para diferentes métodos
-- Logs detalhados para debugging
-- Verificação automática para usuários existentes sem lojas
-- Tratamento de erros robusto
-
-## Teste
-
-Para testar a correção completa:
-
-1. Faça logout se estiver logado
-2. Tente fazer login com uma conta Google que nunca foi usada no sistema
-3. Verifique se o usuário aparece na coleção `users` do Firestore
-4. Verifique se uma loja padrão foi criada na coleção `barberShops`
-5. Confirme se o usuário consegue acessar o dashboard normalmente
-6. Teste se não há mais erros de CORS no console
-7. **Teste adicional**: Faça login com um usuário Google existente que não tem lojas - deve criar automaticamente
-
-### Debug
-
-Para verificar se a criação está funcionando, abra o console do navegador e procure por logs:
-- `[Google Auth] Criando usuário:`
-- `[Google Auth] Usuário criado com sucesso`
-- `[Google Auth] Criando loja padrão...`
-- `[Google Auth] Loja criada com addDoc, ID:`
-- `[Google Auth] Loja padrão criada com sucesso:`
+Este fluxo garante que, independentemente do método de autenticação, todo usuário do tipo `owner` terá um documento de perfil válido e pelo menos uma loja para gerenciar, proporcionando uma experiência de onboarding robusta e sem falhas.

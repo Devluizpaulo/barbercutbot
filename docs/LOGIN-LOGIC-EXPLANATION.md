@@ -102,15 +102,14 @@ Dashboard → Query Firestore → Filtra por ownerId → Lista lojas do usuário
 ```javascript
 // Regras de segurança no Firestore
 match /barberShops/{shopId} {
-  allow read: if isSignedIn() && 
-    get(/databases/$(database)/documents/barberShops/$(shopId)).data.ownerId == request.auth.uid;
+  allow read: if isSignedIn() && isShopOwner(shopId);
 }
 ```
 
 ### **3. Isolamento de Dados**
-- ✅ **Filtros por Usuário**: Todas as queries incluem `ownerId`
-- ✅ **Subcoleções Seguras**: Dados organizados por loja
-- ✅ **Validação de Propriedade**: Verificação de ownership
+- ✅ **Filtros por Usuário**: Todas as queries incluem `ownerId` ou `barberShopId`.
+- ✅ **Subcoleções Seguras**: Dados organizados por loja.
+- ✅ **Validação de Propriedade**: Verificação de ownership nas regras.
 
 ## Hooks de Autenticação Utilizados
 
@@ -118,22 +117,22 @@ match /barberShops/{shopId} {
 ```typescript
 const { user, isUserLoading } = useUser();
 ```
-- **user**: Objeto do usuário autenticado (null se não autenticado)
-- **isUserLoading**: Estado de carregamento da autenticação
+- **user**: Objeto do usuário autenticado (null se não autenticado).
+- **isUserLoading**: Estado de carregamento da autenticação.
 
 ### **`useFirestore()`**
 ```typescript
 const firestore = useFirestore();
 ```
-- **firestore**: Instância configurada do Firestore
-- **Autenticação**: Automaticamente inclui token do usuário
+- **firestore**: Instância configurada do Firestore.
+- **Autenticação**: Inclui automaticamente o token do usuário nas requisições.
 
 ### **`useCollection()`**
 ```typescript
 const { data: shops, isLoading } = useCollection<BarberShop>(userShopsQuery);
 ```
-- **data**: Dados carregados do Firestore
-- **isLoading**: Estado de carregamento da query
+- **data**: Dados carregados do Firestore.
+- **isLoading**: Estado de carregamento da query.
 
 ## Tratamento de Erros
 
@@ -154,8 +153,8 @@ if (shops.length === 0) {
 
 ### **3. Erro de Permissão**
 ```typescript
-// Firestore automaticamente bloqueia acesso não autorizado
-// Erro é capturado e usuário é redirecionado
+// Firestore automaticamente bloqueia acesso não autorizado.
+// O hook useCollection captura o erro e o FirebaseErrorListener o exibe.
 ```
 
 ## Estados de Loading
@@ -181,36 +180,9 @@ if (isLoading) {
 
 ## Vantagens desta Arquitetura
 
-### **✅ Segurança Robusta**
-- Múltiplas camadas de verificação
-- Isolamento completo de dados
-- Tokens JWT seguros
-
-### **✅ Experiência do Usuário**
-- Redirecionamentos automáticos
-- Estados de loading claros
-- Criação automática de recursos
-
-### **✅ Manutenibilidade**
-- Hooks reutilizáveis
-- Lógica centralizada
-- Separação de responsabilidades
-
-### **✅ Performance**
-- Queries otimizadas
-- Cache automático
-- Carregamento sob demanda
-
-## Exemplo Prático
-
-```typescript
-// 1. Usuário acessa /dashboard/loja123
-// 2. Layout verifica autenticação
-// 3. Se autenticado, carrega página da loja
-// 4. Query busca dados: barberShops/loja123/financialRecords
-// 5. Firestore verifica: ownerId == user.uid
-// 6. Se autorizado, retorna dados
-// 7. Se não autorizado, bloqueia acesso
-```
+-   **Segurança Robusta**: Múltiplas camadas de verificação e isolamento completo de dados.
+-   **Experiência do Usuário**: Redirecionamentos automáticos, estados de loading claros e criação automática de recursos.
+-   **Manutenibilidade**: Hooks reutilizáveis, lógica centralizada e separação de responsabilidades.
+-   **Performance**: Queries otimizadas, cache do Firestore e carregamento sob demanda.
 
 Esta arquitetura garante que **apenas o dono da loja** possa acessar seus dados, mantendo a segurança e a integridade do sistema.
