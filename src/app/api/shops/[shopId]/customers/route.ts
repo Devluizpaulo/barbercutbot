@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, firestore } from '@/firebase/server';
 import { authorize } from '@/app/api/_authz';
