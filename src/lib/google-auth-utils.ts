@@ -1,3 +1,4 @@
+
 import { doc, getDoc, setDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
 import { User } from 'firebase/auth';
@@ -8,42 +9,21 @@ import { User } from 'firebase/auth';
 async function createDefaultShop(firestore: Firestore, user: User): Promise<string> {
   console.log('[Google Auth] Criando loja padrão para:', user.uid);
   
-  // Primeiro tentar com addDoc
-  try {
-    const shopRef = await addDoc(collection(firestore, 'barberShops'), {
-      name: `Meu Negócio`,
-      ownerId: user.uid,
-      status: 'active',
-      createdAt: serverTimestamp(),
-    });
-    console.log('[Google Auth] Loja criada com addDoc, ID:', shopRef.id);
-
-    // Atualizar o documento da loja com o ID gerado
-    await setDoc(shopRef, {
-      id: shopRef.id,
-    }, { merge: true });
-    console.log('[Google Auth] Loja atualizada com ID');
-    
-    return shopRef.id;
-  } catch (addDocError) {
-    console.error('[Google Auth] Erro com addDoc, tentando setDoc:', addDocError);
-    
-    // Fallback: criar com setDoc usando um ID gerado
-    const shopId = `shop_${user.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const shopRef = doc(firestore, 'barberShops', shopId);
-    
-    await setDoc(shopRef, {
-      id: shopId,
-      name: `Meu Negócio`,
-      ownerId: user.uid,
-      status: 'active',
-      createdAt: serverTimestamp(),
-    });
-    console.log('[Google Auth] Loja criada com setDoc, ID:', shopId);
-    
-    return shopId;
-  }
+  const shopRef = doc(collection(firestore, 'barberShops'));
+  
+  await setDoc(shopRef, {
+    id: shopRef.id,
+    name: `Meu Negócio`,
+    ownerId: user.uid,
+    status: 'active',
+    isSetupComplete: false, // Adiciona o novo campo
+    createdAt: serverTimestamp(),
+  });
+  console.log('[Google Auth] Loja criada com setDoc, ID:', shopRef.id);
+  
+  return shopRef.id;
 }
+
 
 /**
  * Verifica se o usuário tem lojas criadas
@@ -121,5 +101,3 @@ export async function ensureUserExists(firestore: Firestore, user: User): Promis
   
   return false; // Usuário já existia
 }
-
-    

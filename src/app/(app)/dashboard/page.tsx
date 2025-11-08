@@ -16,7 +16,6 @@ export default function DashboardRedirectPage() {
   const firestore = useFirestore();
 
   // Consulta para encontrar as lojas do usuário.
-  // IMPORTANTE: Adiciona o where('ownerId', '==', user.uid) para cumprir a regra de segurança.
   const userShopsQuery = useMemoFirebase(
     () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1)) : null),
     [firestore, user]
@@ -29,14 +28,17 @@ export default function DashboardRedirectPage() {
     }
 
     if (shops && shops.length > 0) {
-      // Se encontrarmos lojas, redirecionamos para a primeira.
-      const firstShopId = shops[0].id;
-      router.replace(`/dashboard/${firstShopId}`);
+      const shop = shops[0];
+      // Verifica se a configuração inicial foi concluída.
+      if (shop.isSetupComplete) {
+        router.replace(`/dashboard/${shop.id}`);
+      } else {
+        // Se não, redireciona para a página de onboarding.
+        router.replace(`/dashboard/setup/${shop.id}`);
+      }
     } else {
-        // Cenário de fallback: Se o usuário não tiver lojas (o que não deveria acontecer
-        // com a lógica de `ensureUserExists`), podemos redirecioná-lo para uma página de criação.
-        // Por enquanto, apenas exibimos uma mensagem.
-        // router.replace('/create-shop');
+        // Cenário de fallback: Se o usuário não tiver lojas.
+        // A lógica em `ensureUserExists` deve prevenir isso, mas é uma salvaguarda.
     }
   }, [shops, isUserLoading, isLoadingShops, router]);
 

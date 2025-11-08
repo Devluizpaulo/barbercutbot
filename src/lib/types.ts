@@ -39,6 +39,7 @@ export type BarberShop = {
   id: string;
   name: string;
   ownerId: string; // The UserProfile ID of the owner
+  isSetupComplete?: boolean; // Novo campo para o onboarding
   logo?: string;
   address?: string;
   number?: string;
