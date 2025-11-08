@@ -41,6 +41,13 @@ export interface UserHookResult {
   userError: Error | null;
 }
 
+interface FirebaseProviderProps {
+  children: React.ReactNode;
+  firebaseApp: FirebaseApp | null;
+  firestore: Firestore | null;
+  auth: Auth | null;
+}
+
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
@@ -56,8 +63,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    if (!auth) {
-      setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+    if (!auth || !firestore) {
+      setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth or Firestore service not provided.") });
       return;
     }
 

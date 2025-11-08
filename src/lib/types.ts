@@ -6,7 +6,7 @@ import { Timestamp } from 'firebase/firestore';
 // USER & AUTHENTICATION TYPES
 // =================================================================
 
-export type UserRole = 'admin' | 'owner' | 'staff';
+export type UserRole = 'admin' | 'owner' | 'staff' | 'support';
 
 export type UserProfile = {
   id: string; // This is the Firebase UID

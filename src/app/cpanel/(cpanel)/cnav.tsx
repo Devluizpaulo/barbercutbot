@@ -2,6 +2,7 @@
 
 'use client';
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,12 +16,20 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo";
-import { Home, Shield, Users, Store, FileText, Ticket, Settings, LogOut } from "lucide-react";
+import { Home, Shield, Users, Store, FileText, Ticket, Settings, LogOut, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const menuItems = [
     { id: 'home', label: 'Início', icon: Home, href: '/cpanel' },
@@ -32,6 +41,37 @@ const menuItems = [
     { id: 'settings', label: 'Configurações', icon: Settings, href: '/cpanel/settings' },
     { id: 'logs', label: 'Logs', icon: Shield, href: '/cpanel/logs' },
 ];
+
+function ThemeToggle() {
+    const [theme, setTheme] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        // Only run on client
+        const storedTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        setTheme(storedTheme || systemTheme);
+      }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        localStorage.setItem('theme', newTheme);
+        setTheme(newTheme);
+    };
+    
+    if (theme === null) return null;
+
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        aria-label={`Mudar para tema ${theme === 'dark' ? 'claro' : 'escuro'}`}
+      >
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </Button>
+    );
+}
 
 export function CPanelNav() {
     const pathname = usePathname();
@@ -49,12 +89,9 @@ export function CPanelNav() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <div className="flex items-center justify-between gap-2 px-2 py-2">
+                <div className="flex items-center justify-between gap-2 px-4 py-3">
                   <Logo />
-                  <div className="flex items-center gap-2">
-                    <ThemeToggle />
-                    <SidebarTrigger />
-                  </div>
+                  <SidebarTrigger />
                 </div>
             </SidebarHeader>
             <SidebarContent>
@@ -68,7 +105,7 @@ export function CPanelNav() {
                             >
                                 <Link href={item.href}>
                                     <item.icon />
-                                    <span>{item.label}</span>
+                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -76,52 +113,38 @@ export function CPanelNav() {
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                {user && (
-                  <div className="flex items-center gap-3 rounded-md border p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
-                      <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{user.displayName || 'Usuário'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <div className="flex items-center justify-between p-2">
+                    <div className="group-data-[collapsible=icon]:hidden">
+                    {user && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="w-full justify-start p-2 h-auto">
+                                <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
+                                    <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="text-left">
+                                    <p className="text-sm font-medium truncate">{user.displayName || 'Admin'}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                                </div>
+                                </div>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="start" side="top">
+                                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Sair</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleLogout}>
-                      <LogOut className="h-4 w-4 mr-1" />
-                      Sair
-                    </Button>
-                  </div>
-                )}
+                    <ThemeToggle />
+                </div>
             </SidebarFooter>
         </Sidebar>
     )
-}
-
-function ThemeToggle() {
-  const [theme, setTheme] = React.useState('light');
-  
-  React.useEffect(() => {
-    // Only run on client
-    const storedTheme = localStorage.getItem('theme');
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    setTheme(storedTheme || systemTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    localStorage.setItem('theme', newTheme);
-    setTheme(newTheme);
-  };
-  
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={toggleTheme}
-      aria-label={`Mudar para tema ${theme === 'dark' ? 'claro' : 'escuro'}`}
-    >
-      {theme === 'dark' ? 'Claro' : 'Escuro'}
-    </Button>
-  );
 }

@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import type { BarberShop, Appointment, Barber } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -198,7 +198,7 @@ export function TimeSlotPicker({
     };
 
     calculateAvailableSlots();
-  }, [selectedDate, barberIds, serviceDuration, shop, firestore, shopId, barbers, excludeAppointmentId]);
+  }, [selectedDate, barberIds, serviceDuration, shop, firestore, shopId, barbers, excludeAppointmentId, auth]);
   
   if (isLoading) {
     return (
