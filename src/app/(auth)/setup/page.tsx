@@ -64,7 +64,7 @@ export default function SetupPage() {
           description: 'Já existe um administrador no sistema. Redirecionando para login...',
         });
         setTimeout(() => {
-          router.push('/admin');
+          router.push('/cpanel/login');
         }, 2000);
       }
       setIsCheckingAdmins(false);
@@ -124,7 +124,7 @@ export default function SetupPage() {
       if (error.code === 'functions/already-exists') {
         title = 'Admin já existe';
         description = 'Um administrador já foi criado. Redirecionando para o login.';
-        setTimeout(() => router.push('/admin'), 2000);
+        setTimeout(() => router.push('/cpanel/login'), 2000);
       }
       
       toast({
@@ -181,7 +181,7 @@ export default function SetupPage() {
           </CardHeader>
           <CardFooter className="flex flex-col gap-4">
             <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3">
-              <Link href="/admin" className="flex items-center gap-2">
+              <Link href="/cpanel/login" className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
                 Ir para Login Admin
               </Link>
