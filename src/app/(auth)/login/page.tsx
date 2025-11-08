@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -28,7 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Lock, Menu, Shield, Mail, Scissors } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, type User } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
 import { ensureUserExists } from '@/lib/google-auth-utils';
@@ -63,7 +64,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,36 +71,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-
-  // Centralized function to handle successful login and redirection
-  const handleSuccessfulLogin = async (user: User) => {
-    // 1. Ensure user and shop exist
-    await ensureUserExists(firestore, user);
-
-    // 2. Find the user's shop
-    const shopsQuery = query(
-      collection(firestore, 'barberShops'), 
-      where('ownerId', '==', user.uid), 
-      limit(1)
-    );
-    const shopSnapshot = await getDocs(shopsQuery);
-
-    if (shopSnapshot.empty) {
-      // This is a fallback and shouldn't happen if ensureUserExists works correctly.
-      toast({
-        variant: 'destructive',
-        title: 'Nenhum negócio encontrado',
-        description: 'Não foi possível encontrar um negócio associado. Tente novamente ou contate o suporte.',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // 3. Redirect directly to the shop dashboard
-    const shop = shopSnapshot.docs[0].data() as BarberShop;
-    router.push(`/dashboard/${shop.id}`);
-  };
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,8 +84,10 @@ export default function LoginPage() {
     }
     setIsLoading(true);
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await handleSuccessfulLogin(userCredential.user);
+        await signInWithEmailAndPassword(auth, email, password);
+        // On successful sign-in, the onAuthStateChanged listener in
+        // the RootLayout will trigger and the AppLayout will handle redirection.
+        router.push('/dashboard');
     } catch (error: any) {
         let description = 'Ocorreu um erro ao tentar fazer login.';
         if (error.code === 'auth/user-not-found' || 
@@ -140,8 +112,9 @@ export default function LoginPage() {
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
-        const userCredential = await signInWithPopup(auth, provider);
-        await handleSuccessfulLogin(userCredential.user);
+        await signInWithPopup(auth, provider);
+        // Redirect after successful sign-in
+        router.push('/dashboard');
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({

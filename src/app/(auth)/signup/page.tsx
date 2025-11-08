@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -110,15 +110,12 @@ export default function SignupPage() {
             displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
-        // The onUserAfterCreate Cloud Function will handle creating the user document
-        // and default shop in Firestore.
-
         toast({
           title: 'Conta criada com sucesso!',
           description: 'Você será redirecionado para o painel.',
         });
         
-        // The AuthLayout will handle the redirect to /dashboard/shops upon successful login
+        router.push('/dashboard');
 
     } catch (error: any) {
         console.error("Firebase Auth Error:", error);
@@ -167,9 +164,8 @@ export default function SignupPage() {
     
     try {
         await signInWithPopup(auth, provider);
-        // On successful sign-in, the onAuthStateChanged listener in AuthLayout
-        // will handle the redirection. We can just show a success toast.
         toast({ title: "Cadastro bem-sucedido!", description: "Redirecionando..." });
+        router.push('/dashboard');
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
         toast({
@@ -337,5 +333,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    

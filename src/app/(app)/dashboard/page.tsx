@@ -1,48 +1,53 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
+import { ensureUserExists } from '@/lib/google-auth-utils';
 
-// Esta página agora serve como a entrada principal do dashboard.
-// Ela é responsável por encontrar a primeira loja do usuário e redirecioná-lo.
 export default function DashboardRedirectPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-
-  // Consulta para encontrar as lojas do usuário.
-  const userShopsQuery = useMemoFirebase(
-    () => (user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1)) : null),
-    [firestore, user]
-  );
-  const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(userShopsQuery);
+  const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (isUserLoading || isLoadingShops) {
-      return; // Aguardando dados
-    }
+    async function checkUserAndShop() {
+      if (isUserLoading) return;
+      
+      if (user) {
+        // Garantir que o usuário e a loja padrão existam.
+        await ensureUserExists(firestore, user);
 
-    if (shops && shops.length > 0) {
-      const shop = shops[0];
-      // Verifica se a configuração inicial foi concluída.
-      if (shop.isSetupComplete) {
-        router.replace(`/dashboard/${shop.id}`);
+        // Depois de garantir a existência, procurar pela loja.
+        const shopsQuery = query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1));
+        const shopsSnapshot = await getDocs(shopsQuery);
+
+        if (!shopsSnapshot.empty) {
+          const shop = shopsSnapshot.docs[0].data() as BarberShop;
+          if (shop.isSetupComplete) {
+            router.replace(`/dashboard/${shop.id}`);
+          } else {
+            router.replace(`/dashboard/setup/${shop.id}`);
+          }
+        } else {
+          // Fallback - se ensureUserExists falhar por alguma razão.
+          console.error("Falha crítica: Nenhuma loja encontrada para o usuário após a verificação.");
+          setIsSetupComplete(false); // Mantém na tela de loading com erro.
+        }
       } else {
-        // Se não, redireciona para a página de onboarding.
-        router.replace(`/dashboard/setup/${shop.id}`);
+        // Se não houver usuário, não faz nada, pois o AppLayout redirecionará.
       }
-    } else {
-        // Cenário de fallback: Se o usuário não tiver lojas.
-        // A lógica em `ensureUserExists` deve prevenir isso, mas é uma salvaguarda.
     }
-  }, [shops, isUserLoading, isLoadingShops, router]);
 
-  // Exibe uma tela de carregamento universal enquanto a lógica de redirecionamento está em andamento.
+    checkUserAndShop();
+  }, [user, isUserLoading, firestore, router]);
+
+
   return (
     <div className="flex flex-1 items-center justify-center h-screen bg-secondary">
       <div className="flex flex-col items-center gap-4 text-center">
