@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,10 +9,10 @@ import { z } from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useToast } from '@/hooks/use-toast';
-import { useDoc, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, setDocumentNonBlocking, useUser, addDocumentNonBlocking } from '@/firebase';
+import { doc, collection, serverTimestamp } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
-import { LoaderCircle, Building, MapPin, Phone, CreditCard, PartyPopper } from 'lucide-react';
+import { LoaderCircle, Building, MapPin, Phone, CreditCard, PartyPopper, User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -21,15 +21,17 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const steps = [
-  { id: 'Step 1', name: 'Nome do Negócio', fields: ['name'] },
-  { id: 'Step 2', name: 'Endereço', fields: ['cep', 'address', 'number'] },
-  { id: 'Step 3', name: 'Contato', fields: ['phone'] },
-  { id: 'Step 4', name: 'Pagamentos', fields: ['paymentMethods'] },
-  { id: 'Step 5', name: 'Conclusão' },
+  { id: 'Step 1', name: 'Nome do Negócio', fields: ['name'], icon: Building },
+  { id: 'Step 2', name: 'Seu Perfil', fields: ['barberName'], icon: UserIcon },
+  { id: 'Step 3', name: 'Endereço', fields: ['cep', 'address', 'number'], icon: MapPin },
+  { id: 'Step 4', name: 'Contato', fields: ['phone'], icon: Phone },
+  { id: 'Step 5', name: 'Pagamentos', fields: ['paymentMethods'], icon: CreditCard },
+  { id: 'Step 6', name: 'Conclusão', icon: PartyPopper },
 ];
 
 const setupSchema = z.object({
   name: z.string().min(3, 'O nome do negócio deve ter pelo menos 3 caracteres.'),
+  barberName: z.string().min(2, 'O nome do barbeiro é obrigatório.'),
   cep: z.string().optional(),
   address: z.string().optional(),
   number: z.string().optional(),
@@ -45,6 +47,7 @@ export default function OnboardingPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -55,6 +58,7 @@ export default function OnboardingPage() {
     resolver: zodResolver(setupSchema),
     defaultValues: {
       name: shop?.name || '',
+      barberName: user?.displayName || '',
       cep: shop?.cep || '',
       address: shop?.address || '',
       number: shop?.number || '',
@@ -62,6 +66,12 @@ export default function OnboardingPage() {
       paymentMethods: shop?.paymentSettings?.filter(p => p.enabled).map(p => p.method) || ['money', 'pix'],
     },
   });
+
+  useEffect(() => {
+    if (user && !form.getValues('barberName')) {
+        form.setValue('barberName', user.displayName || '');
+    }
+  }, [user, form]);
   
   const { trigger, handleSubmit } = form;
 
@@ -82,14 +92,23 @@ export default function OnboardingPage() {
   };
 
   const onSubmit = async (values: SetupFormValues) => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Erro de autenticação",
+            description: "Usuário não encontrado. Por favor, faça login novamente."
+        });
+        return;
+    }
     try {
         const paymentSettings = [
             { method: 'money', enabled: values.paymentMethods?.includes('money') ?? false },
             { method: 'pix', enabled: values.paymentMethods?.includes('pix') ?? false },
-            { method: 'debit', enabled: values.paymentMethods?.includes('debit') ?? false },
-            { method: 'credit', enabled: values.paymentMethods?.includes('credit') ?? false },
+            { method: 'debit', enabled: values.paymentMethods?.includes('debit') ?? false, rate: 2.5 },
+            { method: 'credit', enabled: values.paymentMethods?.includes('credit') ?? false, rate: 4.5 },
         ]
 
+        // Atualizar informações da loja
         await setDocumentNonBlocking(shopRef, {
             name: values.name,
             cep: values.cep,
@@ -99,6 +118,22 @@ export default function OnboardingPage() {
             paymentSettings: paymentSettings,
             isSetupComplete: true
         }, { merge: true });
+
+        // Criar o primeiro barbeiro com base no dono
+        const barbersRef = collection(firestore, 'barberShops', shopId, 'barbers');
+        const [firstName, ...lastNameParts] = values.barberName.split(' ');
+        const lastName = lastNameParts.join(' ');
+        
+        await addDocumentNonBlocking(barbersRef, {
+            barberShopId: shopId,
+            firstName,
+            lastName,
+            email: user.email,
+            phone: values.phone || '',
+            services: [],
+            createdAt: serverTimestamp(),
+        });
+
 
         toast({
             title: "Configuração Concluída!",
@@ -159,7 +194,24 @@ export default function OnboardingPage() {
                     )} />
                   )}
 
-                  {currentStep === 1 && (
+                   {currentStep === 1 && (
+                     <FormField control={form.control} name="barberName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seu Nome na Agenda</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Como você quer ser chamado na agenda?" {...field} className="pl-10" />
+                          </div>
+                        </FormControl>
+                         <p className="text-sm text-muted-foreground pt-2">Você poderá adicionar mais barbeiros depois no painel de equipe.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  )}
+
+
+                  {currentStep === 2 && (
                      <div className="space-y-4">
                         <FormField control={form.control} name="cep" render={({ field }) => (
                           <FormItem>
@@ -190,7 +242,7 @@ export default function OnboardingPage() {
                      </div>
                   )}
 
-                  {currentStep === 2 && (
+                  {currentStep === 3 && (
                      <FormField control={form.control} name="phone" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Telefone Principal para Contato</FormLabel>
@@ -205,7 +257,7 @@ export default function OnboardingPage() {
                     )} />
                   )}
 
-                  {currentStep === 3 && (
+                  {currentStep === 4 && (
                     <FormField control={form.control} name="paymentMethods" render={() => (
                       <FormItem>
                          <div className="mb-4">
@@ -234,7 +286,7 @@ export default function OnboardingPage() {
                     )} />
                   )}
                   
-                  {currentStep === 4 && (
+                  {currentStep === 5 && (
                     <div className="text-center space-y-4 py-8">
                        <PartyPopper className="h-16 w-16 text-primary mx-auto animate-bounce"/>
                        <h2 className="text-2xl font-bold font-headline">Tudo Pronto!</h2>
