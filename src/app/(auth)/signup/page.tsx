@@ -23,7 +23,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { setDoc, doc, serverTimestamp, collection, writeBatch } from 'firebase/firestore';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -63,10 +63,12 @@ export default function SignupPage() {
   const [acceptedLGPD, setAcceptedLGPD] = useState(false);
 
   const createInitialShopAndUser = async (user: import('firebase/auth').User, providedShopName: string, providedFirstName: string, providedLastName: string) => {
+      const batch = writeBatch(firestore);
+      
       const userDocRef = doc(firestore, "users", user.uid);
       const shopDocRef = doc(collection(firestore, 'barberShops'));
 
-      await setDoc(userDocRef, {
+      batch.set(userDocRef, {
         id: user.uid,
         firstName: providedFirstName,
         lastName: providedLastName,
@@ -75,7 +77,7 @@ export default function SignupPage() {
         createdAt: serverTimestamp(),
       });
       
-      await setDoc(shopDocRef, {
+      batch.set(shopDocRef, {
         id: shopDocRef.id,
         name: providedShopName,
         ownerId: user.uid,
@@ -84,6 +86,7 @@ export default function SignupPage() {
         createdAt: serverTimestamp(),
       });
 
+      await batch.commit();
       return shopDocRef.id;
   }
 
@@ -118,7 +121,16 @@ export default function SignupPage() {
             displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
-        const newShopId = await createInitialShopAndUser(user, shopName, firstName, lastName);
+        // We need to make sure the user object is updated with the display name.
+        // Reload the user to get the latest profile.
+        await user.reload();
+        const updatedUser = auth.currentUser;
+
+        if (!updatedUser) {
+            throw new Error("Não foi possível atualizar o perfil do usuário.");
+        }
+
+        const newShopId = await createInitialShopAndUser(updatedUser, shopName, firstName, lastName);
         
         toast({
           title: 'Conta criada com sucesso!',
@@ -215,9 +227,9 @@ export default function SignupPage() {
               <SheetContent side="right" className="bg-background">
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b">
-                    <Link href="/" aria-label="Página Inicial da BarberCut Bot">
-                      <Logo />
-                    </Link>
+                     <Link href="/" aria-label="Página Inicial da BarberCut Bot">
+                        <Logo />
+                     </Link>
                   </div>
                   <div className="p-4 border-t mt-auto flex flex-col gap-4">
                      <Button variant="ghost" asChild className="w-full">
