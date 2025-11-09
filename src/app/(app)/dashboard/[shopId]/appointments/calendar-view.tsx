@@ -317,7 +317,7 @@ export function CalendarView({
                   </li>
                 )
           })}
-        </ol>
+          </ol>
 
           {isToday(selectedDate) && (
             <NowIndicator />
