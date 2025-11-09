@@ -15,8 +15,6 @@ import {
   BarChart3,
   Moon,
   Sun,
-  ArrowDownLeft,
-  ArrowUpRight
 } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,7 +22,6 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { UserNav } from '@/components/user-nav';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AppNavProps {
   shopId?: string;
@@ -79,14 +76,13 @@ export function AppNav({ shopId }: AppNavProps) {
     return pathname.startsWith(href);
   };
   
-  const isFinanceActive = isActive(`/dashboard/${shopId}/finance`);
-
   const groups = [
     {
       title: 'Operação',
       items: [
         { name: 'Dashboard', href: shopId ? `/dashboard/${shopId}` : '/dashboard', icon: LayoutDashboard },
         { name: 'Agendamentos', href: shopId ? `/dashboard/${shopId}/appointments` : '/dashboard', icon: Calendar },
+        { name: 'Finanças', href: shopId ? `/dashboard/${shopId}/finance` : '/dashboard', icon: DollarSign },
       ],
     },
     {
@@ -147,40 +143,6 @@ export function AppNav({ shopId }: AppNavProps) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
               ))}
-               {group.title === 'Operação' && (
-                 <Collapsible asChild>
-                    <>
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                         <SidebarMenuButton isSubmenuOpen={isFinanceActive} isActive={isFinanceActive} tooltip="Finanças">
-                              <DollarSign className="h-5 w-5" />
-                              <span className="group-data-[collapsible=icon]:hidden">Finanças</span>
-                         </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                    </SidebarMenuItem>
-                     <CollapsibleContent asChild>
-                        <SidebarMenuSub>
-                            <SidebarMenuSubItem>
-                               <SidebarMenuSubButton asChild size="sm" isActive={isActive(`/dashboard/${shopId}/finance/income`)}>
-                                   <Link href={`/dashboard/${shopId}/finance/income`}>
-                                     <ArrowUpRight/>
-                                      Receitas
-                                   </Link>
-                               </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                            <SidebarMenuSubItem>
-                               <SidebarMenuSubButton asChild size="sm" isActive={isActive(`/dashboard/${shopId}/finance/expenses`)}>
-                                   <Link href={`/dashboard/${shopId}/finance/expenses`}>
-                                       <ArrowDownLeft/>
-                                       Despesas
-                                   </Link>
-                               </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                    </CollapsibleContent>
-                    </>
-                 </Collapsible>
-              )}
             </SidebarMenu>
           </div>
         ))}
@@ -196,3 +158,4 @@ export function AppNav({ shopId }: AppNavProps) {
     </Sidebar>
   );
 }
+    

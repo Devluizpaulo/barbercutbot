@@ -4,7 +4,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { FinancialRecord, Service, Barber, Appointment } from '@/lib/types';
-// Dynamically import heavy libs when needed to reduce initial bundle
 import dynamic from 'next/dynamic';
 
 import {
@@ -15,33 +14,28 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { DollarSign, Users, Calendar, Scissors, Store, ArrowUpRight, ArrowDownLeft, PlusCircle, Download } from "lucide-react"
-import { format, getMonth, startOfDay, endOfDay, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths } from 'date-fns';
+import { DollarSign, ArrowUpRight, ArrowDownLeft, PlusCircle, Download, Search } from "lucide-react"
+import { format, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { CashierDialog } from "../cashier-dialog";
 import { useAuth, useFirestore, useUser } from "@/firebase";
-import { Timestamp } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddTransactionForm } from './add-transaction-form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PeriodNavigator, type Period } from './period-navigator';
 import { calculateInterval } from '@/lib/date-utils';
+import { TransactionsTable } from './transactions-table';
+import { useToast } from '@/hooks/use-toast';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Input } from '@/components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const AnnualBarChart = dynamic(() => import('./Charts').then(m => m.AnnualBarChart), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
 const PieRevenueByBarber = dynamic(() => import('./Charts').then(m => m.PieRevenueByBarber), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
 const PieRevenueByPayment = dynamic(() => import('./Charts').then(m => m.PieRevenueByPayment), { ssr: false, loading: () => <Skeleton className="w-full h-[250px]" /> })
 
-
-const annualChartConfig = {
-  income: { label: "Receita", color: "hsl(var(--chart-2))" },
-  expense: { label: "Despesa", color: "hsl(var(--chart-5))" },
-}
-
-const serviceChartConfig = {
-  revenue: { label: "Receita", color: "hsl(var(--chart-1))" },
-}
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
@@ -52,9 +46,14 @@ export default function FinancePage() {
   const [isAddTransactionOpen, setAddTransactionOpen] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
   const [dateOffset, setDateOffset] = useState(0);
+  const [selectedTransaction, setSelectedTransaction] = useState<FinancialRecord | undefined>(undefined);
+  const [transactionToDelete, setTransactionToDelete] = useState<FinancialRecord | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
 
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
 
   // --- Data Fetching via API ---
   const { start, end } = useMemo(() => calculateInterval(period, dateOffset), [period, dateOffset]);
@@ -85,7 +84,7 @@ export default function FinancePage() {
         setAllFinancialRecords(frAllJson.items || []);
         setAllAppointments(apJson.items || []);
         setBarbers(bbJson.items || []);
-        // Filter financialRecords by period locally (date is a Firestore Timestamp-like object when returned via Admin SDK)
+        
         const inRange = (d: any) => {
           const dt = (d?.toDate ? d.toDate() : new Date(d)) as Date;
           return dt >= start && dt <= end;
@@ -102,7 +101,7 @@ export default function FinancePage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [user, auth, shopId, start.getTime(), end.getTime()]);
+  }, [user, auth, shopId, start, end]);
 
   const annualChartRef = useRef<HTMLDivElement>(null);
   const barberChartRef = useRef<HTMLDivElement>(null);
@@ -129,15 +128,30 @@ export default function FinancePage() {
   }
 
   // --- Memoized Calculations ---
-  const { totalIncome, totalExpense, netProfit } = useMemo(() => {
+  const { incomeRecords, expenseRecords, totalIncome, totalExpense, netProfit } = useMemo(() => {
     let income = 0;
     let expense = 0;
+    const incomes: FinancialRecord[] = [];
+    const expenses: FinancialRecord[] = [];
+
+    const lowercasedTerm = searchTerm.toLowerCase();
+    
     financialRecords?.forEach(record => {
-      if (record.type === 'income') income += record.amount;
-      else expense += record.amount;
+      if (record.type === 'income') {
+        income += record.amount;
+        if (!searchTerm || record.description.toLowerCase().includes(lowercasedTerm) || record.category.toLowerCase().includes(lowercasedTerm)) {
+            incomes.push(record);
+        }
+      } else {
+        expense += record.amount;
+        if (!searchTerm || record.description.toLowerCase().includes(lowercasedTerm) || record.category.toLowerCase().includes(lowercasedTerm)) {
+            expenses.push(record);
+        }
+      }
     });
-    return { totalIncome: income, totalExpense: expense, netProfit: income - expense };
-  }, [financialRecords]);
+
+    return { incomeRecords: incomes, expenseRecords: expenses, totalIncome: income, totalExpense: expense, netProfit: income - expense };
+  }, [financialRecords, searchTerm]);
 
   const monthlyData = useMemo(() => {
     const data = Array.from({ length: 12 }, (_, i) => ({
@@ -158,7 +172,6 @@ export default function FinancePage() {
         } else {
             data[monthIndex].expense += t.amount;
             if(t.isRecurring) {
-                // Project for future months of the year
                 for (let i = getMonth(now) + 1; i < 12; i++) {
                    data[i].projectedExpense += t.amount;
                 }
@@ -226,6 +239,22 @@ export default function FinancePage() {
   
   const isLoading = loadingLists;
 
+  const handleFormSuccess = () => {
+    setAddTransactionOpen(false);
+    setSelectedTransaction(undefined);
+  }
+
+  const handleDelete = () => {
+    if (!transactionToDelete) return;
+    const recordRef = doc(firestore, 'barberShops', shopId, 'financialRecords', transactionToDelete.id);
+    deleteDocumentNonBlocking(recordRef);
+    toast({
+      title: 'Transação Removida',
+      description: `A transação foi removida.`,
+    });
+    setTransactionToDelete(null);
+  }
+
   return (
     <>
     <div className="flex flex-col gap-8">
@@ -238,35 +267,6 @@ export default function FinancePage() {
             Acompanhe a receita e as despesas do seu negócio.
           </p>
         </div>
-
-      {!isLoading && (allFinancialRecords?.length || 0) === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div role="button" tabIndex={0} onClick={() => setAddTransactionOpen(true)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="h-5 w-5" />
-                  <div>
-                    <div className="font-medium">Registre sua primeira transação</div>
-                    <div className="text-sm text-muted-foreground">Receita ou despesa</div>
-                  </div>
-                </div>
-                <Button size="sm">Abrir</Button>
-              </div>
-              <div role="button" tabIndex={0} onClick={() => {}} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && {}} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <Store className="h-5 w-5" />
-                  <div>
-                    <div className="font-medium">Abrir caixa</div>
-                    <div className="text-sm text-muted-foreground">Lançar recebimento</div>
-                  </div>
-                </div>
-                <Button size="sm">Abrir</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
         <div className="flex items-center gap-4">
             <PeriodNavigator 
                 period={period} 
@@ -287,7 +287,8 @@ export default function FinancePage() {
                 </DialogHeader>
                 <AddTransactionForm 
                   shopId={shopId} 
-                  onSuccess={() => setAddTransactionOpen(false)}
+                  initialData={selectedTransaction}
+                  onSuccess={handleFormSuccess}
                 />
               </DialogContent>
             </Dialog>
@@ -333,62 +334,116 @@ export default function FinancePage() {
         </Card>
       </div>
 
-       <Card ref={annualChartRef}>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Desempenho Anual e Projeções</CardTitle>
-            <CardDescription>Receitas e despesas realizadas e projetadas para o ano.</CardDescription>
-          </div>
-          <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(annualChartRef, 'relatorio-desempenho-anual')}>
-            <Download className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-            <AnnualBarChart data={monthlyData} />
-        </CardContent>
-      </Card>
-      
-      <div className="space-y-8">
-        <div>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight font-headline">
-                Relatórios Detalhados
-            </h2>
-            <p className="text-muted-foreground">
-                Análises específicas para o seu negócio no período selecionado.
-            </p>
-        </div>
-        <div className="grid gap-8 md:grid-cols-2">
-            <Card ref={barberChartRef}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Receita por Profissional</CardTitle>
-                    <CardDescription>Performance de vendas por barbeiro.</CardDescription>
-                  </div>
-                  <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(barberChartRef, 'relatorio-receita-profissional')}>
-                    <Download className="h-4 w-4" />
-                  </Button>
+      <Tabs defaultValue="overview">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="income">Receitas</TabsTrigger>
+          <TabsTrigger value="expenses">Despesas</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-8 mt-6">
+            <Card ref={annualChartRef}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Desempenho Anual e Projeções</CardTitle>
+                  <CardDescription>Receitas e despesas realizadas e projetadas para o ano.</CardDescription>
+                </div>
+                <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(annualChartRef, 'relatorio-desempenho-anual')}>
+                  <Download className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent>
+                  <AnnualBarChart data={monthlyData} />
+              </CardContent>
+            </Card>
+             <div className="grid gap-8 md:grid-cols-2">
+                <Card ref={barberChartRef}>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle>Receita por Profissional</CardTitle>
+                        <CardDescription>Performance de vendas por barbeiro.</CardDescription>
+                      </div>
+                      <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(barberChartRef, 'relatorio-receita-profissional')}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="flex justify-center">
+                      <PieRevenueByBarber data={revenueByBarber} colors={COLORS} />
+                    </CardContent>
+                </Card>
+                <Card ref={paymentChartRef}>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                          <CardTitle>Forma de Pagamento</CardTitle>
+                          <CardDescription>Distribuição da receita por forma de pagamento.</CardDescription>
+                        </div>
+                        <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(paymentChartRef, 'relatorio-forma-pagamento')}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="flex justify-center">
+                      <PieRevenueByPayment data={revenueByPaymentMethod} colors={COLORS} />
+                    </CardContent>
+                </Card>
+            </div>
+        </TabsContent>
+        <TabsContent value="income">
+            <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Receitas</CardTitle>
+                  <CardDescription>Todas as entradas de dinheiro no período selecionado.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center">
-                  <PieRevenueByBarber data={revenueByBarber} colors={COLORS} />
+                <CardContent>
+                    <TransactionsTable 
+                        transactions={incomeRecords} 
+                        isLoading={isLoading} 
+                        onEdit={(t) => { setSelectedTransaction(t); setAddTransactionOpen(true); }}
+                        onDelete={setTransactionToDelete}
+                    />
                 </CardContent>
             </Card>
-            <Card ref={paymentChartRef}>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Forma de Pagamento</CardTitle>
-                      <CardDescription>Distribuição da receita por forma de pagamento.</CardDescription>
-                    </div>
-                    <Button variant="outline" size="icon" onClick={() => handleDownloadPdf(paymentChartRef, 'relatorio-forma-pagamento')}>
-                      <Download className="h-4 w-4" />
-                    </Button>
+        </TabsContent>
+        <TabsContent value="expenses">
+            <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Despesas</CardTitle>
+                  <CardDescription>Todas as saídas de dinheiro no período selecionado.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center">
-                  <PieRevenueByPayment data={revenueByPaymentMethod} colors={COLORS} />
+                <CardContent>
+                    <TransactionsTable 
+                        transactions={expenseRecords} 
+                        isLoading={isLoading} 
+                        onEdit={(t) => { setSelectedTransaction(t); setAddTransactionOpen(true); }}
+                        onDelete={setTransactionToDelete}
+                    />
                 </CardContent>
             </Card>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
+     <AlertDialog
+        open={!!transactionToDelete}
+        onOpenChange={(isOpen) => !isOpen && setTransactionToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá remover a transação de <strong>{transactionToDelete?.description}</strong> permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Sim, remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   )
 }
+
+    
