@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs
 import type { Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { BarberShop, UserProfile } from './types';
+import { addDays } from 'date-fns';
 
 
 /**
@@ -36,21 +37,27 @@ export async function createInitialShopAndUser(firestore: Firestore, user: User,
     };
     batch.set(userDocRef, { ...userProfile, createdAt: serverTimestamp() });
     
-    // 2. Create the BarberShop document
+    // 2. Create the BarberShop document with a 14-day trial
+    const trialEndDate = addDays(new Date(), 14);
     const shopData: Partial<BarberShop> = {
       id: shopDocRef.id,
       name: shopName,
       ownerId: user.uid,
       status: 'active',
-      isSetupComplete: true, // Setup is now considered complete by default.
+      isSetupComplete: true, 
       createdAt: serverTimestamp() as Timestamp,
+      subscription: {
+        plan: 'pro',
+        status: 'trialing',
+        currentPeriodEnd: Timestamp.fromDate(trialEndDate),
+      },
     };
     batch.set(shopDocRef, shopData);
 
     // 3. Commit the transaction
     await batch.commit();
     
-    console.log(`[Auth] User ${user.uid} and Shop ${shopDocRef.id} created successfully.`);
+    console.log(`[Auth] User ${user.uid} and Shop ${shopDocRef.id} created with 14-day trial.`);
     return shopDocRef.id;
 }
 
@@ -78,15 +85,20 @@ export async function ensureUserExists(firestore: Firestore, user: User): Promis
     
     if (shopsSnapshot.empty) {
         console.warn('[Auth Fallback] User exists but has no shop. Creating default shop.');
-        // Only create the shop document part
+        const trialEndDate = addDays(new Date(), 14);
         const shopDocRef = doc(collection(firestore, 'barberShops'));
         await setDoc(shopDocRef, {
             id: shopDocRef.id,
             name: "Minha Barbearia (Padrão)",
             ownerId: user.uid,
             status: 'active',
-            isSetupComplete: true, // Setup is now considered complete by default.
+            isSetupComplete: true, 
             createdAt: serverTimestamp(),
+            subscription: {
+                plan: 'pro',
+                status: 'trialing',
+                currentPeriodEnd: Timestamp.fromDate(trialEndDate),
+            },
         });
     }
 

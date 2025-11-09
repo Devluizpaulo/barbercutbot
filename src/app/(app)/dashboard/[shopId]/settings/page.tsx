@@ -37,7 +37,7 @@ import { WorkingHoursManager } from './components/working-hours-manager';
 import { HolidaysManager } from './components/holidays-manager';
 import { IntegrationsForm } from './components/integrations-form';
 import { PaymentsForm } from './components/payments-form';
-import { SubscriptionManager } from './components/subscription-manager';
+import { SubscriptionManager, SubscriptionStatusBanner } from './components/subscription-manager';
 import { CashierManager } from './components/cashier-manager';
 import { PermissionsManager } from './components/permissions-manager';
 
@@ -56,6 +56,7 @@ export default function SettingsPage() {
     return (
       <div className="space-y-8">
         <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-24 w-full" />
         <Skeleton className="h-12 w-full" />
         <Card>
             <CardHeader>
@@ -84,6 +85,8 @@ export default function SettingsPage() {
           Gerencie as informações e preferências do seu negócio.
         </p>
       </div>
+
+      <SubscriptionStatusBanner shop={shop} />
 
       <Tabs defaultValue="profile" orientation="vertical" className="flex flex-col md:flex-row gap-8">
         <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 md:w-[220px] h-auto shrink-0 items-start">

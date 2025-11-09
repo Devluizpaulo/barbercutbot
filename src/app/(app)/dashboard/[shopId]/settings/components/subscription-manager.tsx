@@ -53,7 +53,7 @@ const toDate = (timestamp: Timestamp | Date | string | undefined): Date | null =
     return new Date(timestamp);
 }
 
-function SubscriptionStatusBanner({ shop, onManageBilling }: { shop: BarberShop, onManageBilling?: () => void }) {
+export function SubscriptionStatusBanner({ shop, onManageBilling }: { shop: BarberShop, onManageBilling?: () => void }) {
     const status = shop.subscription?.status;
     const periodEnd = toDate(shop.subscription?.currentPeriodEnd);
     const [now, setNow] = useState<Date>(new Date());
@@ -349,7 +349,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
   return (
     <>
       <div className="space-y-8">
-        <SubscriptionStatusBanner shop={shop} onManageBilling={handleManageBilling} />
+        
         <Card>
           <CardHeader>
             <CardTitle>Seu Plano Atual</CardTitle>
@@ -380,7 +380,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {PLANS.filter(p => p.id !== 'starter' && p.metadata?.tipo !== 'addon').map((plan, index) => (
-                <Card key={plan.id} className={cn("flex flex-col", plan.isFeatured && "border-primary")}>
+                <Card key={plan.id} className={cn("flex flex-col", plan.isFeatured && "border-primary ring-2 ring-primary")}>
                   <CardHeader>
                     <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
                     <CardDescription className="text-justify">{plan.description}</CardDescription>
