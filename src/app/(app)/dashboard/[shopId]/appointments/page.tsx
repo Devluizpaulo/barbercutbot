@@ -251,11 +251,11 @@ export default function AppointmentsPage() {
 
             <div className="hidden lg:flex flex-col gap-6">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-base font-semibold capitalize whitespace-nowrap">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
                         <div className="flex items-center gap-1">
-                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
-                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -265,12 +265,13 @@ export default function AppointmentsPage() {
                             onSelect={(date) => date && setSelectedDate(date)}
                             locale={ptBR}
                             className="p-0"
+                            classNames={{ caption_label: 'hidden' }}
                         />
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2"><Filter/> Profissionais</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2"><Filter className="h-4 w-4"/> Profissionais</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         {barbers?.map(barber => (
