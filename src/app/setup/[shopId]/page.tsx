@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -304,14 +304,19 @@ export default function OnboardingPage() {
   const { data: shop, isLoading: isShopLoading } = useDoc<BarberShop>(shopRef);
 
   if (isUserLoading || isShopLoading) {
-    return <LoaderCircle className="h-10 w-10 animate-spin" />;
+    return <LoaderCircle className="h-10 w-10 animate-spin text-primary" />;
   }
 
   if (!shop || !user) {
-    return <div>Dados não encontrados.</div>;
+    return (
+      <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+              <CardTitle className="text-destructive">Erro</CardTitle>
+              <CardDescription>Não foi possível carregar as informações do negócio ou do usuário.</CardDescription>
+          </CardHeader>
+      </Card>
+    );
   }
   
   return <SetupFormComponent shop={shop} user={user} />;
 }
-
-    
