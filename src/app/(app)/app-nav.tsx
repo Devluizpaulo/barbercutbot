@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -15,6 +16,7 @@ import {
   BarChart3,
   Moon,
   Sun,
+  Store,
 } from 'lucide-react';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarFooter } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -81,7 +83,8 @@ export function AppNav({ shopId }: AppNavProps) {
       title: 'Operação',
       items: [
         { name: 'Dashboard', href: shopId ? `/dashboard/${shopId}` : '/dashboard', icon: LayoutDashboard },
-        { name: 'Agendamentos', href: shopId ? `/dashboard/${shopId}/appointments` : '/dashboard', icon: Calendar },
+        { name: 'Agenda', href: shopId ? `/dashboard/${shopId}/appointments` : '/dashboard', icon: Calendar },
+        { name: 'Caixa (PDV)', href: shopId ? `/dashboard/${shopId}/cashier` : '/dashboard', icon: Store },
         { name: 'Finanças', href: shopId ? `/dashboard/${shopId}/finance` : '/dashboard', icon: DollarSign },
       ],
     },
@@ -89,8 +92,10 @@ export function AppNav({ shopId }: AppNavProps) {
       title: 'Cadastro',
       items: [
         { name: 'Clientes', href: shopId ? `/dashboard/${shopId}/clients` : '/dashboard', icon: Users },
-        { name: 'Barbeiros', href: shopId ? `/dashboard/${shopId}/barbers` : '/dashboard', icon: Scissors },
         { name: 'Serviços', href: shopId ? `/dashboard/${shopId}/services` : '/dashboard', icon: Package },
+        { name: 'Produtos', href: shopId ? `/dashboard/${shopId}/products` : '/dashboard', icon: Package },
+        { name: 'Fornecedores', href: shopId ? `/dashboard/${shopId}/suppliers` : '/dashboard', icon: Users },
+        { name: 'Equipe', href: shopId ? `/dashboard/${shopId}/barbers` : '/dashboard', icon: Scissors },
       ],
     },
     {
@@ -103,6 +108,7 @@ export function AppNav({ shopId }: AppNavProps) {
       title: 'Admin',
       items: [
         { name: 'Configurações', href: shopId ? `/dashboard/${shopId}/settings` : '/dashboard', icon: Settings },
+        { name: 'Suporte', href: shopId ? `/dashboard/${shopId}/support` : '/dashboard', icon: Settings },
       ],
     },
   ];

@@ -28,7 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DollarSign, CheckSquare, Square, ShoppingCart, Trash2, PlusCircle, Search } from 'lucide-react';
-import { ReceiptDialog } from './ReceiptDialog';
+import { ReceiptDialog } from './receipt-dialog';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, Timestamp, doc, writeBatch, serverTimestamp, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -620,3 +620,4 @@ function WalkInSale({ shopId, services, products, customers, onSaleSuccess }: { 
         </div>
     );
 }
+
