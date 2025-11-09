@@ -108,13 +108,22 @@ service cloud.firestore {
     match /adminLogs/{logId} {
       allow create: if isSignedIn();
       allow get, update, delete: if isAdmin();
-      allow list: if false;
+      allow list: if isAdmin(); // Only admins can list logs
     }
 
     match /tickets/{ticketId} {
       allow create: if request.auth.uid == request.resource.data.userId;
-      allow get, update, delete: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
-      allow list: if false;
+      allow get, update: if request.auth.uid == get(/databases/$(database)/documents/tickets/$(ticketId)).data.userId || isAdmin();
+      allow delete: if isAdmin();
+
+      // Admins can list all tickets.
+      // Regular users can only list tickets they own.
+      allow list: if isAdmin() || (isSignedIn() && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid);
+    }
+
+    match /documents/{docId} {
+      allow read: if true; // Public documents
+      allow write: if isAdmin();
     }
   }
 }
