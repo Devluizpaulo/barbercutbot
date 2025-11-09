@@ -35,7 +35,7 @@ import type { BarberShop } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { setDocumentNonBlocking, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import { PLANS } from '@/lib/plans';
+import { Plan } from '@/lib/plans';
 import { createStripeCheckout } from '@/ai/flows/create-stripe-checkout-flow';
 
 const integrationsFormSchema = z.object({
@@ -65,6 +65,22 @@ export function IntegrationsForm({ shopId, initialData }: IntegrationsFormProps)
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+  
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const response = await fetch('/api/plans');
+        if (!response.ok) throw new Error('Failed to fetch plans');
+        const data = await response.json();
+        setPlans(data.plans || []);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+      }
+    }
+    fetchPlans();
+  }, []);
 
   const form = useForm<IntegrationsFormValues>({
     resolver: zodResolver(integrationsFormSchema),
@@ -139,7 +155,7 @@ export function IntegrationsForm({ shopId, initialData }: IntegrationsFormProps)
         toast({ variant: 'destructive', title: 'Faça login', description: 'Você precisa estar autenticado para contratar.' });
         return;
       }
-      const plan = PLANS.find(p => p.id === planId);
+      const plan = plans.find(p => p.id === planId);
       if (!plan || !plan.priceId) {
         toast({ variant: 'destructive', title: 'Plano indisponível', description: 'Não foi possível localizar o plano selecionado.' });
         return;
