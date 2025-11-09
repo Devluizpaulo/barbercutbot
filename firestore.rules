@@ -110,6 +110,11 @@ service cloud.firestore {
       allow get, update, delete: if isAdmin();
       allow list: if isAdmin(); // Only admins can list logs
     }
+    
+    match /platform/{docId} {
+      allow read: if isSignedIn(); // Allow any signed-in user to read platform settings
+      allow write: if isAdmin();   // Only admins can change platform settings
+    }
 
     match /tickets/{ticketId} {
       allow create: if request.auth.uid == request.resource.data.userId;
