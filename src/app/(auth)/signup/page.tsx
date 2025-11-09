@@ -18,11 +18,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, User, Mail, Lock, Menu, Shield } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { LoaderCircle, User, Mail, Lock, Menu, Shield, Building } from 'lucide-react';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
+import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -51,6 +52,8 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const [shopName, setShopName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,38 +62,43 @@ export default function SignupPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [acceptedLGPD, setAcceptedLGPD] = useState(false);
 
+  const createInitialShopAndUser = async (user: import('firebase/auth').User, providedShopName: string, providedFirstName: string, providedLastName: string) => {
+      const userDocRef = doc(firestore, "users", user.uid);
+      const shopDocRef = doc(collection(firestore, 'barberShops'));
+
+      await setDoc(userDocRef, {
+        id: user.uid,
+        firstName: providedFirstName,
+        lastName: providedLastName,
+        email: user.email,
+        role: 'owner',
+        createdAt: serverTimestamp(),
+      });
+      
+      await setDoc(shopDocRef, {
+        id: shopDocRef.id,
+        name: providedShopName,
+        ownerId: user.uid,
+        status: 'active',
+        isSetupComplete: false,
+        createdAt: serverTimestamp(),
+      });
+
+      return shopDocRef.id;
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações aprimoradas
-    if (!acceptedLGPD) {
+    if (!acceptedLGPD || !firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !shopName.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Consentimento necessário',
-        description: 'Para criar sua conta, é necessário aceitar a Política de Privacidade e autorizar o tratamento de dados (LGPD).',
+        title: 'Campos Incompletos',
+        description: 'Por favor, preencha todos os campos e aceite os termos para continuar.',
       });
       return;
     }
-
-    if (!firstName.trim() || !lastName.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Nome incompleto',
-        description: 'Por favor, preencha seu nome e sobrenome.',
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast({
-        variant: 'destructive',
-        title: 'Email inválido',
-        description: 'Por favor, informe um endereço de e-mail válido.',
-      });
-      return;
-    }
-
+    
     if (password.length < 6) {
         toast({
             variant: 'destructive',
@@ -110,32 +118,23 @@ export default function SignupPage() {
             displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
+        const newShopId = await createInitialShopAndUser(user, shopName, firstName, lastName);
+        
         toast({
           title: 'Conta criada com sucesso!',
-          description: 'Você será redirecionado para o painel.',
+          description: 'Vamos configurar sua loja.',
         });
         
-        router.push('/dashboard');
+        router.push(`/dashboard/setup/${newShopId}`);
 
     } catch (error: any) {
-        console.error("Firebase Auth Error:", error);
-        let title = 'Falha no cadastro';
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
-        
         if (error.code === 'auth/email-already-in-use') {
-            description = 'Este endereço de e-mail já está em uso. Tente fazer login ou use outro e-mail.';
-        } else if (error.code === 'auth/invalid-email') {
-            description = 'O endereço de e-mail não é válido.';
-        } else if (error.code === 'auth/operation-not-allowed') {
-            title = 'Cadastro desabilitado';
-            description = 'O cadastro de novos usuários está temporariamente desabilitado. Entre em contato com o suporte.';
-        } else if (error.code === 'auth/weak-password') {
-            description = 'A senha é muito fraca. Use uma combinação mais forte.';
+            description = 'Este e-mail já está em uso. Tente fazer login.';
         }
-        
         toast({
           variant: 'destructive',
-          title,
+          title: 'Falha no cadastro',
           description,
         });
     } finally {
@@ -144,11 +143,11 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!acceptedLGPD) {
+    if (!acceptedLGPD || !shopName.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Consentimento necessário',
-        description: 'Para criar sua conta com Google, é necessário aceitar a Política de Privacidade e autorizar o tratamento de dados (LGPD).',
+        title: 'Campos Incompletos',
+        description: 'Por favor, preencha o nome da sua barbearia e aceite os termos.',
       });
       return;
     }
@@ -156,18 +155,18 @@ export default function SignupPage() {
     
     const provider = new GoogleAuthProvider();
     
-    provider.addScope('email');
-    provider.addScope('profile');
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    });
-    
     try {
-        await signInWithPopup(auth, provider);
-        toast({ title: "Cadastro bem-sucedido!", description: "Redirecionando..." });
-        router.push('/dashboard');
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
+        const gFirstName = nameParts[0];
+        const gLastName = nameParts.slice(1).join(' ');
+
+        const newShopId = await createInitialShopAndUser(user, shopName, gFirstName, gLastName);
+        
+        toast({ title: "Cadastro bem-sucedido!", description: "Vamos configurar sua loja." });
+        router.push(`/dashboard/setup/${newShopId}`);
     } catch (error: any) {
-        console.error("Google Sign-In Error:", error);
         toast({
             variant: "destructive",
             title: "Erro no Cadastro com Google",
@@ -247,7 +246,14 @@ export default function SignupPage() {
             </CardHeader>
             <form onSubmit={handleSignup}>
                 <CardContent className="space-y-4">
-                  <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || !acceptedLGPD}>
+                 <div className="space-y-2">
+                    <Label htmlFor="shopName" className="text-slate-300">Nome da Barbearia</Label>
+                    <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="shopName" required value={shopName} onChange={(e) => setShopName(e.target.value)} className="pl-10 bg-white/5 border-white/20" />
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full bg-white/10 text-white hover:bg-white/20 border-white/20" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || !acceptedLGPD || !shopName.trim()}>
                       {isGoogleLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
                       Cadastrar com Google
                   </Button>

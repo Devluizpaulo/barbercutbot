@@ -64,6 +64,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,8 +86,6 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        // On successful sign-in, the onAuthStateChanged listener in
-        // the RootLayout will trigger and the AppLayout will handle redirection.
         router.push('/dashboard');
     } catch (error: any) {
         let description = 'Ocorreu um erro ao tentar fazer login.';
@@ -113,7 +112,7 @@ export default function LoginPage() {
     
     try {
         await signInWithPopup(auth, provider);
-        // Redirect after successful sign-in
+        // After login, the /dashboard page will handle logic
         router.push('/dashboard');
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);

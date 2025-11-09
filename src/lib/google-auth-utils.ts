@@ -1,25 +1,25 @@
 
-import { doc, getDoc, setDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
 /**
  * Cria uma loja padrão para um usuário
  */
-async function createDefaultShop(firestore: Firestore, user: User): Promise<string> {
-  console.log('[Google Auth] Criando loja padrão para:', user.uid);
+async function createDefaultShop(firestore: Firestore, user: User, shopName: string): Promise<string> {
+  console.log('[Auth] Criando loja padrão para:', user.uid);
   
   const shopRef = doc(collection(firestore, 'barberShops'));
   
   await setDoc(shopRef, {
     id: shopRef.id,
-    name: `Meu Negócio`,
+    name: shopName,
     ownerId: user.uid,
     status: 'active',
-    isSetupComplete: false, // Adiciona o novo campo
+    isSetupComplete: false,
     createdAt: serverTimestamp(),
   });
-  console.log('[Google Auth] Loja criada com setDoc, ID:', shopRef.id);
+  console.log('[Auth] Loja criada com setDoc, ID:', shopRef.id);
   
   return shopRef.id;
 }
@@ -37,13 +37,13 @@ async function userHasShops(firestore: Firestore, userId: string): Promise<boole
     const shopsSnapshot = await getDocs(shopsQuery);
     return !shopsSnapshot.empty;
   } catch (error) {
-    console.error('[Google Auth] Erro ao verificar lojas do usuário:', error);
+    console.error('[Auth] Erro ao verificar lojas do usuário:', error);
     return false;
   }
 }
 
 /**
- * Cria ou verifica a existência de um usuário no Firestore após login com Google
+ * Cria ou verifica a existência de um usuário no Firestore após login
  * Também cria uma loja padrão se o usuário for novo ou se não tiver lojas
  * @param firestore Instância do Firestore
  * @param user Usuário autenticado do Firebase Auth
@@ -54,7 +54,7 @@ export async function ensureUserExists(firestore: Firestore, user: User): Promis
   const userDoc = await getDoc(userDocRef);
 
   if (!userDoc.exists()) {
-    console.log('[Google Auth] Criando usuário:', user.uid, user.email);
+    console.log('[Auth] Criando usuário no DB:', user.uid, user.email);
     
     const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
     const firstName = nameParts[0];
@@ -70,32 +70,35 @@ export async function ensureUserExists(firestore: Firestore, user: User): Promis
         role: 'owner',
         createdAt: serverTimestamp(),
       });
-      console.log('[Google Auth] Usuário criado com sucesso');
+      console.log('[Auth] Usuário criado com sucesso');
 
-      // 2. Criar uma loja padrão para o usuário
-      const shopId = await createDefaultShop(firestore, user);
-      console.log('[Google Auth] Loja padrão criada com sucesso:', shopId);
+      // 2. Criar uma loja padrão para o usuário. 
+      // O nome é genérico aqui, pois a tela de signup já deve ter criado a loja.
+      // Isso serve como um fallback de segurança.
+      const shopId = await createDefaultShop(firestore, user, "Meu Negócio");
+      console.log('[Auth] Loja padrão de fallback criada:', shopId);
       
       return true; // Usuário foi criado
     } catch (error) {
-      console.error('[Google Auth] Erro ao criar usuário/loja:', error);
-      throw error; // Re-throw para que o erro seja tratado no componente
+      console.error('[Auth] Erro ao criar usuário/loja:', error);
+      throw error;
     }
   } else {
-    console.log('[Google Auth] Usuário já existe:', user.uid);
+    console.log('[Auth] Usuário já existe:', user.uid);
     
-    // Verificar se o usuário tem lojas, se não tiver, criar uma
+    // Verificar se o usuário tem lojas, se não tiver, criar uma.
+    // Isso é um fallback importante para logins via Google onde a loja pode não ter sido criada.
     const hasShops = await userHasShops(firestore, user.uid);
     if (!hasShops) {
-      console.log('[Google Auth] Usuário não tem lojas, criando loja padrão...');
+      console.log('[Auth] Usuário não tem lojas, criando loja padrão de fallback...');
       try {
-        const shopId = await createDefaultShop(firestore, user);
-        console.log('[Google Auth] Loja padrão criada para usuário existente:', shopId);
+        const shopId = await createDefaultShop(firestore, user, "Meu Negócio");
+        console.log('[Auth] Loja padrão criada para usuário existente sem loja:', shopId);
       } catch (error) {
-        console.error('[Google Auth] Erro ao criar loja para usuário existente:', error);
+        console.error('[Auth] Erro ao criar loja para usuário existente:', error);
       }
     } else {
-      console.log('[Google Auth] Usuário já tem lojas');
+      console.log('[Auth] Usuário já tem lojas');
     }
   }
   
