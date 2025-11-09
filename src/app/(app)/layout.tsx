@@ -42,7 +42,8 @@ export default function AppLayout({
 
   }, [user, isUserLoading, router, pathname]);
 
-  // Show a loading spinner while the user's auth state is being determined.
+  // This check now only handles the initial auth loading.
+  // The logic to find and redirect to a shop is handled by the /dashboard page itself.
   if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
