@@ -8,6 +8,13 @@ import { useEffect } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppNav } from './app-nav';
 
+/**
+ * This is the main security gate for the authenticated user application.
+ * Its responsibilities are:
+ * 1. Ensure a user is logged in. If not, redirect to /login.
+ * 2. Ensure the logged-in user has the 'owner' role. If not, redirect away.
+ * 3. Render the main app shell (Sidebar, etc.) for authenticated owners.
+ */
 export default function AppLayout({
   children,
 }: {
@@ -17,34 +24,40 @@ export default function AppLayout({
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
 
-  // Try to extract shopId from routes like /dashboard/:shopId/*
+  // Extract shopId from the URL for the AppNav component.
   const shopId = (() => {
-    if (!pathname) return undefined;
-    const m = pathname.match(/^\/dashboard\/([^\/]+)(?:\/|$)/);
-    return m?.[1];
+    const match = pathname.match(/^\/dashboard\/([^\/]+)/);
+    return match?.[1];
   })();
 
   useEffect(() => {
+    // Wait until the authentication check is complete.
     if (isUserLoading) {
-      return; // Still checking, do nothing yet.
+      return;
     }
 
+    // If no user is authenticated, they must log in.
     if (!user) {
-      // If no user is found after loading, redirect to the main login page.
       router.replace('/login');
       return;
     }
     
-    // If the user is an admin, they should not be in the app layout. Redirect them to the CPanel.
+    // If the user is an admin, they belong in the CPanel, not here.
     if (user.role === 'admin') {
       router.replace('/cpanel');
       return;
     }
+    
+    // If for some reason a user with a role other than 'owner' ends up here,
+    // send them back to the main login page as a fallback.
+    if (user.role !== 'owner') {
+        router.replace('/login');
+        return;
+    }
 
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isUserLoading, router]);
 
-  // This check now only handles the initial auth loading.
-  // The logic to find and redirect to a shop is handled by the /dashboard page itself.
+  // While authentication is loading, show a full-screen loader.
   if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -59,8 +72,8 @@ export default function AppLayout({
     );
   }
 
-  // If there is a user and they are an owner, render the main app layout.
-  // This check prevents non-admins from seeing a flash of the app layout before redirection.
+  // If loading is complete and we have a valid 'owner' user, render the app shell.
+  // This check prevents non-owners from briefly seeing the app layout before redirection.
   if (user && user.role === 'owner') {
     return (
       <SidebarProvider>
@@ -74,7 +87,7 @@ export default function AppLayout({
     );
   }
 
-  // This is a fallback loading state, typically seen during the brief moment of redirection.
+  // This fallback loader catches the brief moment before a non-owner user is redirected.
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

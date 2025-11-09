@@ -25,32 +25,36 @@ export default function DashboardRedirectPage() {
   const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(userShopsQuery);
 
   useEffect(() => {
-    // Wait until we know for sure if a user is logged in and we have their shop data.
+    // Wait until we have all necessary information.
     if (isUserLoading || isLoadingShops) {
       return; 
     }
 
-    // If there's no user, the main layout will handle the redirect to /login.
+    // If there's no user, the main layout should have already redirected to /login.
+    // This is an extra safety check.
     if (!user) {
+      router.replace('/login');
       return;
     }
     
-    // If we have shop data:
-    if (shops && shops.length > 0) {
-      const shop = shops[0];
-      // If the shop setup is explicitly marked as not complete, redirect to the onboarding process.
-      if (shop.isSetupComplete === false) {
-        router.replace(`/setup/${shop.id}`);
+    // If the user is logged in and shop data is loaded:
+    if (shops) {
+      if (shops.length > 0) {
+        const shop = shops[0];
+        // If setup is explicitly false, go to the onboarding flow.
+        if (shop.isSetupComplete === false) {
+          router.replace(`/setup/${shop.id}`);
+        } else {
+          // Otherwise, go to the main dashboard for that shop.
+          router.replace(`/dashboard/${shop.id}`);
+        }
       } else {
-        // Otherwise, go to the main dashboard for that shop.
-        router.replace(`/dashboard/${shop.id}`);
+        // Fallback: This user has no shops. This can happen if shop creation failed
+        // during signup. Send them to login to be safe. A better experience might
+        // be a page that says "No shop found, create one?".
+        console.error("Nenhuma loja encontrada para o usuário. Redirecionando para login.");
+        router.replace('/login');
       }
-    } else if (!isLoadingShops && shops?.length === 0) {
-      // This is a fallback case. If a logged-in user somehow has no shops,
-      // something went wrong during signup. We'll send them to the login page
-      // to restart the flow safely.
-      console.error("Nenhuma loja encontrada para o usuário. Redirecionando para login.");
-      router.replace('/login');
     }
   }, [user, isUserLoading, shops, isLoadingShops, router]);
 
