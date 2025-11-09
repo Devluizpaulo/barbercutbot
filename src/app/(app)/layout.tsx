@@ -36,71 +36,59 @@ export default function AppLayout({
 
   const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(userShopsQuery);
 
-  const shopId = shops?.[0]?.id;
-  const isSetupComplete = shops?.[0]?.isSetupComplete;
-
   const isLoading = isUserLoading || isLoadingShops;
+  const shop = shops?.[0];
 
   useEffect(() => {
     if (isLoading) {
       return; // Wait for all data to be loaded.
     }
 
-    // 1. Authentication Check
+    // 1. Authentication Check: If no user, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
     }
 
-    // 2. Authorization Check
+    // 2. Authorization Check: Handle non-owner roles.
     if (user.role === 'admin') {
       router.replace('/cpanel');
       return;
     }
     if (user.role !== 'owner') {
-      router.replace('/login'); // Fallback for any other roles
+      router.replace('/login'); // Fallback for any other unauthorized roles
       return;
     }
     
-    // At this point, we have a logged-in 'owner'. Now, check for shop setup.
-    const currentPath = pathname.split('/')[1];
-
-    if (!shopId) {
-      // This is a critical error state: an owner without a shop.
-      // This should ideally be handled by a more robust "create your first shop" page.
-      // For now, we'll prevent a loop by not redirecting.
+    // At this point, we have a logged-in 'owner'. Now, check for shop and setup.
+    if (!shop) {
+      // This is a critical error state, but we avoid a loop by not redirecting.
+      // A more robust solution would be a "Create your first shop" page.
       console.error("Critical: Owner user exists without any associated shop.");
-      return; // Stop execution to avoid loops.
+      return; 
     }
 
-    // 3. Onboarding/Setup Check
-    if (isSetupComplete === false) {
-      // If setup is not complete, redirect to the setup page for their shop.
-      // Only redirect if they are NOT already on a setup page.
-      if (!pathname.startsWith('/setup/')) {
-        router.replace(`/setup/${shopId}`);
+    // 3. Onboarding/Setup Check: The core logic.
+    if (shop.isSetupComplete === false) {
+      // If setup is incomplete, forcefully redirect to the setup page.
+      if (!pathname.startsWith(`/setup/${shop.id}`)) {
+        router.replace(`/setup/${shop.id}`);
       }
-      return; // Stop further execution after redirection.
-    }
-    
-    // 4. If setup IS complete, but they are somehow on the setup page, redirect them away to their dashboard.
-    if (isSetupComplete === true && pathname.startsWith('/setup/')) {
-       router.replace(`/dashboard/${shopId}`);
-       return;
-    }
-
-
-    // 5. If the user is on the root dashboard page, redirect them to their specific shop dashboard.
-     if (pathname === '/dashboard') {
-      router.replace(`/dashboard/${shopId}`);
       return;
     }
 
-  }, [user, isLoading, shops, shopId, isSetupComplete, pathname, router]);
+    // 4. If setup IS complete, but user is on a setup-related page, or the root dashboard, redirect to their shop.
+    if (shop.isSetupComplete === true) {
+      if (pathname.startsWith('/setup/') || pathname === '/dashboard') {
+        router.replace(`/dashboard/${shop.id}`);
+        return;
+      }
+    }
 
-  // While ANY of the core data is loading, show a full-screen loader.
-  // This is the main guard against rendering components with incomplete data.
-  if (isLoading || !shopId || (isSetupComplete === false && !pathname.startsWith('/setup/'))) {
+  }, [user, isLoading, shop, pathname, router]);
+
+  // While ANY of the core data is loading, or if we are in a redirection state, show a full-screen loader.
+  if (isLoading || !shop || (shop.isSetupComplete === false && !pathname.startsWith('/setup'))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-center">
@@ -114,10 +102,10 @@ export default function AppLayout({
     );
   }
   
-  // If all checks pass, render the main application layout for the user.
+  // If all checks pass, render the main application layout.
   return (
     <SidebarProvider>
-      <AppNav shopId={shopId} />
+      <AppNav shopId={shop.id} />
       <SidebarInset>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
@@ -126,4 +114,3 @@ export default function AppLayout({
     </SidebarProvider>
   );
 }
-
