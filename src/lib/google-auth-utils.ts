@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit, FieldValue } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { BarberShop, UserProfile } from './types';
@@ -43,7 +43,7 @@ export async function createInitialShopAndUser(firestore: Firestore, user: User,
       ownerId: user.uid,
       status: 'active',
       isSetupComplete: false, // This forces the user into the onboarding flow.
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp() as Timestamp,
     };
     batch.set(shopDocRef, shopData);
 

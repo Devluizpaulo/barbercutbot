@@ -13,7 +13,7 @@ async function ensureAuthorized(uid: string, shopId: string, claims: any) {
 
 export async function GET(req: NextRequest, { params }: { params: { shopId: string } }) {
   try {
-    const shopId = params.shopId;
+    const { shopId } = params;
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
