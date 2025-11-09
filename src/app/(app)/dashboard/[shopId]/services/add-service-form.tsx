@@ -91,10 +91,6 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
   }
 
   const onUploadImage = async (file: File) => {
-    if (uploadTaskRef.current) {
-        uploadTaskRef.current.cancel();
-    }
-
     try {
       if (!ALLOWED_TYPES.includes(file.type)) {
         toast({ variant: 'destructive', title: 'Formato inválido', description: 'Envie PNG ou JPG.' });
@@ -262,7 +258,7 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
                 />
                 <div className="flex gap-2">
                     <Button type="button" variant="outline" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
-                        {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                        {isUploading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2"/>}
                         Enviar foto
                     </Button>
                     <Button

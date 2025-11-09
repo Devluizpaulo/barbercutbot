@@ -123,11 +123,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
     });
   };
 
-  const onUploadLogo = async (file: File) => {
-    if (uploadTaskRef.current) {
-        uploadTaskRef.current.cancel();
-    }
-    
+  const onUploadLogo = async (file: File) => {    
     try {
       if (!ALLOWED_TYPES.includes(file.type)) {
         toast({ title: 'Formato inválido', description: 'Envie PNG ou JPG.', variant: 'destructive' });
@@ -142,7 +138,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
       const storage = getStorage();
       const key = `barberShops/${shopId}/logo_${Date.now()}`;
       const ref = storageRef(storage, key);
-      const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
+      const task = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
       uploadTaskRef.current = task;
       await new Promise<void>((resolve, reject) => {
         task.on('state_changed', (snap) => {
@@ -226,7 +222,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
                     >
-                    {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    {isUploading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2" />}
                     Enviar imagem
                     </Button>
                     <Button

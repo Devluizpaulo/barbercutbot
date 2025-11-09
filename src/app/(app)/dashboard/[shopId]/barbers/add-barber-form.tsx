@@ -229,9 +229,11 @@ export function AddBarberForm({
       const url = await getDownloadURL(ref);
       form.setValue('avatar', url, { shouldDirty: true, shouldValidate: true });
       toast({ title: 'Foto atualizada!', description: 'Upload concluído com sucesso.' });
-    } catch (e) {
-      const message = (e as any)?.message || 'Tente novamente.';
-      toast({ variant: 'destructive', title: 'Falha no upload', description: message });
+    } catch (e: any) {
+      if (e.code !== 'storage/canceled') {
+        const message = (e as any)?.message || 'Tente novamente.';
+        toast({ variant: 'destructive', title: 'Falha no upload', description: message });
+      }
     } finally {
       setUploading(false);
       setUploadProgress(null);
@@ -374,7 +376,7 @@ export function AddBarberForm({
                 />
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" size="sm" disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
-                    {isUploading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    {isUploading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2"/> }
                     Enviar foto
                   </Button>
                   <Button
