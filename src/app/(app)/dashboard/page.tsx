@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, serverTimestamp, limit } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
