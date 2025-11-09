@@ -10,6 +10,8 @@ import {
   Calendar as CalendarIcon,
   Store,
   Users,
+  LayoutGrid,
+  Filter,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { format, addDays, subDays } from 'date-fns';
@@ -23,6 +25,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -67,7 +70,9 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedBarberId, setSelectedBarberId] = useState<string | 'all'>('all');
+  
+  // Controls which barbers are visible in the columns
+  const [visibleBarberIds, setVisibleBarberIds] = useState<string[]>([]);
 
   const params = useParams();
   const shopId = params.shopId as string;
@@ -109,6 +114,12 @@ export default function AppointmentsPage() {
         setCustomers(cj.items || []);
         setBarbers(bj.items || []);
         setServices(sj.items || []);
+        
+        // Initially, set all barbers as visible
+        if (bj.items) {
+          setVisibleBarberIds(bj.items.map((barber: Barber) => barber.id));
+        }
+
       } catch (err) {
         console.error('Erro ao carregar listas', err);
         setAppointments([]);
@@ -125,6 +136,20 @@ export default function AppointmentsPage() {
 
   const isLoading = listsLoading;
 
+  const handleBarberVisibilityChange = (barberId: string, checked: boolean | 'indeterminate') => {
+    setVisibleBarberIds(prev => {
+        if (checked) {
+            return [...prev, barberId];
+        } else {
+            return prev.filter(id => id !== barberId);
+        }
+    });
+  };
+  
+  const filteredBarbers = useMemo(() => {
+    if (!barbers) return [];
+    return barbers.filter(b => visibleBarberIds.includes(b.id));
+  }, [barbers, visibleBarberIds]);
 
   const handleAddNew = () => {
     setSelectedAppointment(undefined);
@@ -179,10 +204,11 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <div className="flex h-full flex-col gap-8">
+      <div className="flex flex-col h-full gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+              <LayoutGrid />
               Agenda
             </h1>
             <p className="text-muted-foreground">
@@ -190,6 +216,7 @@ export default function AppointmentsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+             <Button variant="outline" onClick={goToday}>Hoje</Button>
             <Dialog
               open={isFormOpen}
               onOpenChange={(isOpen) => {
@@ -226,148 +253,62 @@ export default function AppointmentsPage() {
           </div>
         </div>
         
-        {!isLoading && (
-          (() => {
-            const hasAppointments = (appointments?.length || 0) > 0;
-            const hasCustomers = (customers?.length || 0) > 0;
-            const hasBarbers = (barbers?.length || 0) > 0;
-            const hasServices = (services?.length || 0) > 0;
-            if (hasAppointments && hasCustomers && hasBarbers && hasServices) return null;
-            return (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {!hasAppointments && (
-                      <div
-                        onClick={handleAddNew}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') handleAddNew();
-                        }}
-                        className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CalendarIcon className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Crie um agendamento</div>
-                            <div className="text-sm text-muted-foreground">Cliente, serviço e horário</div>
-                          </div>
-                        </div>
-                        <Button size="sm">Abrir</Button>
-                      </div>
-                    )}
-                    {!hasCustomers && (
-                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <Users className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Adicione um cliente</div>
-                            <div className="text-sm text-muted-foreground">Necessário para agendar</div>
-                          </div>
-                        </div>
-                        <Button size="sm" asChild>
-                          <Link href={`/dashboard/${shopId}/clients`}>Abrir</Link>
-                        </Button>
-                      </div>
-                    )}
-                    {!hasBarbers && (
-                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <Store className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Adicione um profissional</div>
-                            <div className="text-sm text-muted-foreground">Atribua aos atendimentos</div>
-                          </div>
-                        </div>
-                        <Button size="sm" asChild>
-                          <Link href={`/dashboard/${shopId}/barbers`}>Abrir</Link>
-                        </Button>
-                      </div>
-                    )}
-                    {!hasServices && (
-                      <div className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <Store className="h-5 w-5" />
-                          <div>
-                            <div className="font-medium">Cadastre um serviço</div>
-                            <div className="text-sm text-muted-foreground">Preço e duração</div>
-                          </div>
-                        </div>
-                        <Button size="sm" asChild>
-                          <Link href={`/dashboard/${shopId}/services`}>Abrir</Link>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })()
-        )}
-
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Card className="w-full sm:w-auto">
-              <CardContent className="p-3">
-                 <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Todos os Barbeiros" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todos os Barbeiros</SelectItem>
-                        {barbers?.map(barber => (
-                            <SelectItem key={barber.id} value={barber.id}>{barber.firstName}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-            <Card className="flex-1 sm:flex-initial">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full sm:w-[240px] justify-start text-left font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {format(selectedDate, 'PPP', { locale: ptBR })}
-                        </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                        <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={(date) => date && setSelectedDate(date)}
-                            initialFocus
-                            locale={ptBR}
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <Button variant="secondary" onClick={goToday}>Hoje</Button>
-                    <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
+            {/* Left Sidebar */}
+            <div className="hidden lg:flex flex-col gap-6 p-4 border-r">
+                <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</h3>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
+                    </div>
                 </div>
-              </CardContent>
-            </Card>
-        </header>
+                <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    locale={ptBR}
+                    className="rounded-md border"
+                />
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2"><Filter/> Profissionais</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {barbers?.map(barber => (
+                            <div key={barber.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id={`barber-${barber.id}`} 
+                                    checked={visibleBarberIds.includes(barber.id)}
+                                    onCheckedChange={(checked) => handleBarberVisibilityChange(barber.id, checked)}
+                                />
+                                <label
+                                    htmlFor={`barber-${barber.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                    {barber.firstName} {barber.lastName}
+                                </label>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
 
-        <div className="flex-1 -mt-8 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
-            <CalendarView 
-                appointments={appointments || []}
-                barbers={barbers || []}
-                customers={customers || []}
-                services={services || []}
-                isLoading={isLoading}
-                selectedDate={selectedDate}
-                selectedBarberId={selectedBarberId}
-                onEdit={handleEdit}
-                onReschedule={handleReschedule}
-                onCancel={(appt) => setAppointmentToCancel(appt)}
-                onComplete={handleComplete}
-            />
+            {/* Main Calendar View */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 pr-4 sm:pr-6 pb-4 sm:pb-6">
+                <CalendarView 
+                    appointments={appointments || []}
+                    barbers={filteredBarbers}
+                    customers={customers || []}
+                    services={services || []}
+                    isLoading={isLoading}
+                    selectedDate={selectedDate}
+                    onEdit={handleEdit}
+                    onReschedule={handleReschedule}
+                    onCancel={(appt) => setAppointmentToCancel(appt)}
+                    onComplete={handleComplete}
+                />
+            </div>
         </div>
       </div>
       <CashierDialog 
