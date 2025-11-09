@@ -253,12 +253,28 @@ export default function AppointmentsPage() {
           </div>
         </div>
         
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
-            {/* Left Sidebar */}
-            <div className="hidden lg:flex flex-col gap-6 p-4 border-r">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
+            {/* Main Calendar View */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 pr-4 sm:pr-6 pb-4 sm:pb-6">
+                <CalendarView 
+                    appointments={appointments || []}
+                    barbers={filteredBarbers}
+                    customers={customers || []}
+                    services={services || []}
+                    isLoading={isLoading}
+                    selectedDate={selectedDate}
+                    onEdit={handleEdit}
+                    onReschedule={handleReschedule}
+                    onCancel={(appt) => setAppointmentToCancel(appt)}
+                    onComplete={handleComplete}
+                />
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="hidden lg:flex flex-col gap-6 p-4 border-l">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
+                        <CardTitle className="text-base font-semibold capitalize">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
                         <div className="flex items-center gap-1">
                             <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
                             <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
@@ -296,22 +312,6 @@ export default function AppointmentsPage() {
                         ))}
                     </CardContent>
                 </Card>
-            </div>
-
-            {/* Main Calendar View */}
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 pr-4 sm:pr-6 pb-4 sm:pb-6">
-                <CalendarView 
-                    appointments={appointments || []}
-                    barbers={filteredBarbers}
-                    customers={customers || []}
-                    services={services || []}
-                    isLoading={isLoading}
-                    selectedDate={selectedDate}
-                    onEdit={handleEdit}
-                    onReschedule={handleReschedule}
-                    onCancel={(appt) => setAppointmentToCancel(appt)}
-                    onComplete={handleComplete}
-                />
             </div>
         </div>
       </div>
