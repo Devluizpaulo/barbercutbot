@@ -8,6 +8,10 @@ const EnvSchema = z.object({
   // Stripe (server)
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  // Mercado Pago (server)
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().optional(),
   
   // Genkit AI
   GEMINI_API_KEY: z.string().optional(),

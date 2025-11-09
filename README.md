@@ -12,7 +12,7 @@ npm install
 ```
 
 ### **2. Configure as Variáveis de Ambiente**
-Crie um arquivo `.env.local` na raiz do projeto. As credenciais do Firebase e da Stripe são essenciais.
+Crie um arquivo `.env.local` na raiz do projeto. As credenciais do Firebase e dos provedores de pagamento são essenciais.
 
 ```env
 # Firebase Admin (Necessário para rodar o script de setup local)
@@ -23,6 +23,10 @@ GOOGLE_APPLICATION_CREDENTIALS='{ "type": "service_account", ... }'
 # Chaves da Stripe (Obtenha em dashboard.stripe.com/apikeys)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Chaves do Mercado Pago (Obtenha no painel de desenvolvedor do MP)
+MERCADO_PAGO_ACCESS_TOKEN=APP_USR-...
+MERCADO_PAGO_WEBHOOK_SECRET=...
 
 # URL base para webhooks e redirecionamentos
 NEXT_PUBLIC_BASE_URL=http://localhost:9002
@@ -93,7 +97,7 @@ firestore.rules                 # Regras de Segurança do Firestore
 - **Autenticação:** Firebase Authentication (Email/Senha, Google, Custom Claims)
 - **Banco de Dados:** Firestore (NoSQL)
 - **Backend Logic:** Cloud Functions for Firebase (TypeScript)
-- **Pagamentos:** Stripe (Subscriptions & Webhooks)
+- **Pagamentos:** Stripe & Mercado Pago (Subscriptions & Webhooks)
 - **IA (Chatbot):** Genkit (Google AI Studio)
 - **Deployment:** Vercel / Firebase App Hosting
 
@@ -128,7 +132,7 @@ Para detalhes aprofundados sobre a implementação, consulte a pasta `/docs`:
 - **[03-CRUD-LOGIC.md](./docs/03-CRUD-LOGIC.md)**: Detalhes sobre a estratégia de leitura e escrita de dados.
 - **[04-SECURITY-RULES.md](./docs/04-SECURITY-RULES.md)**: Análise das regras de segurança do Firestore.
 - **[05-ADMIN-LOGS.md](./docs/05-ADMIN-LOGS.md)**: Implementação do sistema de logs de auditoria.
-- **[06-PAGAMENTOS-STRIPE.md](./docs/06-PAGAMENTOS-STRIPE.md)**: Fluxo de operação da integração com a Stripe.
+- **[06-PAGAMENTOS.md](./docs/06-PAGAMENTOS.md)**: Fluxo de operação da integração com Stripe e Mercado Pago.
 
 ---
 

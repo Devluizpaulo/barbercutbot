@@ -17,6 +17,7 @@ import { Check, LoaderCircle, ExternalLink, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PLANS, Plan } from '@/lib/plans';
 import { createStripeCheckout } from '@/ai/flows/create-stripe-checkout-flow';
+import { createMercadoPagoCheckout } from '@/ai/flows/create-mercadopago-checkout-flow';
 import { createStripePortalSession } from '@/ai/flows/create-stripe-portal-session-flow';
 import { cancelStripeSubscription } from '@/ai/flows/cancel-stripe-subscription-flow';
 import type { BarberShop } from '@/lib/types';
@@ -38,12 +39,15 @@ import { format as fmtDateBR } from 'date-fns';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 interface SubscriptionManagerProps {
   shopId: string;
   shop: BarberShop;
 }
+
+type PaymentProvider = 'stripe' | 'mercadopago';
 
 const toDate = (timestamp: Timestamp | Date | string | undefined): Date | null => {
     if (!timestamp) return null;
@@ -155,6 +159,8 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
   const [nowTick, setNowTick] = useState<Date>(new Date());
   const [notifiedRenewal, setNotifiedRenewal] = useState(false);
   const [subs, setSubs] = useState<Array<{ id: string; status: string; current_period_start: string | null; current_period_end: string | null; items: Array<{ id: string; priceId: string; productName?: string; metadata?: Record<string, any> }>; }>>([]);
+  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('stripe');
+
   const formatMoney = (amountInCents: number, currency: string) => {
     try {
       const code = (currency || 'BRL').toUpperCase();
@@ -164,7 +170,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
     }
   };
 
-  const handleCheckout = async (plan: Plan) => {
+  const handleCheckout = async (plan: Plan, provider: PaymentProvider) => {
     if (!user || !plan.priceId) {
       toast({
         variant: 'destructive',
@@ -174,14 +180,31 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
       return;
     }
     setIsBillingLoading(true);
+
     try {
-      const { checkoutUrl } = await createStripeCheckout({
-        shopId: shopId,
-        planId: plan.id,
-        priceId: plan.priceId,
-        userEmail: user.email!,
-        userId: user.uid,
-      });
+      let checkoutUrl: string | undefined;
+
+      if (provider === 'stripe') {
+          const response = await createStripeCheckout({
+              shopId: shopId,
+              planId: plan.id,
+              priceId: plan.priceId,
+              userEmail: user.email!,
+              userId: user.uid,
+          });
+          checkoutUrl = response.checkoutUrl;
+      } else if (provider === 'mercadopago') {
+          const response = await createMercadoPagoCheckout({
+              shopId: shopId,
+              planId: plan.id,
+              priceId: plan.priceId, // O Mercado Pago pode não usar priceId, mas mantemos para consistência
+              userEmail: user.email!,
+              userId: user.uid,
+              price: plan.price,
+              planName: plan.name,
+          });
+          checkoutUrl = response.checkoutUrl;
+      }
 
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
@@ -190,11 +213,11 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
       }
 
     } catch (error) {
-      console.error('Error creating Stripe checkout session:', error);
+      console.error(`Error creating ${provider} checkout session:`, error);
       toast({
         variant: 'destructive',
         title: 'Erro ao iniciar pagamento',
-        description: 'Não foi possível criar a sessão de checkout. Tente novamente.',
+        description: `Não foi possível criar a sessão de checkout com ${provider}. Tente novamente.`,
       });
     } finally {
       setIsBillingLoading(false);
@@ -392,17 +415,27 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
                       </div>
                       <ul className="space-y-3">
                         {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <Check className="h-5 w-5 text-green-500" />
-                            <span className="text-sm text-justify">{feature}</span>
+                          <li key={i} className="flex items-start gap-3">
+                            <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                            <span className="text-sm">{feature}</span>
                           </li>
                         ))}
                       </ul>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col gap-4 items-start">
+                     <RadioGroup defaultValue={selectedProvider} onValueChange={(v: PaymentProvider) => setSelectedProvider(v)} className="flex items-center gap-4">
+                        <Label htmlFor="provider-stripe" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <RadioGroupItem value="stripe" id="provider-stripe" />
+                            Stripe (Cartão)
+                        </Label>
+                        <Label htmlFor="provider-mp" className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <RadioGroupItem value="mercadopago" id="provider-mp" />
+                            Mercado Pago
+                        </Label>
+                    </RadioGroup>
                     <Button 
                       className="w-full" 
-                      onClick={() => handleCheckout(plan)} 
+                      onClick={() => handleCheckout(plan, selectedProvider)} 
                       disabled={isBillingLoading || currentPlan.id === plan.id}
                     >
                       {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/>}
@@ -445,8 +478,8 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
                     </div>
                     <ul className="space-y-3">
                       {addon.features.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <Check className="h-5 w-5 text-green-500" />
+                        <li key={i} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                           <span className="text-sm text-justify">{feature}</span>
                         </li>
                       ))}
@@ -455,7 +488,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
                   <CardFooter>
                     <Button
                       className="w-full"
-                      onClick={() => handleCheckout(addon)}
+                      onClick={() => handleCheckout(addon, 'stripe')}
                       disabled={isBillingLoading || includedInPremium || alreadySubscribed || !addon.priceId || !addon.priceId.startsWith('price_')}
                     >
                       {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
