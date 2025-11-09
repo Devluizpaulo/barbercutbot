@@ -47,13 +47,12 @@ export default function OnboardingPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const [currentStep, setCurrentStep] = useState(0);
-  const formInitializedRef = useRef(false);
 
   const shopRef = doc(firestore, 'barberShops', shopId);
-  const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
+  const { data: shop, isLoading: isShopLoading } = useDoc<BarberShop>(shopRef);
   
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
@@ -68,16 +67,18 @@ export default function OnboardingPage() {
     },
   });
 
+  const formInitializedRef = useRef(false);
+
   useEffect(() => {
-    // Populate form only once when shop data is loaded and not initialized before
-    if (shop && !formInitializedRef.current) {
+    // Populate form only once when shop and user data are loaded
+    if (shop && user && !formInitializedRef.current) {
         form.reset({
             name: shop.name || '',
-            barberName: user?.displayName || '',
+            barberName: user.displayName || '',
             cep: shop.cep || '',
             address: shop.address || '',
             number: shop.number || '',
-            phone: shop.phone || '',
+            phone: user.phoneNumber || shop.phone || '',
             paymentMethods: shop.paymentSettings?.filter(p => p.enabled).map(p => p.method) || ['money', 'pix'],
         });
         formInitializedRef.current = true; // Mark as initialized
@@ -92,6 +93,7 @@ export default function OnboardingPage() {
     if (!output) return;
 
     if (currentStep < steps.length - 1) {
+        // Save data on the final step before conclusion
         if (currentStep === steps.length - 2) {
              await handleSubmit(onSubmit)();
         } else {
@@ -123,7 +125,7 @@ export default function OnboardingPage() {
             { method: 'credit', enabled: values.paymentMethods?.includes('credit') ?? false, rate: 4.5 },
         ]
 
-        // Atualizar informações da loja
+        // Update shop info
         await setDocumentNonBlocking(shopRef, {
             name: values.name,
             cep: values.cep,
@@ -134,7 +136,7 @@ export default function OnboardingPage() {
             isSetupComplete: true
         }, { merge: true });
 
-        // Criar o primeiro barbeiro com base no dono
+        // Create the first barber based on the owner
         const barbersRef = collection(firestore, 'barberShops', shopId, 'barbers');
         const [firstName, ...lastNameParts] = values.barberName.split(' ');
         const lastName = lastNameParts.join(' ');
@@ -172,7 +174,7 @@ export default function OnboardingPage() {
      router.push(`/dashboard/${shopId}`);
   }
 
-  if (isLoading || !shop) {
+  if (isShopLoading || isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <LoaderCircle className="h-10 w-10 animate-spin" />
