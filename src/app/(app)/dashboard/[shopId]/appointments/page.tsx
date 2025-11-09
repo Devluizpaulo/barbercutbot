@@ -16,7 +16,7 @@ import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Popover,
   PopoverContent,
@@ -306,10 +306,10 @@ export default function AppointmentsPage() {
           })()
         )}
 
-        <header className="flex flex-none flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
-            <div className="flex items-center gap-4">
-                <h2 className="text-xl font-semibold hidden md:block">Agenda</h2>
-                <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <Card className="w-full sm:w-auto">
+              <CardContent className="p-3">
+                 <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Todos os Barbeiros" />
                     </SelectTrigger>
@@ -320,33 +320,38 @@ export default function AppointmentsPage() {
                         ))}
                     </SelectContent>
                 </Select>
-            </div>
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(selectedDate, 'PPP', { locale: ptBR })}
+              </CardContent>
+            </Card>
+            <Card className="flex-1 sm:flex-initial">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
+                        <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => date && setSelectedDate(date)}
-                        initialFocus
-                        locale={ptBR}
-                    />
-                    </PopoverContent>
-                </Popover>
-                <Button variant="secondary" onClick={goToday}>Hoje</Button>
-                <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full sm:w-[240px] justify-start text-left font-normal">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {format(selectedDate, 'PPP', { locale: ptBR })}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            initialFocus
+                            locale={ptBR}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <Button variant="secondary" onClick={goToday}>Hoje</Button>
+                    <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+              </CardContent>
+            </Card>
         </header>
 
         <div className="flex-1 -mt-8 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
