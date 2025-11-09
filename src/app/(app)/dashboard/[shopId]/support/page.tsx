@@ -49,19 +49,19 @@ export default function SupportPage() {
   const faqItems = [
     {
       question: 'Como faço para adicionar um novo barbeiro?',
-      answer: 'Vá para a seção "Barbeiros" no menu lateral e clique no botão "Adicionar Barbeiro". Preencha as informações e salve.',
+      answer: 'Vá para a seção "Equipe" no menu lateral e clique no botão "Adicionar Profissional". Preencha as informações e salve.',
     },
     {
       question: 'É possível cancelar um agendamento?',
-      answer: 'Sim. Na página de "Agendamentos", encontre o agendamento desejado, clique no menu de ações (três pontos) e selecione "Cancelar".',
+      answer: 'Sim. Na página de "Agenda", clique sobre o agendamento desejado para ver os detalhes e, em seguida, clique em "Cancelar".',
     },
     {
       question: 'Como gero um relatório financeiro?',
-      answer: 'Acesse a seção "Finanças". Você pode visualizar o resumo, filtrar por data e em breve poderá exportar relatórios detalhados.',
+      answer: 'Acesse a seção "Finanças". Você pode visualizar o resumo, filtrar por data e, em breve, poderá exportar relatórios detalhados.',
     },
      {
-      question: 'Posso integrar minha agenda com a Google Agenda?',
-      answer: 'Sim! Vá em "Configurações" > "Integrações" e siga as instruções para conectar sua conta do Google.',
+      question: 'Como configuro o robô de agendamento do WhatsApp?',
+      answer: 'Vá em "Configurações" > "Automação e IA". Lá, você poderá ativar o bot, inserir o ID da sua instância do WhatsApp e personalizar a mensagem do assistente.',
     }
   ];
 
@@ -190,25 +190,25 @@ export default function SupportPage() {
             <CardTitle>Termos de Uso</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+            <p className="text-sm text-muted-foreground text-justify">
+             Ao utilizar nossa plataforma, você concorda com nossos termos, que regem o uso do serviço, responsabilidades da conta, pagamentos e propriedade intelectual. Você é responsável pela segurança de sua conta e pelo uso adequado do sistema. As assinaturas são recorrentes e o cancelamento impede cobranças futuras.
             </p>
+             <Button variant="link" asChild className="px-0 h-auto mt-2">
+                <Link href="/terms" target="_blank">Ler documento completo</Link>
+             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Contrato de Prestação de Serviços</CardTitle>
+            <CardTitle>Política de Privacidade</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Duis aute irure dolor in reprehenderit in voluptate velit esse
-              cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
-              cupidatat non proident, sunt in culpa qui officia deserunt mollit
-              anim id est laborum.
+            <p className="text-sm text-muted-foreground text-justify">
+             Nossa Política de Privacidade descreve como coletamos e usamos seus dados para operar e melhorar a plataforma. Comprometemo-nos a proteger suas informações e a não compartilhá-las, exceto quando necessário para a prestação do serviço ou exigido por lei, em conformidade com a LGPD.
             </p>
+             <Button variant="link" asChild className="px-0 h-auto mt-2">
+                <Link href="/privacy" target="_blank">Ler documento completo</Link>
+             </Button>
           </CardContent>
         </Card>
       </div>
