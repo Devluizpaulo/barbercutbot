@@ -38,8 +38,8 @@ export default function DashboardRedirectPage() {
     // If we have shop data:
     if (shops && shops.length > 0) {
       const shop = shops[0];
-      // If the shop setup is not complete, redirect to the new, separate onboarding process.
-      if (!shop.isSetupComplete) {
+      // If the shop setup is explicitly marked as not complete, redirect to the onboarding process.
+      if (shop.isSetupComplete === false) {
         router.replace(`/setup/${shop.id}`);
       } else {
         // Otherwise, go to the main dashboard for that shop.
