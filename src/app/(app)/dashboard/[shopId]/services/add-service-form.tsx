@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -105,31 +105,33 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
       const storage = getStorage();
       const key = `barberShops/${shopId}/services/${initialData?.id || 'new'}/image_${Date.now()}`;
       const ref = storageRef(storage, key);
-      const task = uploadBytesResumable(ref, cropped, { contentType: file.type });
-      uploadTaskRef.current = task;
+      uploadTaskRef.current = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
 
-      await new Promise<void>((resolve, reject) => {
-        task.on('state_changed', 
-          (snap) => {
-            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-            setUploadProgress(pct);
-          }, 
-          (err) => reject(err), 
-          () => resolve()
-        );
-      });
+      uploadTaskRef.current.on('state_changed', 
+        (snap) => {
+          const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+          setUploadProgress(pct);
+        }, 
+        (err) => {
+          throw err;
+        }, 
+        async () => {
+          const url = await getDownloadURL(uploadTaskRef.current!.snapshot.ref);
+          form.setValue('imageUrl', url, { shouldDirty: true, shouldValidate: true });
+          toast({ title: 'Imagem atualizada!', description: 'Upload concluído com sucesso.' });
+          setUploading(false);
+          setUploadProgress(null);
+          uploadTaskRef.current = null;
+        }
+      );
 
-      const url = await getDownloadURL(ref);
-      form.setValue('imageUrl', url, { shouldDirty: true, shouldValidate: true });
-      toast({ title: 'Imagem atualizada!', description: 'Upload concluído com sucesso.' });
     } catch (e: any) {
        if (e.code !== 'storage/canceled') {
          toast({ variant: 'destructive', title: 'Falha no upload', description: e.message || 'Tente novamente.' });
        }
-    } finally {
-      setUploading(false);
-      setUploadProgress(null);
-      uploadTaskRef.current = null;
+       setUploading(false);
+       setUploadProgress(null);
+       uploadTaskRef.current = null;
     }
   };
   
@@ -475,5 +477,3 @@ export function AddServiceForm({ shopId, initialData, onSuccess }: AddServiceFor
     </Form>
   );
 }
-
-    

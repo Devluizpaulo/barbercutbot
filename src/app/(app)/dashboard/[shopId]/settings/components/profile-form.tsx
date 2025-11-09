@@ -138,24 +138,31 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
       const storage = getStorage();
       const key = `barberShops/${shopId}/logo_${Date.now()}`;
       const ref = storageRef(storage, key);
-      const task = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
-      uploadTaskRef.current = task;
-      await new Promise<void>((resolve, reject) => {
-        task.on('state_changed', (snap) => {
+      uploadTaskRef.current = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
+      
+      uploadTaskRef.current.on('state_changed', 
+        (snap) => {
           const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
           setUploadProgress(pct);
-        }, (err) => reject(err), () => resolve());
-      });
-      const url = await getDownloadURL(ref);
-      form.setValue('logo', url, { shouldDirty: true, shouldValidate: true });
-      const shopRef = doc(firestore, 'barberShops', shopId);
-      setDocumentNonBlocking(shopRef, { logo: url }, { merge: true });
-      toast({ title: 'Logo atualizada!', description: 'A imagem foi enviada com sucesso.' });
+        }, 
+        (err) => {
+          throw err;
+        }, 
+        async () => {
+          const url = await getDownloadURL(uploadTaskRef.current!.snapshot.ref);
+          form.setValue('logo', url, { shouldDirty: true, shouldValidate: true });
+          const shopRef = doc(firestore, 'barberShops', shopId);
+          setDocumentNonBlocking(shopRef, { logo: url }, { merge: true });
+          toast({ title: 'Logo atualizada!', description: 'A imagem foi enviada com sucesso.' });
+          setUploading(false);
+          setUploadProgress(null);
+          uploadTaskRef.current = null;
+        }
+      );
     } catch (e: any) {
       if (e.code !== 'storage/canceled') {
         toast({ title: 'Falha ao enviar logo', description: e.message || 'Tente novamente.', variant: 'destructive' });
       }
-    } finally {
       setUploading(false);
       setUploadProgress(null);
       uploadTaskRef.current = null;

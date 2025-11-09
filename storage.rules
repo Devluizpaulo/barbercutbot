@@ -1,0 +1,18 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Regra geral: permitir leitura pública de todas as imagens para facilitar a exibição no app.
+    // A segurança de escrita é o mais importante aqui.
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // Apenas usuários autenticados podem escrever, e apenas em caminhos específicos.
+    // O caminho deve começar com "barberShops/{shopId}/..."
+    match /barberShops/{shopId}/{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+  }
+}

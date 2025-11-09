@@ -216,25 +216,32 @@ export function AddBarberForm({
       const storage = getStorage();
       const unique = `${Date.now()}_${(crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}`;
       const ext = file.type === 'image/png' ? 'png' : 'jpg';
-      const key = `barberShops/${shopId}/barbers/${initialData?.id || 'tmp'}/avatar_${unique}.${ext}`;
+      const key = `barberShops/${shopId}/barbers/${initialData?.id || 'new'}/avatar_${unique}.${ext}`;
       const ref = storageRef(storage, key);
-      const task = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
-      uploadTaskRef.current = task;
-      await new Promise<void>((resolve, reject) => {
-        task.on('state_changed', (snap) => {
+      uploadTaskRef.current = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
+      
+      uploadTaskRef.current.on('state_changed', 
+        (snap) => {
           const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
           setUploadProgress(pct);
-        }, (err) => reject(err), () => resolve());
-      });
-      const url = await getDownloadURL(ref);
-      form.setValue('avatar', url, { shouldDirty: true, shouldValidate: true });
-      toast({ title: 'Foto atualizada!', description: 'Upload concluído com sucesso.' });
+        }, 
+        (err) => {
+          throw err;
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTaskRef.current!.snapshot.ref);
+          form.setValue('avatar', url, { shouldDirty: true, shouldValidate: true });
+          toast({ title: 'Foto atualizada!', description: 'Upload concluído com sucesso.' });
+          setUploading(false);
+          setUploadProgress(null);
+          uploadTaskRef.current = null;
+        }
+      );
     } catch (e: any) {
       if (e.code !== 'storage/canceled') {
         const message = (e as any)?.message || 'Tente novamente.';
         toast({ variant: 'destructive', title: 'Falha no upload', description: message });
       }
-    } finally {
       setUploading(false);
       setUploadProgress(null);
       uploadTaskRef.current = null;
@@ -793,5 +800,3 @@ export function AddBarberForm({
     </Form>
   );
 }
-
-    
