@@ -28,17 +28,13 @@ import {
 } from '@/components/ui/dialog';
 import { AddTicketForm } from './add-ticket-form';
 import { useParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
 import type { Ticket as TicketType } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-
-interface PlatformSettings {
-  emergencyPhone?: string;
-}
 
 export default function SupportPage() {
   const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
@@ -47,11 +43,15 @@ export default function SupportPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const ticketsQuery = useMemoFirebase(() => (user) ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
+  // Hardcoded emergency phone number. This will be updated by the admin via CPanel,
+  // but clients will read this static value, avoiding Firestore permission issues.
+  const emergencyPhone = '+55 (11) 98765-4321';
 
-  const settingsRef = useMemoFirebase(() => doc(firestore, 'platform/settings'), [firestore]);
-  const { data: platformSettings, isLoading: isLoadingSettings } = useDoc<PlatformSettings>(settingsRef);
+  const ticketsQuery = useMemoFirebase(() => 
+    (user) ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid)) : null, 
+    [firestore, user]
+  );
+  const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
 
   const faqItems = [
     {
@@ -87,7 +87,6 @@ export default function SupportPage() {
         default: return 'outline';
     }
   };
-
 
   return (
     <div className="flex flex-col gap-8">
@@ -162,25 +161,15 @@ export default function SupportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-             {isLoadingSettings ? (
-                <div className="space-y-2">
-                    <p className="text-lg font-mono font-semibold bg-muted h-7 w-48 animate-pulse rounded-md"></p>
-                    <p className="text-sm text-muted-foreground bg-muted h-4 w-40 animate-pulse rounded-md"></p>
-                </div>
-             ) : (
-                <>
-                  <p className="text-lg font-mono font-semibold">{platformSettings?.emergencyPhone || 'Não configurado'}</p>
-                  <p className="text-sm text-muted-foreground">Disponível em horário comercial.</p>
-                </>
-             )}
+            <p className="text-lg font-mono font-semibold">{emergencyPhone}</p>
+            <p className="text-sm text-muted-foreground">Disponível em horário comercial.</p>
           </CardContent>
            <CardFooter>
             <Button 
                 variant="outline" 
                 asChild
-                disabled={!platformSettings?.emergencyPhone}
             >
-                <a href={`tel:${platformSettings?.emergencyPhone}`}>Ligar Agora</a>
+                <a href={`tel:${emergencyPhone}`}>Ligar Agora</a>
             </Button>
           </CardFooter>
         </Card>
@@ -203,7 +192,6 @@ export default function SupportPage() {
            </CardContent>
          </Card>
       </div>
-
 
       <div className="space-y-6">
          <h2 className="text-xl font-bold font-headline flex items-center gap-2"><FileText /> Documentos Legais</h2>

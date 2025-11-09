@@ -39,7 +39,7 @@ export function GeneralSettingsForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const settingsRef = doc(firestore, 'platform/settings');
+  const settingsRef = doc(firestore, 'platform', 'settings');
   const { data: initialData, isLoading } = useDoc<FormValues>(settingsRef);
 
   const form = useForm<FormValues>({
@@ -47,7 +47,7 @@ export function GeneralSettingsForm() {
     values: initialData || { // Use 'values' to make it controlled after loading
       platformName: 'BarberCut Bot',
       supportEmail: 'suporte@barbercutbot.com',
-      emergencyPhone: '',
+      emergencyPhone: '+55 (11) 98765-4321',
     },
     disabled: isLoading, // Disable form while loading initial data
   });
