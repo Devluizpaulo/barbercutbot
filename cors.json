@@ -1,0 +1,19 @@
+
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:9002",
+      "https://barbercutbot.vercel.app",
+      "https://barbercutbot.firebaseapp.com",
+      "https://barbercutbot.web.app"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "X-Goog-Resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

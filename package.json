@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "storage:cors": "gsutil cors set cors.json gs://barbercutbot.appspot.com"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.21.0",

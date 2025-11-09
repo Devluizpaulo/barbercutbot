@@ -4,6 +4,7 @@ Para gerenciar a plataforma, o primeiro passo é criar um usuário com a permiss
 
 1.  ✅ **Automático via Interface de Setup (Recomendado)**
 2.  ⚙️ **Manual via Firebase Console & Script (Alternativo)**
+3.  **Post-Setup: Configurar CORS do Storage (Essencial para Uploads)**
 
 ---
 
@@ -81,7 +82,37 @@ Acesse `http://localhost:9002/cpanel/login` e use as credenciais que você criou
 
 ---
 
+## 🌩️ Configurar CORS do Storage (Essencial para Uploads)
+
+**⚠️ IMPORTANTE:** Para que o upload de imagens (logos, fotos de perfil) funcione, você precisa autorizar o domínio da sua aplicação a enviar arquivos para o Firebase Storage.
+
+### **Passo 1: Instale o Google Cloud CLI**
+Se você ainda não tem, [instale a ferramenta de linha de comando do Google Cloud](https://cloud.google.com/sdk/docs/install).
+
+### **Passo 2: Faça o Login na CLI**
+Abra seu terminal e execute:
+```bash
+gcloud auth login
+```
+Siga as instruções no navegador para autorizar o acesso à sua conta Google.
+
+### **Passo 3: Configure o Projeto**
+Diga à CLI qual projeto do Firebase você está usando (o ID do projeto está no `firebase.json`):
+```bash
+gcloud config set project barbercutbot
+```
+
+### **Passo 4: Aplique a Configuração CORS**
+Execute o seguinte comando na raiz do seu projeto. Ele usará o arquivo `cors.json` que já está configurado.
+```bash
+npm run storage:cors
+```
+Este comando aplica as regras que permitem que `localhost` e seu domínio de produção (`barbercutbot.vercel.app`) enviem arquivos para o Storage.
+
+---
+
 ## 🚨 Solução de Problemas
 
 - **Página `/setup` mostra "Sistema já configurado"**: Significa que um documento com `role: "admin"` já existe na coleção `users`. Use o login em `/cpanel/login`.
 - **"Permission Denied" após login manual**: Verifique se o Custom Claim `{ admin: true }` foi adicionado corretamente executando o script `add-admin-claim.js`. As regras de segurança priorizam o custom claim para acesso irrestrito.
+- **Upload de imagem falha com erro de CORS**: Execute os passos da seção "Configurar CORS do Storage" acima.
