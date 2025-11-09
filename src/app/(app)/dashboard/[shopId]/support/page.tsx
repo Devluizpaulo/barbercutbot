@@ -28,13 +28,17 @@ import {
 } from '@/components/ui/dialog';
 import { AddTicketForm } from './add-ticket-form';
 import { useParams } from 'next/navigation';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
 import type { Ticket as TicketType } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+
+interface PlatformSettings {
+  emergencyPhone?: string;
+}
 
 export default function SupportPage() {
   const [isTicketDialogOpen, setTicketDialogOpen] = useState(false);
@@ -44,7 +48,10 @@ export default function SupportPage() {
   const { user } = useUser();
 
   const ticketsQuery = useMemoFirebase(() => (user) ? query(collection(firestore, 'tickets'), where('userId', '==', user.uid)) : null, [firestore, user]);
-  const { data: tickets, isLoading } = useCollection<TicketType>(ticketsQuery);
+  const { data: tickets, isLoading: isLoadingTickets } = useCollection<TicketType>(ticketsQuery);
+
+  const settingsRef = useMemoFirebase(() => doc(firestore, 'platform/settings'), [firestore]);
+  const { data: platformSettings, isLoading: isLoadingSettings } = useDoc<PlatformSettings>(settingsRef);
 
   const faqItems = [
     {
@@ -107,8 +114,8 @@ export default function SupportPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
-               {isLoading && <p className="text-sm text-muted-foreground">Carregando seus tickets...</p>}
-               {!isLoading && tickets && tickets.length > 0 ? (
+               {isLoadingTickets && <p className="text-sm text-muted-foreground">Carregando seus tickets...</p>}
+               {!isLoadingTickets && tickets && tickets.length > 0 ? (
                     tickets.map(ticket => (
                         <div key={ticket.id} className="flex justify-between items-center p-2 rounded-md border">
                             <div>
@@ -155,11 +162,26 @@ export default function SupportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-             <p className="text-lg font-mono font-semibold">+55 (11) 99999-9999</p>
-             <p className="text-sm text-muted-foreground">Disponível de Seg. a Sex. das 9h às 18h.</p>
+             {isLoadingSettings ? (
+                <div className="space-y-2">
+                    <p className="text-lg font-mono font-semibold bg-muted h-7 w-48 animate-pulse rounded-md"></p>
+                    <p className="text-sm text-muted-foreground bg-muted h-4 w-40 animate-pulse rounded-md"></p>
+                </div>
+             ) : (
+                <>
+                  <p className="text-lg font-mono font-semibold">{platformSettings?.emergencyPhone || 'Não configurado'}</p>
+                  <p className="text-sm text-muted-foreground">Disponível em horário comercial.</p>
+                </>
+             )}
           </CardContent>
            <CardFooter>
-            <Button variant="outline">Ligar Agora</Button>
+            <Button 
+                variant="outline" 
+                asChild
+                disabled={!platformSettings?.emergencyPhone}
+            >
+                <a href={`tel:${platformSettings?.emergencyPhone}`}>Ligar Agora</a>
+            </Button>
           </CardFooter>
         </Card>
       </div>

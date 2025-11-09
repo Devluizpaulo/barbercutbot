@@ -23,29 +23,37 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Save, LoaderCircle, AppWindow, Mail } from 'lucide-react';
+import { Save, LoaderCircle, AppWindow, Mail, Phone } from 'lucide-react';
+import { useDoc, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const formSchema = z.object({
   platformName: z.string().min(1, 'O nome da plataforma é obrigatório.'),
   supportEmail: z.string().email('Email de suporte inválido.'),
+  emergencyPhone: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export function GeneralSettingsForm() {
   const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const settingsRef = doc(firestore, 'platform/settings');
+  const { data: initialData, isLoading } = useDoc<FormValues>(settingsRef);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    values: initialData || { // Use 'values' to make it controlled after loading
       platformName: 'BarberCut Bot',
       supportEmail: 'suporte@barbercutbot.com',
+      emergencyPhone: '',
     },
+    disabled: isLoading, // Disable form while loading initial data
   });
 
   const onSubmit = (values: FormValues) => {
-    // Em um cenário real, você salvaria isso em um documento de configuração no Firestore.
-    console.log(values);
+    setDocumentNonBlocking(settingsRef, values, { merge: true });
     toast({
       title: 'Configurações Salvas!',
       description: 'As configurações gerais da plataforma foram atualizadas.',
@@ -104,11 +112,32 @@ export function GeneralSettingsForm() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="emergencyPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone de Emergência</FormLabel>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        placeholder="+55 (11) 99999-9999"
+                        {...field}
+                        value={field.value || ''}
+                        className="pl-10"
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
           <CardFooter className="flex justify-end">
             <Button
               type="submit"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || isLoading}
             >
               {form.formState.isSubmitting && (
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
