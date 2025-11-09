@@ -6,6 +6,8 @@ import { LoaderCircle } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useEffect } from 'react';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { AppNav } from './app-nav';
 import { collection, query, where, limit } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
@@ -83,6 +85,28 @@ export default function AppLayout({
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
+        <footer className="border-t p-4 text-xs text-muted-foreground flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+          <span>
+            © {new Date().getFullYear()} Nexus Systems LPJ · CNPJ 62.618.880/0001-11 · Todos os direitos reservados. · <a href="/about" className="underline">Sobre</a> · <a href="/terms" className="underline">Termos</a>
+          </span>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="px-2">Licença/Créditos</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Licença & Créditos</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Software de propriedade de <strong>Nexus Systems LPJ</strong> (CNPJ 62.618.880/0001-11).</p>
+                <p>Razão Social: LUIZ PAULO GONCALVES MIGUEL DE JESUS DESENVOLVIMENTO DE SOFTWARE LTDA.</p>
+                <p>Abertura: 08/09/2025 · Porte: ME.</p>
+                <p>Atividade Principal: 62.04-0-00 - Consultoria em tecnologia da informação.</p>
+                <p>Atividades Secundárias: 62.01-5-01; 62.01-5-02; 62.02-3-00; 63.11-9-00; 63.19-4-00.</p>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </footer>
       </SidebarInset>
     </SidebarProvider>
   );

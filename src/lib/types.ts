@@ -317,6 +317,13 @@ export type RolePermissions = {
     manageServices: boolean;
     viewFinancial: boolean;
     manageSettings: boolean;
+    // Caixa e Recibos
+    openCashier: boolean;
+    closeCashier: boolean;
+    viewReceipts: boolean;
+    issueReceipts: boolean;
+    refundReceipts: boolean;
+    manageCashMovements: boolean;
 }
 
 export type Role = {

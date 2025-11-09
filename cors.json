@@ -8,11 +8,15 @@
       "https://barbercutbot.firebaseapp.com",
       "https://barbercutbot.web.app"
     ],
-    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "method": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
       "Authorization",
-      "X-Goog-Resumable"
+      "x-goog-meta-*",
+      "x-goog-resumable",
+      "x-goog-upload-protocol",
+      "x-goog-upload-command",
+      "x-goog-upload-offset"
     ],
     "maxAgeSeconds": 3600
   }

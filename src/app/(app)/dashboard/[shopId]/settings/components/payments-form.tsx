@@ -95,8 +95,8 @@ export function PaymentsForm({ shopId, initialData }: PaymentsFormProps) {
           <CardHeader>
             <CardTitle>Meios de Recebimento</CardTitle>
             <CardDescription>
-              Configure as formas de pagamento que seu negócio aceita no
-              local e suas taxas.
+              Configure as formas de pagamento aceitas e as taxas descontadas do valor bruto
+              para apurar o valor líquido recebido.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -135,7 +135,7 @@ export function PaymentsForm({ shopId, initialData }: PaymentsFormProps) {
                       <FormItem>
                         <div className="flex items-center gap-2">
                           <FormLabel className="text-sm text-muted-foreground">
-                            Taxa
+                            Taxa descontada do bruto
                           </FormLabel>
                           <div className="relative">
                             <FormControl>
@@ -155,6 +155,14 @@ export function PaymentsForm({ shopId, initialData }: PaymentsFormProps) {
                               %
                             </span>
                           </div>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {(() => {
+                              const r = Number(inputField.value || 0);
+                              const bruto = 100;
+                              const liquido = Math.max(0, bruto * (1 - r / 100));
+                              return `Ex.: R$ ${bruto.toFixed(2).replace('.', ',')} → líquido R$ ${liquido.toFixed(2).replace('.', ',')}`;
+                            })()}
+                          </span>
                         </div>
                       </FormItem>
                     )}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -55,6 +54,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const uploadTaskRef = useRef<UploadTask | null>(null);
   const MAX_BYTES = 1024 * 1024; // 1MB
   const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
@@ -135,7 +135,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
       }
       setUploading(true);
       const cropped = await cropCenterSquare(file);
-      const storage = getStorage();
+      const storage = getStorage(undefined, 'gs://barbercutbot.firebasestorage.app');
       const key = `barberShops/${shopId}/logo_${Date.now()}`;
       const ref = storageRef(storage, key);
       uploadTaskRef.current = uploadBytesResumable(ref, cropped, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
@@ -181,36 +181,50 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div
-                className="relative group"
+              <button
+                type="button"
+                className={`relative group rounded-full focus:outline-none focus:ring-2 focus:ring-primary ${isDragActive ? 'ring-2 ring-primary/50' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(e) => { e.preventDefault(); setIsDragActive(true); }}
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                onDragLeave={() => setIsDragActive(false)}
                 onDrop={(e) => {
                   e.preventDefault();
+                  setIsDragActive(false);
                   const f = e.dataTransfer.files?.[0];
                   if (f) onUploadLogo(f);
                 }}
+                aria-label={isUploading ? 'Enviando imagem...' : 'Alterar logo'}
+                disabled={isUploading}
               >
-                <Avatar className="h-24 w-24">
-                  <AvatarImage
-                    src={form.watch('logo')}
-                    alt={form.watch('name')}
-                  />
-                  <AvatarFallback>
-                    <Building2 />
-                  </AvatarFallback>
-                </Avatar>
-                {uploadProgress !== null && (
-                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                     <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
-                       <div className="h-full bg-primary" style={{ width: `${uploadProgress}%` }} />
-                     </div>
-                   </div>
-                )}
-                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ImageIcon className="h-8 w-8 text-white" />
-                 </div>
-              </div>
-              <div className="flex-1 space-y-4">
+                <div className="relative h-24 w-24">
+                  {uploadProgress !== null && (
+                    <div
+                      className="absolute -inset-1 rounded-full"
+                      style={{
+                        background: `conic-gradient(var(--primary) ${uploadProgress}%, rgba(255,255,255,0.08) 0)`,
+                        WebkitMask: 'radial-gradient(farthest-side, transparent 70%, black 72%)',
+                        mask: 'radial-gradient(farthest-side, transparent 70%, black 72%)',
+                      }}
+                    />
+                  )}
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage
+                      src={form.watch('logo')}
+                      alt={form.watch('name')}
+                    />
+                    <AvatarFallback>
+                      <Building2 />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className={`absolute inset-0 rounded-full flex items-center justify-center transition ${isDragActive ? 'bg-black/60 opacity-100' : 'bg-black/40 opacity-0 group-hover:opacity-100'}`}>
+                    <div className="text-xs font-medium text-white px-2 py-1 rounded bg-black/50">
+                      {isUploading ? 'Enviando...' : 'Clique ou solte aqui'}
+                    </div>
+                  </div>
+                </div>
+              </button>
+              <div className="flex-1 space-y-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -221,7 +235,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     if (f) onUploadLogo(f);
                   }}
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                     <Button
                     type="button"
                     variant="outline"
@@ -230,19 +244,20 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     onClick={() => fileInputRef.current?.click()}
                     >
                     {isUploading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2" />}
-                    Enviar imagem
+                    Alterar logo
                     </Button>
                     <Button
                     type="button"
                     variant="ghost"
                     size="sm"
+                    disabled={isUploading}
                     onClick={async () => {
                         const currentUrl = form.getValues('logo');
                         if (currentUrl) {
                         try {
-                            const storage = getStorage();
-                            const ref = storageRef(storage, currentUrl);
-                            await deleteObject(ref);
+                            const storage = getStorage(undefined, 'gs://barbercutbot.firebasestorage.app');
+                            const urlRef = storageRef(storage, currentUrl);
+                            await deleteObject(urlRef);
                         } catch {}
                         }
                         form.setValue('logo', '', { shouldDirty: true, shouldValidate: true });
@@ -253,6 +268,7 @@ export function ProfileForm({ shopId, initialData }: ProfileFormProps) {
                     >
                     Remover logo
                     </Button>
+                    <span className="text-xs text-muted-foreground">PNG ou JPG até 1MB</span>
                 </div>
                 <FormField
                   control={form.control}

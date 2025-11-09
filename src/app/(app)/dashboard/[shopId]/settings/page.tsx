@@ -86,16 +86,16 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile" orientation="vertical" className="flex flex-col md:flex-row gap-8">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 md:w-[220px] h-auto shrink-0">
-          <TabsTrigger value="profile"> <User className="mr-2" /> Perfil </TabsTrigger>
-          <TabsTrigger value="address"> <MapPin className="mr-2" /> Endereço </TabsTrigger>
-          <TabsTrigger value="hours"> <Clock className="mr-2" /> Horários </TabsTrigger>
-          <TabsTrigger value="holidays"> <Calendar className="mr-2" /> Feriados </TabsTrigger>
-          <TabsTrigger value="payments"> <Wallet className="mr-2" /> Pagamentos </TabsTrigger>
-          <TabsTrigger value="cashier"> <Wallet className="mr-2" /> Caixa </TabsTrigger>
-          <TabsTrigger value="permissions"> <ShieldCheck className="mr-2" /> Permissões </TabsTrigger>
-          <TabsTrigger value="integrations"> <Bot className="mr-2" /> Automação </TabsTrigger>
-          <TabsTrigger value="subscription"> <CreditCard className="mr-2" /> Assinatura </TabsTrigger>
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 md:w-[220px] h-auto shrink-0 items-start">
+          <TabsTrigger value="profile" className="w-full justify-start text-left text-justify"> <User className="mr-2 shrink-0" /> <span className="truncate">Perfil</span> </TabsTrigger>
+          <TabsTrigger value="address" className="w-full justify-start text-left text-justify"> <MapPin className="mr-2 shrink-0" /> <span className="truncate">Endereço</span> </TabsTrigger>
+          <TabsTrigger value="hours" className="w-full justify-start text-left text-justify"> <Clock className="mr-2 shrink-0" /> <span className="truncate">Horários</span> </TabsTrigger>
+          <TabsTrigger value="holidays" className="w-full justify-start text-left text-justify"> <Calendar className="mr-2 shrink-0" /> <span className="truncate">Feriados</span> </TabsTrigger>
+          <TabsTrigger value="payments" className="w-full justify-start text-left text-justify"> <Wallet className="mr-2 shrink-0" /> <span className="truncate">Pagamentos</span> </TabsTrigger>
+          <TabsTrigger value="cashier" className="w-full justify-start text-left text-justify"> <Wallet className="mr-2 shrink-0" /> <span className="truncate">Caixa</span> </TabsTrigger>
+          <TabsTrigger value="permissions" className="w-full justify-start text-left text-justify"> <ShieldCheck className="mr-2 shrink-0" /> <span className="truncate">Permissões</span> </TabsTrigger>
+          <TabsTrigger value="integrations" className="w-full justify-start text-left text-justify"> <Bot className="mr-2 shrink-0" /> <span className="truncate">Automação</span> </TabsTrigger>
+          <TabsTrigger value="subscription" className="w-full justify-start text-left text-justify"> <CreditCard className="mr-2 shrink-0" /> <span className="truncate">Assinatura</span> </TabsTrigger>
         </TabsList>
 
         <div className="flex-1">

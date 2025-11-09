@@ -4,6 +4,6 @@ export const firebaseConfig = {
   "apiKey": "AIzaSyDpq_iES-V8uzM3j1KMAmfefbvfR3PhU74",
   "authDomain": "barbercutbot.firebaseapp.com",
   "measurementId": "G-5G37Z2W3G5",
-  "storageBucket": "barbercutbot.appspot.com",
+  "storageBucket": "barbercutbot.firebasestorage.app",
   "messagingSenderId": "229266030377"
 };
