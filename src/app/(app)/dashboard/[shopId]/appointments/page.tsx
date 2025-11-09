@@ -251,21 +251,13 @@ export default function AppointmentsPage() {
 
             <div className="hidden lg:flex flex-col gap-6">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-base font-semibold capitalize whitespace-nowrap">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
-                        <div className="flex items-center gap-1">
-                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight className="h-4 w-4" /></Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         <Calendar
                             mode="single"
                             selected={selectedDate}
                             onSelect={(date) => date && setSelectedDate(date)}
                             locale={ptBR}
-                            className="p-0"
-                            classNames={{ caption_label: 'hidden' }}
+                            className="p-3"
                         />
                     </CardContent>
                 </Card>
