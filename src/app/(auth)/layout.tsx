@@ -15,22 +15,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   
-  useEffect(() => {
-    // If a user is found, the appropriate layout ((app) or cpanel) will handle
-    // the redirection. This layout's job is done.
-    if (!isUserLoading && user) {
-        if (user.role === 'admin') {
-            router.replace('/cpanel');
-        } else {
-            router.replace('/dashboard');
-        }
-    }
-  }, [user, isUserLoading, router]);
+  // This layout should not handle redirects. 
+  // It should simply render the children if the user is not yet authenticated,
+  // or a loader if auth state is pending. The protected layouts ((app) or cpanel)
+  // are responsible for redirecting already-authenticated users.
 
-
-  // While checking auth status OR if a user is found and redirection is imminent,
-  // show a loader. This is the key to preventing the "flicker" of the login form.
-  if (isUserLoading || user) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -38,6 +28,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // Only if loading is complete and there is NO user, render the children (login form).
+  // If loading is complete, render the children (login form, signup, setup, etc.)
   return <>{children}</>;
 }
