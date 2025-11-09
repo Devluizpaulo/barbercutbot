@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit, FieldValue, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit, FieldValue, addDoc, Timestamp } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { BarberShop, UserProfile } from './types';

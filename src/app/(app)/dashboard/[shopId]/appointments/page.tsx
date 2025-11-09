@@ -214,7 +214,7 @@ export default function AppointmentsPage() {
                 />
             </div>
 
-            <div className="hidden lg:flex flex-col gap-6">
+            <div className="hidden lg:flex flex-col gap-4">
                 <Card>
                     <CardContent className="p-0">
                         <Calendar
