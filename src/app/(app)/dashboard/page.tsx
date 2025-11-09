@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -25,18 +26,11 @@ export default function DashboardRedirectPage() {
       return; 
     }
 
-    // If the user is definitely not logged in, redirect them.
+    // If the user is definitely not logged in, the layout will handle it.
     if (!user) {
-      router.replace('/login');
       return;
     }
-
-    // If the user is an admin, send them to the control panel.
-    if (user.role === 'admin') {
-      router.replace('/cpanel');
-      return;
-    }
-
+    
     // If we have loaded the shops data and found at least one.
     if (shops && shops.length > 0) {
       const shop = shops[0];
