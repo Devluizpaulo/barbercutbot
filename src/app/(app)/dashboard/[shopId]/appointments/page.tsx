@@ -5,9 +5,13 @@ import { useState, useMemo } from 'react';
 import {
   PlusCircle,
   Filter,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { addDays, subDays } from 'date-fns';
+import { addDays, subDays, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -212,6 +216,22 @@ export default function AppointmentsPage() {
 
             <div className="hidden lg:flex flex-col gap-6">
                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between p-3">
+                        <CardTitle className="text-base font-medium flex-1 truncate">
+                            {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
+                        </CardTitle>
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setSelectedDate(subDays(selectedDate, 1))}>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                             <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => setSelectedDate(new Date())}>
+                                Hoje
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardHeader>
                     <CardContent className="p-0">
                         <Calendar
                             mode="single"
