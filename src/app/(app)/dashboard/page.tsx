@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoaderCircle, Settings, Rocket, ArrowRight } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -20,8 +20,6 @@ export default function DashboardDecisionPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const [firstShop, setFirstShop] = useState<BarberShop | null>(null);
-  const [isLoadingShop, setIsLoadingShop] = useState(true);
 
   const userShopsQuery = useMemoFirebase(() => (
     user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1)) : null
@@ -30,27 +28,15 @@ export default function DashboardDecisionPage() {
   const { data: shops, isLoading: isLoadingShopsHook } = useCollection<BarberShop>(userShopsQuery);
 
   useEffect(() => {
-    if (isUserLoading) return;
-
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.replace('/login');
-      return;
     }
+  }, [isUserLoading, user, router]);
 
-    if (!isLoadingShopsHook && shops) {
-      if (shops.length > 0) {
-        const shop = shops[0];
-        setFirstShop(shop);
-        // If setup is complete, redirect immediately to the main dashboard.
-        if (shop.isSetupComplete === true) {
-          router.replace(`/dashboard/${shop.id}`);
-        }
-      }
-      setIsLoadingShop(false);
-    }
-  }, [user, isUserLoading, shops, isLoadingShopsHook, router]);
-  
-  if (isUserLoading || isLoadingShop) {
+  // Combined loading state
+  const isLoading = isUserLoading || isLoadingShopsHook;
+
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center h-full">
         <div className="flex flex-col items-center gap-4 text-center">
@@ -62,6 +48,20 @@ export default function DashboardDecisionPage() {
     );
   }
 
+  const firstShop = shops?.[0];
+
+  // If there's a shop and its setup is complete, redirect.
+  if (firstShop && firstShop.isSetupComplete !== false) {
+    router.replace(`/dashboard/${firstShop.id}`);
+    // Return a loader while redirecting
+    return (
+      <div className="flex flex-1 items-center justify-center h-full">
+        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If there's a shop and setup is NOT complete, show the decision card.
   if (firstShop && firstShop.isSetupComplete === false) {
     return (
         <div className="flex flex-1 items-center justify-center h-full bg-secondary">
@@ -99,21 +99,16 @@ export default function DashboardDecisionPage() {
     )
   }
 
-  // Fallback case if no shop is found.
-  if (!firstShop) {
-     return (
-       <div className="flex flex-1 items-center justify-center h-full">
-         <div className="text-center">
-            <h2 className="text-xl font-semibold">Nenhuma loja encontrada</h2>
-            <p className="text-muted-foreground">Não encontramos uma barbearia associada a esta conta.</p>
-            <Button asChild className="mt-4">
-              <Link href="/signup">Criar uma nova loja</Link>
-            </Button>
-         </div>
+  // Fallback case if no shop is found after loading.
+  return (
+     <div className="flex flex-1 items-center justify-center h-full">
+       <div className="text-center">
+          <h2 className="text-xl font-semibold">Nenhuma loja encontrada</h2>
+          <p className="text-muted-foreground">Não encontramos uma barbearia associada a esta conta.</p>
+          <Button asChild className="mt-4">
+            <Link href="/signup">Criar uma nova loja</Link>
+          </Button>
        </div>
-     );
-  }
-
-  // This should ideally not be reached if the redirection logic works correctly.
-  return <div className="flex flex-1 items-center justify-center h-full"><LoaderCircle className="h-8 w-8 animate-spin" /></div>;
+     </div>
+  );
 }
