@@ -256,20 +256,24 @@ export default function AppointmentsPage() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
             {/* Left Sidebar */}
             <div className="hidden lg:flex flex-col gap-6 p-4 border-r">
-                <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</h3>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
-                    </div>
-                </div>
-                <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    locale={ptBR}
-                    className="rounded-md border"
-                />
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-base font-semibold">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            locale={ptBR}
+                            className="p-0"
+                        />
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2"><Filter/> Profissionais</CardTitle>
