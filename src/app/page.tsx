@@ -80,15 +80,16 @@ export default function LandingPage() {
 
       <main className="flex-1 pt-20">
         <section className="relative w-full h-[90vh] flex items-center">
-          <Image
-            src="/image/hero.png"
-            alt="Hero image of a barber shop"
-            fill
-            className="object-cover object-right"
-            priority
-            quality={100}
-            data-ai-hint="barber shop interior"
-          />
+          <div className="absolute inset-0">
+            <Image
+              src="/image/hero.png"
+              alt="Hero image of a barber shop"
+              fill
+              className="object-cover object-right"
+              priority
+              data-ai-hint="barber shop interior"
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
           <div className="relative z-10 container mx-auto px-4 md:px-6 text-white">
             <div className="max-w-xl">

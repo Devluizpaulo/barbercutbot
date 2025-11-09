@@ -61,15 +61,16 @@ export default function RecoverPage() {
   };
 
   return (
-     <div className="flex flex-col min-h-screen">
-        <Image
-            src="/image/hero.png"
-            alt="Fundo de uma barbearia estilosa"
-            fill
-            className="object-cover"
-            quality={90}
-            data-ai-hint="barber shop background"
-        />
+     <div className="relative flex flex-col min-h-screen">
+        <div className="absolute inset-0">
+            <Image
+                src="/image/hero.png"
+                alt="Fundo de uma barbearia estilosa"
+                fill
+                className="object-cover"
+                data-ai-hint="barber shop background"
+            />
+        </div>
         <div className="absolute inset-0 bg-black/70" />
 
         <main className="flex-1 flex items-center justify-center px-4 z-10">

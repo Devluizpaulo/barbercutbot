@@ -179,15 +179,16 @@ export default function SignupPage() {
 
 
   return (
-    <div className="flex flex-col min-h-screen">
-       <Image
-            src="/image/hero.png"
-            alt="Fundo de uma barbearia estilosa"
-            fill
-            className="object-cover"
-            quality={90}
-            data-ai-hint="barber shop background"
-        />
+    <div className="relative flex flex-col min-h-screen">
+       <div className="absolute inset-0">
+            <Image
+                src="/image/hero.png"
+                alt="Fundo de uma barbearia estilosa"
+                fill
+                className="object-cover"
+                data-ai-hint="barber shop background"
+            />
+        </div>
         <div className="absolute inset-0 bg-black/70" />
 
       <header className="fixed top-0 left-0 right-0 bg-transparent z-20">
