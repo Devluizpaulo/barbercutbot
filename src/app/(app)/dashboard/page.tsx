@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
-import { useUser, useFirestore } from '@/firebase';
-import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 
 export default function DashboardRedirectPage() {
@@ -13,41 +12,37 @@ export default function DashboardRedirectPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  useEffect(() => {
-    async function findUserShopAndRedirect() {
-      if (isUserLoading || !user || !firestore) {
-        return;
-      }
-      
-      // 1. Find the user's shop
-      const shopsQuery = query(
-        collection(firestore, 'barberShops'), 
-        where('ownerId', '==', user.uid), 
-        limit(1)
-      );
-      const shopsSnapshot = await getDocs(shopsQuery);
+  const userShopsQuery = useMemoFirebase(() => (
+    user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1)) : null
+  ), [firestore, user]);
 
-      if (!shopsSnapshot.empty) {
-        const shop = shopsSnapshot.docs[0].data() as BarberShop;
-        
-        // 2. Check if the setup is complete
-        if (shop.isSetupComplete) {
-          router.replace(`/dashboard/${shop.id}`);
-        } else {
-          router.replace(`/dashboard/setup/${shop.id}`);
-        }
-      } else {
-        // This case should ideally not happen if signup flow is correct,
-        // but it's a good fallback.
-        console.error("Nenhuma loja encontrada para o usuário. Redirecionando para criação de conta.");
-        // We might want to redirect to a page that allows creating a shop,
-        // or back to signup. For now, let's show an error state.
-        // Or, more robustly, attempt to create it. But for now, we'll just log.
-      }
+  const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(userShopsQuery);
+
+  useEffect(() => {
+    if (isUserLoading || isLoadingShops) {
+      return; // Aguarde o carregamento do usuário e das lojas
     }
 
-    findUserShopAndRedirect();
-  }, [user, isUserLoading, firestore, router]);
+    if (!user) {
+      // Se não houver usuário, redirecione para o login (embora o layout já deva fazer isso)
+      router.replace('/login');
+      return;
+    }
+
+    if (shops && shops.length > 0) {
+      const shop = shops[0];
+      if (shop.isSetupComplete) {
+        router.replace(`/dashboard/${shop.id}`);
+      } else {
+        router.replace(`/dashboard/setup/${shop.id}`);
+      }
+    } else if (!isLoadingShops) {
+      // Se terminou de carregar e não há lojas, pode ser um estado de erro ou um novo usuário cujo documento ainda não foi criado.
+      // O fluxo de cadastro agora cria a loja, então isso é um fallback.
+      console.error("Nenhuma loja encontrada para o usuário, mas o carregamento foi concluído. Verifique o processo de cadastro.");
+      // Poderia redirecionar para uma página de erro ou tentar criar uma loja aqui.
+    }
+  }, [user, isUserLoading, shops, isLoadingShops, router]);
 
   return (
     <div className="flex flex-1 items-center justify-center h-screen bg-secondary">

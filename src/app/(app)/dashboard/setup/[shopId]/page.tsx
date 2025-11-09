@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -57,22 +56,31 @@ export default function OnboardingPage() {
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
     defaultValues: {
-      name: shop?.name || '',
-      barberName: user?.displayName || '',
-      cep: shop?.cep || '',
-      address: shop?.address || '',
-      number: shop?.number || '',
-      phone: shop?.phone || '',
-      paymentMethods: shop?.paymentSettings?.filter(p => p.enabled).map(p => p.method) || ['money', 'pix'],
+      name: '',
+      barberName: '',
+      cep: '',
+      address: '',
+      number: '',
+      phone: '',
+      paymentMethods: ['money', 'pix'],
     },
   });
 
   useEffect(() => {
-    if (user && !form.getValues('barberName')) {
-        form.setValue('barberName', user.displayName || '');
+    // Populate form only once when shop data is loaded
+    if (shop) {
+        form.reset({
+            name: shop.name || '',
+            barberName: user?.displayName || '',
+            cep: shop.cep || '',
+            address: shop.address || '',
+            number: shop.number || '',
+            phone: shop.phone || '',
+            paymentMethods: shop.paymentSettings?.filter(p => p.enabled).map(p => p.method) || ['money', 'pix'],
+        });
     }
-  }, [user, form]);
-  
+  }, [shop]); // Depend only on shop data
+
   const { trigger, handleSubmit } = form;
 
   const next = async () => {
