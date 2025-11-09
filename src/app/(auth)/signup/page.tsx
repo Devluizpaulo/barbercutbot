@@ -23,7 +23,8 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
-import { setDoc, doc, serverTimestamp, collection, writeBatch } from 'firebase/firestore';
+import { createInitialShopAndUser } from '@/lib/google-auth-utils';
+
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -62,33 +63,6 @@ export default function SignupPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [acceptedLGPD, setAcceptedLGPD] = useState(false);
 
-  const createInitialShopAndUser = async (user: import('firebase/auth').User, providedShopName: string, providedFirstName: string, providedLastName: string) => {
-      const batch = writeBatch(firestore);
-      
-      const userDocRef = doc(firestore, "users", user.uid);
-      const shopDocRef = doc(collection(firestore, 'barberShops'));
-
-      batch.set(userDocRef, {
-        id: user.uid,
-        firstName: providedFirstName,
-        lastName: providedLastName,
-        email: user.email,
-        role: 'owner',
-        createdAt: serverTimestamp(),
-      });
-      
-      batch.set(shopDocRef, {
-        id: shopDocRef.id,
-        name: providedShopName,
-        ownerId: user.uid,
-        status: 'active',
-        isSetupComplete: false,
-        createdAt: serverTimestamp(),
-      });
-
-      await batch.commit();
-      return shopDocRef.id;
-  }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +104,7 @@ export default function SignupPage() {
             throw new Error("Não foi possível atualizar o perfil do usuário.");
         }
 
-        const newShopId = await createInitialShopAndUser(updatedUser, shopName, firstName, lastName);
+        const newShopId = await createInitialShopAndUser(firestore, updatedUser, shopName, firstName, lastName);
         
         toast({
           title: 'Conta criada com sucesso!',
@@ -174,7 +148,7 @@ export default function SignupPage() {
         const gFirstName = nameParts[0];
         const gLastName = nameParts.slice(1).join(' ');
 
-        const newShopId = await createInitialShopAndUser(user, shopName, gFirstName, gLastName);
+        const newShopId = await createInitialShopAndUser(firestore, user, shopName, gFirstName, gLastName);
         
         toast({ title: "Cadastro bem-sucedido!", description: "Vamos configurar sua loja." });
         router.push(`/dashboard/setup/${newShopId}`);

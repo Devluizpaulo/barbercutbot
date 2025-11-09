@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +26,7 @@ const steps = [
   { id: 'Step 3', name: 'Endereço', fields: ['cep', 'address', 'number'], icon: MapPin },
   { id: 'Step 4', name: 'Contato', fields: ['phone'], icon: Phone },
   { id: 'Step 5', name: 'Pagamentos', fields: ['paymentMethods'], icon: CreditCard },
-  { id: 'Step 6', name: 'Conclusão', icon: PartyPopper },
+  { id: 'Step 6', 'name': 'Conclusão', 'icon': PartyPopper },
 ];
 
 const setupSchema = z.object({
@@ -49,6 +50,7 @@ export default function OnboardingPage() {
   const { user } = useUser();
 
   const [currentStep, setCurrentStep] = useState(0);
+  const formInitializedRef = useRef(false);
 
   const shopRef = doc(firestore, 'barberShops', shopId);
   const { data: shop, isLoading } = useDoc<BarberShop>(shopRef);
@@ -67,8 +69,8 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    // Populate form only once when shop data is loaded
-    if (shop) {
+    // Populate form only once when shop data is loaded and not initialized before
+    if (shop && !formInitializedRef.current) {
         form.reset({
             name: shop.name || '',
             barberName: user?.displayName || '',
@@ -78,8 +80,9 @@ export default function OnboardingPage() {
             phone: shop.phone || '',
             paymentMethods: shop.paymentSettings?.filter(p => p.enabled).map(p => p.method) || ['money', 'pix'],
         });
+        formInitializedRef.current = true; // Mark as initialized
     }
-  }, [shop]); // Depend only on shop data
+  }, [shop, user, form]);
 
   const { trigger, handleSubmit } = form;
 
@@ -89,7 +92,11 @@ export default function OnboardingPage() {
     if (!output) return;
 
     if (currentStep < steps.length - 1) {
-      setCurrentStep(step => step + 1);
+        if (currentStep === steps.length - 2) {
+             await handleSubmit(onSubmit)();
+        } else {
+             setCurrentStep(step => step + 1);
+        }
     }
   };
 
@@ -135,20 +142,17 @@ export default function OnboardingPage() {
         await addDocumentNonBlocking(barbersRef, {
             barberShopId: shopId,
             firstName,
-            lastName,
+            lastName: lastName || '.',
             email: user.email,
             phone: values.phone || '',
             services: [],
             createdAt: serverTimestamp(),
         });
-
-
-        toast({
-            title: "Configuração Concluída!",
-            description: "Seu negócio está pronto para decolar."
-        });
-
-        router.push(`/dashboard/${shopId}`);
+        
+        // This will now be handled by the final step button
+        if (currentStep === steps.length - 2) {
+            setCurrentStep(step => step + 1);
+        }
 
     } catch (error) {
         console.error("Failed to save setup data:", error);
@@ -159,6 +163,14 @@ export default function OnboardingPage() {
         })
     }
   };
+  
+  const finishOnboarding = () => {
+     toast({
+            title: "Configuração Concluída!",
+            description: "Seu negócio está pronto para decolar."
+        });
+     router.push(`/dashboard/${shopId}`);
+  }
 
   if (isLoading || !shop) {
     return (
@@ -316,12 +328,12 @@ export default function OnboardingPage() {
                   </Button>
                 )}
                  {currentStep === steps.length - 2 && (
-                  <Button type="button" onClick={handleSubmit(onSubmit)}>
+                  <Button type="button" onClick={next}>
                     Finalizar Configuração
                   </Button>
                 )}
                  {currentStep === steps.length - 1 && (
-                  <Button type="submit">
+                  <Button type="button" onClick={finishOnboarding}>
                     Ir para o Dashboard
                   </Button>
                 )}
