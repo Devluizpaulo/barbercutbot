@@ -243,7 +243,7 @@ export default function FinancePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <button onClick={() => setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              <div role="button" tabIndex={0} onClick={() => setAddTransactionOpen(true)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50 cursor-pointer">
                 <div className="flex items-center gap-3">
                   <DollarSign className="h-5 w-5" />
                   <div>
@@ -252,8 +252,8 @@ export default function FinancePage() {
                   </div>
                 </div>
                 <Button size="sm">Abrir</Button>
-              </button>
-              <button onClick={() => setAddTransactionOpen(true)} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50">
+              </div>
+              <div role="button" tabIndex={0} onClick={() => {}} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && {}} className="flex items-center justify-between rounded-md border p-4 hover:bg-muted/50 cursor-pointer">
                 <div className="flex items-center gap-3">
                   <Store className="h-5 w-5" />
                   <div>
@@ -262,7 +262,7 @@ export default function FinancePage() {
                   </div>
                 </div>
                 <Button size="sm">Abrir</Button>
-              </button>
+              </div>
             </div>
           </CardContent>
         </Card>
