@@ -58,10 +58,15 @@ service cloud.firestore {
     }
     
     match /platform/{docId} {
-      // Any signed-in user can read platform settings (like emergency phone).
-      allow read: if isSignedIn();
-      // Only admins can change platform settings.
+      // Any signed-in user can read platform settings (like emergency phone). Admins can write.
+      allow read: if isSignedIn() || isAdmin();
       allow write: if isAdmin();
+    }
+    
+    // This includes /platform/pricing/plans
+    match /platform/pricing/plans/{planId} {
+        allow read: if true; // Plans are public
+        allow write: if isAdmin(); // Only admins can change plans
     }
 
     match /tickets/{ticketId} {

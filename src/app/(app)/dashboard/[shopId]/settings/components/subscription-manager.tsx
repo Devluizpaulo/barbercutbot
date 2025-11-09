@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -15,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, LoaderCircle, ExternalLink, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PLANS, Plan } from '@/lib/plans';
+import { Plan } from '@/lib/plans';
 import { createStripeCheckout } from '@/ai/flows/create-stripe-checkout-flow';
 import { createMercadoPagoCheckout } from '@/ai/flows/create-mercadopago-checkout-flow';
 import { createStripePortalSession } from '@/ai/flows/create-stripe-portal-session-flow';
@@ -146,6 +147,7 @@ export function SubscriptionStatusBanner({ shop, onManageBilling }: { shop: Barb
 export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) {
   const { user } = useUser();
   const { toast } = useToast();
+  const firestore = useFirestore();
   const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
   const [isCancelAlertOpen, setCancelAlertOpen] = useState(false);
@@ -160,6 +162,11 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
   const [notifiedRenewal, setNotifiedRenewal] = useState(false);
   const [subs, setSubs] = useState<Array<{ id: string; status: string; current_period_start: string | null; current_period_end: string | null; items: Array<{ id: string; priceId: string; productName?: string; metadata?: Record<string, any> }>; }>>([]);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('stripe');
+
+  // Fetch plans dynamically from Firestore
+  const plansQuery = useMemoFirebase(() => query(collection(firestore, 'platform', 'pricing', 'plans'), orderBy('price', 'asc')), [firestore]);
+  const { data: plans } = useCollection<Plan>(plansQuery);
+
 
   const formatMoney = (amountInCents: number, currency: string) => {
     try {
@@ -275,12 +282,12 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
 
 
   const currentPlanId = shop?.subscription?.plan || 'starter';
-  const currentPlan = PLANS.find(p => p.id === currentPlanId) || PLANS[0];
+  const currentPlan = plans?.find(p => p.id === currentPlanId) || plans?.[0];
   const status = shop?.subscription?.status;
   const isSubscriptionActive = status === 'active' || status === 'trialing';
   const subscriptionEndDate = toDate(shop?.subscription?.currentPeriodEnd);
   const daysToRenewal = subscriptionEndDate ? differenceInDays(subscriptionEndDate, new Date()) : null;
-  const addonIa = PLANS.find(p => p.id === 'addon-ia');
+  const addonIa = plans?.find(p => p.id === 'addon-ia');
   const addonIaActive = addonIa?.priceId ? !!activeAddons[addonIa.priceId] : false;
 
   // Tick a cada minuto para badges/alertas
@@ -369,6 +376,8 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
     }
   }, [subscriptionEndDate, status, nowTick, notifiedRenewal, toast]);
 
+  if (!currentPlan) return <LoaderCircle className="animate-spin" />;
+
   return (
     <>
       <div className="space-y-8">
@@ -402,7 +411,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
               <p className="text-sm text-muted-foreground">Faça um upgrade para ter acesso a mais recursos.</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {PLANS.filter(p => p.id !== 'starter' && p.metadata?.tipo !== 'addon').map((plan, index) => (
+              {(plans || []).filter(p => p.id !== 'starter' && p.metadata?.tipo !== 'addon').map((plan, index) => (
                 <Card key={plan.id} className={cn("flex flex-col", plan.isFeatured && "border-primary ring-2 ring-primary")}>
                   <CardHeader>
                     <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
@@ -414,7 +423,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
                         <span className="text-muted-foreground">/mês</span>
                       </div>
                       <ul className="space-y-3">
-                        {plan.features.map((feature, i) => (
+                        {(plan.features || []).map((feature, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                             <span className="text-sm">{feature}</span>
@@ -453,7 +462,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
             <p className="text-sm text-muted-foreground">Funcionalidades extras que você pode adicionar ao seu plano atual.</p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {PLANS.filter(p => p.metadata?.tipo === 'addon').map((addon) => {
+            {(plans || []).filter(p => p.metadata?.tipo === 'addon').map((addon) => {
               const includedInPremium = currentPlan.id === 'premium';
               const alreadySubscribed = addon.priceId ? !!activeAddons[addon.priceId] : false;
               return (
@@ -477,7 +486,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
                       <span className="text-muted-foreground">/mês</span>
                     </div>
                     <ul className="space-y-3">
-                      {addon.features.map((feature, i) => (
+                      {(addon.features || []).map((feature, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                           <span className="text-sm text-justify">{feature}</span>

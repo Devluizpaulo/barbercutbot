@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -8,13 +11,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { PLANS } from "@/lib/plans";
+import { Plan } from "@/lib/plans";
 import { cn } from "@/lib/utils";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LandingPage() {
   const avatar1 = PlaceHolderImages.find(p => p.id === 'avatar-1');
   const avatar2 = PlaceHolderImages.find(p => p.id === 'avatar-2');
   const avatar3 = PlaceHolderImages.find(p => p.id === 'avatar-3');
+  
+  const firestore = useFirestore();
+  const plansQuery = useMemoFirebase(() => query(collection(firestore, 'platform', 'pricing', 'plans'), orderBy('price', 'asc')), [firestore]);
+  const { data: plans, isLoading: isLoadingPlans } = useCollection<Plan>(plansQuery);
 
 
   return (
@@ -247,7 +257,12 @@ export default function LandingPage() {
                   className="w-full"
               >
                   <CarouselContent className="-ml-4">
-                      {PLANS.filter(p => p.id !== 'addon-ia').map((plan, index) => (
+                      {isLoadingPlans && Array.from({length: 3}).map((_, i) => (
+                           <CarouselItem key={i} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                               <Skeleton className="h-[500px] w-full" />
+                           </CarouselItem>
+                      ))}
+                      {(plans || []).filter(p => p.id !== 'addon-ia').map((plan, index) => (
                           <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
                               <Card className={cn("flex flex-col h-full", plan.isFeatured && "border-primary ring-2 ring-primary")}>
                                   <CardHeader className="text-left">
@@ -296,7 +311,7 @@ export default function LandingPage() {
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Termos de Serviço</Link>
              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidade</Link>
              <Button variant="ghost" size="sm" asChild>
-                <Link href="/admin">
+                <Link href="/cpanel/login">
                     <Shield className="mr-2 h-4 w-4"/>
                     Admin
                 </Link>
