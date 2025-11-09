@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit, FieldValue } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, limit, FieldValue, addDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { BarberShop, UserProfile } from './types';
@@ -42,7 +42,7 @@ export async function createInitialShopAndUser(firestore: Firestore, user: User,
       name: shopName,
       ownerId: user.uid,
       status: 'active',
-      isSetupComplete: false, // This forces the user into the onboarding flow.
+      isSetupComplete: true, // Setup is now considered complete by default.
       createdAt: serverTimestamp() as Timestamp,
     };
     batch.set(shopDocRef, shopData);
@@ -85,7 +85,7 @@ export async function ensureUserExists(firestore: Firestore, user: User): Promis
             name: "Minha Barbearia (Padrão)",
             ownerId: user.uid,
             status: 'active',
-            isSetupComplete: false,
+            isSetupComplete: true, // Setup is now considered complete by default.
             createdAt: serverTimestamp(),
         });
     }
