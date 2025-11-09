@@ -8,12 +8,16 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { collection, query, where, limit } from 'firebase/firestore';
 import type { BarberShop } from '@/lib/types';
 
+/**
+ * This is the central routing page after a user logs in.
+ * Its sole responsibility is to find the user's first shop and redirect them
+ * to the appropriate place: the setup page or the main dashboard.
+ */
 export default function DashboardRedirectPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  // Query to find the first shop owned by the user.
   const userShopsQuery = useMemoFirebase(() => (
     user ? query(collection(firestore, 'barberShops'), where('ownerId', '==', user.uid), limit(1)) : null
   ), [firestore, user]);
@@ -21,37 +25,36 @@ export default function DashboardRedirectPage() {
   const { data: shops, isLoading: isLoadingShops } = useCollection<BarberShop>(userShopsQuery);
 
   useEffect(() => {
-    // Wait until both user and shop data have been loaded.
+    // Wait until we know for sure if a user is logged in and we have their shop data.
     if (isUserLoading || isLoadingShops) {
       return; 
     }
 
-    // If the user is definitely not logged in, the layout will handle it.
+    // If there's no user, the main layout will handle the redirect to /login.
     if (!user) {
       return;
     }
     
-    // If we have loaded the shops data and found at least one.
+    // If we have shop data:
     if (shops && shops.length > 0) {
       const shop = shops[0];
-      // Check if the initial setup for the shop is complete.
-      if (shop.isSetupComplete) {
-        // If complete, go to the main dashboard for that shop.
-        router.replace(`/dashboard/${shop.id}`);
-      } else {
-        // If not complete, go to the setup page for that shop.
+      // If the shop setup is not complete, redirect to the onboarding process.
+      if (!shop.isSetupComplete) {
         router.replace(`/dashboard/setup/${shop.id}`);
+      } else {
+        // Otherwise, go to the main dashboard for that shop.
+        router.replace(`/dashboard/${shop.id}`);
       }
-    } else if (!isLoadingShops) {
-      // This case handles a logged-in user who for some reason has no shops associated with them.
-      // This might happen during the signup process before the shop document is created.
-      // We log an error for debugging but don't redirect, to avoid loops.
-      // The signup/login flow should handle creating a shop if one doesn't exist.
-      console.error("Nenhuma loja encontrada para o usuário, mas o carregamento foi concluído. Verifique o processo de cadastro.");
+    } else if (!isLoadingShops && shops?.length === 0) {
+      // This is a fallback case. If a logged-in user somehow has no shops,
+      // something went wrong during signup. We'll send them to the login page
+      // to restart the flow safely.
+      console.error("Nenhuma loja encontrada para o usuário. Redirecionando para login.");
+      router.replace('/login');
     }
   }, [user, isUserLoading, shops, isLoadingShops, router]);
 
-  // Render a loading state while we figure out where to send the user.
+  // Display a loading state while determining the correct route.
   return (
     <div className="flex flex-1 items-center justify-center h-full">
       <div className="flex flex-col items-center gap-4 text-center">

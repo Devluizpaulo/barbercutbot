@@ -95,23 +95,20 @@ export default function SignupPage() {
             displayName: `${firstName.trim()} ${lastName.trim()}`
         });
 
-        // We need to make sure the user object is updated with the display name.
-        // Reload the user to get the latest profile.
-        await user.reload();
+        await user.reload(); // Ensure the user object has the updated displayName
         const updatedUser = auth.currentUser;
-
-        if (!updatedUser) {
-            throw new Error("Não foi possível atualizar o perfil do usuário.");
+        if (!updatedUser?.displayName) {
+             throw new Error("Falha ao atualizar o perfil do usuário.");
         }
 
-        const newShopId = await createInitialShopAndUser(firestore, updatedUser, shopName, firstName, lastName);
+        await createInitialShopAndUser(firestore, updatedUser, shopName);
         
         toast({
           title: 'Conta criada com sucesso!',
-          description: 'Vamos configurar sua loja.',
+          description: 'Você será redirecionado para a página de login.',
         });
         
-        router.push(`/dashboard/setup/${newShopId}`);
+        router.push('/login');
 
     } catch (error: any) {
         let description = 'Ocorreu um erro ao criar sua conta. Tente novamente.';
@@ -144,14 +141,11 @@ export default function SignupPage() {
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        const nameParts = user.displayName?.split(' ') || ['Novo', 'Usuário'];
-        const gFirstName = nameParts[0];
-        const gLastName = nameParts.slice(1).join(' ');
 
-        const newShopId = await createInitialShopAndUser(firestore, user, shopName, gFirstName, gLastName);
+        await createInitialShopAndUser(firestore, user, shopName);
         
-        toast({ title: "Cadastro bem-sucedido!", description: "Vamos configurar sua loja." });
-        router.push(`/dashboard/setup/${newShopId}`);
+        toast({ title: "Cadastro com Google bem-sucedido!", description: "Você será redirecionado para o login." });
+        router.push('/login');
     } catch (error: any) {
         toast({
             variant: "destructive",

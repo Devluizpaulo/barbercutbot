@@ -29,13 +29,9 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, Lock, Menu, Shield, Mail, Scissors } from 'lucide-react';
-import { useAuth, useFirestore, useUser } from '@/firebase';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider, type User } from 'firebase/auth';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
-import { ensureUserExists } from '@/lib/google-auth-utils';
-import { collection, getDocs, query, where, limit } from 'firebase/firestore';
-import type { BarberShop } from '@/lib/types';
-
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -64,7 +60,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,6 +81,8 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         await signInWithEmailAndPassword(auth, email, password);
+        // After successful login, redirect to the dashboard.
+        // The dashboard page will handle routing to setup or main page.
         router.push('/dashboard');
     } catch (error: any) {
         let description = 'Ocorreu um erro ao tentar fazer login.';
@@ -112,7 +109,7 @@ export default function LoginPage() {
     
     try {
         await signInWithPopup(auth, provider);
-        // After login, the /dashboard page will handle logic
+        // After successful login, redirect to the dashboard.
         router.push('/dashboard');
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
