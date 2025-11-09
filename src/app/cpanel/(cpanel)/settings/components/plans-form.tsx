@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import {
   Card,
@@ -12,39 +12,54 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Edit, LoaderCircle, Save, PlusCircle, Trash2 } from 'lucide-react';
+import { Edit, LoaderCircle, Save, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { setDocumentNonBlocking, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import type { Plan } from '@/lib/plans';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function PlansForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const plansQuery = useMemo(() => query(collection(firestore, 'platform', 'pricing', 'plans'), orderBy('price', 'asc')), [firestore]);
-  const { data: plans, isLoading: isLoadingPlans } = useCollection<Plan>(plansQuery);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { control, register, handleSubmit, watch, getValues, setValue } = useForm({
+  const { control, register, handleSubmit, getValues, setValue } = useForm({
     defaultValues: {
-      plans: plans || [],
+      plans: [] as Plan[],
     }
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: 'plans',
     keyName: 'formId',
   });
-  
-  useState(() => {
-    setValue('plans', plans || []);
-  });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/plans');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        setPlans(data.plans || []);
+        setValue('plans', data.plans || []);
+      } catch (error) {
+        console.error("Failed to fetch plans:", error);
+        toast({ title: 'Erro ao carregar planos', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchPlans();
+  }, [setValue, toast]);
 
   const onSubmit = async (data: { plans: Plan[]}) => {
     setIsSubmitting(true);
@@ -71,6 +86,24 @@ export function PlansForm() {
         setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-8 w-1/3"/>
+                <Skeleton className="h-4 w-2/3"/>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Skeleton className="h-40 w-full"/>
+                <Skeleton className="h-10 w-32"/>
+            </CardContent>
+            <CardFooter>
+                 <Skeleton className="h-10 w-32 ml-auto"/>
+            </CardFooter>
+        </Card>
+    )
+  }
 
   return (
     <Card>

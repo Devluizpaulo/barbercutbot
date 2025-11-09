@@ -3,8 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -147,7 +146,6 @@ export function SubscriptionStatusBanner({ shop, onManageBilling }: { shop: Barb
 export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) {
   const { user } = useUser();
   const { toast } = useToast();
-  const firestore = useFirestore();
   const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
   const [isCancelAlertOpen, setCancelAlertOpen] = useState(false);
@@ -163,9 +161,22 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
   const [subs, setSubs] = useState<Array<{ id: string; status: string; current_period_start: string | null; current_period_end: string | null; items: Array<{ id: string; priceId: string; productName?: string; metadata?: Record<string, any> }>; }>>([]);
   const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('stripe');
 
-  // Fetch plans dynamically from Firestore
-  const plansQuery = useMemoFirebase(() => query(collection(firestore, 'platform', 'pricing', 'plans'), orderBy('price', 'asc')), [firestore]);
-  const { data: plans } = useCollection<Plan>(plansQuery);
+  // Fetch plans dynamically from public API
+  const [plans, setPlans] = useState<Plan[] | null>(null);
+  useEffect(() => {
+    async function fetchPlans() {
+        try {
+            const response = await fetch('/api/plans');
+            if (!response.ok) throw new Error('Failed to fetch plans');
+            const data = await response.json();
+            setPlans(data.plans || []);
+        } catch (error) {
+            console.error(error);
+            setPlans([]);
+        }
+    }
+    fetchPlans();
+  }, []);
 
 
   const formatMoney = (amountInCents: number, currency: string) => {
@@ -376,7 +387,7 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
     }
   }, [subscriptionEndDate, status, nowTick, notifiedRenewal, toast]);
 
-  if (!currentPlan) return <LoaderCircle className="animate-spin" />;
+  if (!currentPlan || !plans) return <LoaderCircle className="animate-spin" />;
 
   return (
     <>

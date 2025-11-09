@@ -13,18 +13,36 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Plan } from "@/lib/plans";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const avatar1 = PlaceHolderImages.find(p => p.id === 'avatar-1');
   const avatar2 = PlaceHolderImages.find(p => p.id === 'avatar-2');
   const avatar3 = PlaceHolderImages.find(p => p.id === 'avatar-3');
   
-  const firestore = useFirestore();
-  const plansQuery = useMemoFirebase(() => query(collection(firestore, 'platform', 'pricing', 'plans'), orderBy('price', 'asc')), [firestore]);
-  const { data: plans, isLoading: isLoadingPlans } = useCollection<Plan>(plansQuery);
+  const [plans, setPlans] = useState<Plan[] | null>(null);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    async function fetchPlans() {
+        try {
+            setIsLoadingPlans(true);
+            const response = await fetch('/api/plans');
+            if (!response.ok) {
+                throw new Error('Failed to fetch plans');
+            }
+            const data = await response.json();
+            setPlans(data.plans || []);
+        } catch (error) {
+            console.error("Error fetching plans:", error);
+            setPlans([]); // Set to empty array on error
+        } finally {
+            setIsLoadingPlans(false);
+        }
+    }
+    fetchPlans();
+  }, []);
 
 
   return (
