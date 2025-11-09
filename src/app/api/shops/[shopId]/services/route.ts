@@ -20,6 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: { shopId: stri
 
     return NextResponse.json({ items });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 });
+    console.error('Error fetching services:', e);
+    return NextResponse.json({ error: e?.message || 'Internal server error' }, { status: 500 });
   }
 }

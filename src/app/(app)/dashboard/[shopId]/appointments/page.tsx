@@ -1,17 +1,13 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useMemo } from 'react';
 import {
   PlusCircle,
-  ChevronLeft,
-  ChevronRight,
   Filter,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { format, addDays, subDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { addDays, subDays } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,8 +25,8 @@ import {
 
 import { AddAppointmentForm } from './add-appointment-form';
 
-import { useFirestore, useUser, useAuth } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc, query, collection, where, Timestamp } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
 import { useToast } from '@/hooks/use-toast';
@@ -59,63 +55,35 @@ export default function AppointmentsPage() {
   const shopId = params.shopId as string;
   const firestore = useFirestore();
   const { user } = useUser();
-  const auth = useAuth();
   const { toast } = useToast();
 
-  const [appointments, setAppointments] = useState<Appointment[] | null>(null);
-  const [customers, setCustomers] = useState<Customer[] | null>(null);
-  const [barbers, setBarbers] = useState<Barber[] | null>(null);
-  const [services, setServices] = useState<Service[] | null>(null);
-  const [listsLoading, setListsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!user || !auth?.currentUser || !shopId) {
-        setAppointments(null);
-        setCustomers(null);
-        setBarbers(null);
-        setServices(null);
-        setListsLoading(false);
-        return;
-      }
-      setListsLoading(true);
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` } as HeadersInit;
-        const [a, c, b, s] = await Promise.all([
-          fetch(`/api/shops/${shopId}/appointments`, { headers }),
-          fetch(`/api/shops/${shopId}/customers`, { headers }),
-          fetch(`/api/shops/${shopId}/barbers`, { headers }),
-          fetch(`/api/shops/${shopId}/services`, { headers }),
-        ]);
-        if (cancelled) return;
-        const [aj, cj, bj, sj] = await Promise.all([a.json(), c.json(), b.json(), s.json()]);
-        setAppointments(aj.items || []);
-        setCustomers(cj.items || []);
-        setBarbers(bj.items || []);
-        setServices(sj.items || []);
-        
-        // Initially, set all barbers as visible
-        if (bj.items) {
-          setVisibleBarberIds(bj.items.map((barber: Barber) => barber.id));
-        }
-
-      } catch (err) {
-        console.error('Erro ao carregar listas', err);
-        setAppointments([]);
-        setCustomers([]);
-        setBarbers([]);
-        setServices([]);
-      } finally {
-        if (!cancelled) setListsLoading(false);
-      }
+  const toDate = (timestamp: Timestamp | Date | string): Date => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate();
     }
-    load();
-    return () => { cancelled = true; };
-  }, [user, shopId, auth]);
+    return new Date(timestamp);
+  }
 
-  const isLoading = listsLoading;
+  const appointmentsQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'appointments'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const { data: appointments, isLoading: isLoadingAppointments } = useCollection<Appointment>(appointmentsQuery);
+
+  const customersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'customers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const { data: customers, isLoading: isLoadingCustomers } = useCollection<Customer>(customersQuery);
+  
+  const barbersQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'barbers'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const { data: barbers, isLoading: isLoadingBarbers } = useCollection<Barber>(barbersQuery);
+  
+  const servicesQuery = useMemoFirebase(() => (user && shopId) ? query(collection(firestore, 'barberShops', shopId, 'services'), where('barberShopId', '==', shopId)) : null, [firestore, shopId, user]);
+  const { data: services, isLoading: isLoadingServices } = useCollection<Service>(servicesQuery);
+
+  const isLoading = isLoadingAppointments || isLoadingCustomers || isLoadingBarbers || isLoadingServices;
+  
+  // Set all barbers as visible initially
+  useMemo(() => {
+    if (barbers) {
+        setVisibleBarberIds(barbers.map((barber: Barber) => barber.id));
+    }
+  }, [barbers]);
 
   const handleBarberVisibilityChange = (barberId: string, checked: boolean | 'indeterminate') => {
     setVisibleBarberIds(prev => {
@@ -141,12 +109,6 @@ export default function AppointmentsPage() {
     setFormOpen(false);
     setSelectedAppointment(undefined);
   };
-
-  const changeDate = (amount: number) => {
-    setSelectedDate(prev => addDays(prev, amount));
-  };
-
-  const goToday = () => setSelectedDate(new Date());
 
   const handleEdit = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -196,7 +158,6 @@ export default function AppointmentsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <Button variant="outline" onClick={goToday}>Hoje</Button>
             <Dialog
               open={isFormOpen}
               onOpenChange={(isOpen) => {
