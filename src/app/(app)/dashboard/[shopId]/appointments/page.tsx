@@ -7,10 +7,6 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
-  Store,
-  Users,
-  LayoutGrid,
   Filter,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -18,21 +14,9 @@ import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 import {
   Dialog,
@@ -49,8 +33,6 @@ import { useFirestore, useUser, useAuth } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import type { Appointment, Customer, Barber, Service } from '@/lib/types';
 import { CalendarView } from './calendar-view';
-import { CashierDialog } from '../cashier-dialog';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -66,7 +48,6 @@ import {
 
 export default function AppointmentsPage() {
   const [isFormOpen, setFormOpen] = useState(false);
-  const [isCashierOpen, setIsCashierOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -90,7 +71,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!user || !shopId || !auth?.currentUser) {
+      if (!user || !auth?.currentUser || !shopId) {
         setAppointments(null);
         setCustomers(null);
         setBarbers(null);
@@ -204,11 +185,10 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <div className="flex flex-col h-full gap-4">
+      <div className="flex flex-col h-full gap-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-              <LayoutGrid />
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-headline">
               Agenda
             </h1>
             <p className="text-muted-foreground">
@@ -253,9 +233,8 @@ export default function AppointmentsPage() {
           </div>
         </div>
         
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 -mx-4 -mb-4 sm:-mx-6 sm:-mb-8">
-            {/* Main Calendar View */}
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 pr-4 sm:pr-6 pb-4 sm:pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 flex-1 min-h-0">
+            <div className="flex-1 flex flex-col min-h-0">
                 <CalendarView 
                     appointments={appointments || []}
                     barbers={filteredBarbers}
@@ -270,11 +249,10 @@ export default function AppointmentsPage() {
                 />
             </div>
 
-            {/* Right Sidebar */}
-            <div className="hidden lg:flex flex-col gap-6 p-4 border-l">
+            <div className="hidden lg:flex flex-col gap-6">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold capitalize">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <CardTitle className="text-base font-semibold capitalize whitespace-nowrap">{format(selectedDate, 'MMMM yyyy', { locale: ptBR })}</CardTitle>
                         <div className="flex items-center gap-1">
                             <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(-1)}><ChevronLeft/></Button>
                             <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => changeDate(1)}><ChevronRight/></Button>
@@ -315,26 +293,6 @@ export default function AppointmentsPage() {
             </div>
         </div>
       </div>
-      <CashierDialog 
-        open={isCashierOpen} 
-        onOpenChange={setIsCashierOpen} 
-        shopId={shopId} 
-       />
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-                onClick={() => setIsCashierOpen(true)}
-                className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg"
-                size="icon"
-            >
-                <Store className="h-8 w-8" />
-                <span className="sr-only">Abrir Caixa</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left" sideOffset={10}>Abrir caixa</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
 
       <AlertDialog open={!!appointmentToCancel} onOpenChange={(isOpen) => !isOpen && setAppointmentToCancel(null)}>
           <AlertDialogContent>
