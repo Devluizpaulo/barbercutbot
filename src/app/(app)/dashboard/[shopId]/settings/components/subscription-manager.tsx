@@ -350,74 +350,70 @@ export function SubscriptionManager({ shopId, shop }: SubscriptionManagerProps) 
     <>
       <div className="space-y-8">
         <SubscriptionStatusBanner shop={shop} onManageBilling={handleManageBilling} />
-
-        {/* Dados da Conta primeiro */}
         <Card>
           <CardHeader>
-            <CardTitle>Dados da Conta</CardTitle>
-            <CardDescription className="text-justify">Informações principais da sua barbearia e assinatura.</CardDescription>
+            <CardTitle>Seu Plano Atual</CardTitle>
+            <CardDescription className="text-justify">
+              {currentPlan.description}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground">Criação da conta</div>
-              <div className="font-medium">{shop.createdAt ? fmtDateBR(new Date((shop.createdAt as any).toDate ? (shop.createdAt as any).toDate() : shop.createdAt), 'dd/MM/yyyy HH:mm') : '—'}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Plano atual</div>
-              <div className="font-medium">{currentPlan.name}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Próxima cobrança</div>
-              <div className="font-medium">{subscriptionEndDate ? fmtDateBR(subscriptionEndDate, 'dd/MM/yyyy HH:mm') : '—'}</div>
-            </div>
+          <CardContent>
+             <div className="flex flex-col sm:flex-row items-start sm:items-baseline gap-2">
+                <span className="text-4xl font-bold">R${currentPlan.price.toFixed(2)}</span>
+                <span className="text-muted-foreground">/mês</span>
+             </div>
           </CardContent>
+          {isSubscriptionActive && (
+            <CardFooter>
+              <Button variant="outline" onClick={handleManageBilling} disabled={isBillingLoading}>
+                 {isBillingLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                Gerenciar Assinatura e Faturas
+              </Button>
+            </CardFooter>
+          )}
         </Card>
 
-        {/* Histórico de Assinaturas depois dos dados */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Assinaturas</CardTitle>
-            <CardDescription className="text-justify">Períodos, status e produtos vinculados à sua assinatura.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {subs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum histórico disponível.</p>
-            ) : (
-              <div className="divide-y rounded-md border">
-                {subs.map((s) => (
-                  <div key={s.id} className="p-3 space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-mono text-xs md:text-sm">{s.id}</div>
-                      <Badge className="capitalize" variant={s.status === 'active' ? 'default' : s.status === 'trialing' ? 'secondary' : 'outline'}>{s.status}</Badge>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <div className="text-muted-foreground">Início do período</div>
-                        <div>{s.current_period_start ? fmtDateBR(new Date(s.current_period_start), 'dd/MM/yyyy HH:mm') : '—'}</div>
+        <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold">Mudar de Plano</h3>
+              <p className="text-sm text-muted-foreground">Faça um upgrade para ter acesso a mais recursos.</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {PLANS.filter(p => p.id !== 'starter' && p.metadata?.tipo !== 'addon').map((plan, index) => (
+                <Card key={plan.id} className={cn("flex flex-col", plan.isFeatured && "border-primary")}>
+                  <CardHeader>
+                    <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
+                    <CardDescription className="text-justify">{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 space-y-6">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold">R${plan.price.toFixed(2)}</span>
+                        <span className="text-muted-foreground">/mês</span>
                       </div>
-                      <div>
-                        <div className="text-muted-foreground">Fim do período</div>
-                        <div>{s.current_period_end ? fmtDateBR(new Date(s.current_period_end), 'dd/MM/yyyy HH:mm') : '—'}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">Produtos</div>
-                        <div className="space-y-1">
-                          {s.items?.map(it => (
-                            <div key={it.id} className="flex items-center gap-2">
-                              <span className="inline-block rounded-sm border px-2 py-0.5 text-xs">{it.productName || it.priceId}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <Check className="h-5 w-5 text-green-500" />
+                            <span className="text-sm text-justify">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleCheckout(plan)} 
+                      disabled={isBillingLoading || currentPlan.id === plan.id}
+                    >
+                      {isBillingLoading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin"/>}
+                      {currentPlan.id === plan.id ? 'Plano Atual' : 'Fazer Upgrade'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+        </div>
 
-        {/* Add-ons */}
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold">Add-ons</h3>
