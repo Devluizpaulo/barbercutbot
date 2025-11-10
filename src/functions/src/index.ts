@@ -1,8 +1,7 @@
 
 import * as admin from 'firebase-admin';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
-import type { UserRecord } from 'firebase-admin/auth';
+import { onCall, HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
 
 admin.initializeApp();
 const db = getFirestore();
@@ -10,7 +9,6 @@ const db = getFirestore();
 // =============================================
 // CORS Configuration
 // =============================================
-// Define allowed origins for CORS. This is crucial for Vercel deployment.
 const corsOptions = {
     cors: [
         'http://localhost:3000', 
@@ -21,20 +19,12 @@ const corsOptions = {
     ]
 };
 
-
 // =============================================
 // FUNÇÕES AUXILIARES DE SEGURANÇA
 // =============================================
 
-/**
- * Verifica se um usuário tem a role de 'admin' no Firestore.
- * @param {string | undefined} uid O UID do usuário a ser verificado.
- * @returns {Promise<boolean>} True se o usuário for admin, false caso contrário.
- */
 async function isAdmin(uid: string | undefined): Promise<boolean> {
-    if (!uid) {
-        return false;
-    }
+    if (!uid) return false;
     try {
         const userDoc = await db.collection('users').doc(uid).get();
         return userDoc.exists && userDoc.data()?.role === 'admin';
@@ -44,15 +34,10 @@ async function isAdmin(uid: string | undefined): Promise<boolean> {
     }
 }
 
-
 // =============================================
 // FUNÇÕES DE SETUP E GERENCIAMENTO
 // =============================================
 
-/**
- * Verifica se já existe um usuário com a role de 'admin'.
- * Chamada pela página /setup para decidir se o formulário deve ser exibido.
- */
 export const checkAdminExists = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     try {
         const usersRef = db.collection('users');
@@ -64,10 +49,6 @@ export const checkAdminExists = onCall({ region: 'us-central1', ...corsOptions }
     }
 });
 
-/**
- * Atualiza os dados básicos do usuário e sincroniza o papel
- * com o custom claim de admin (promover/demover).
- */
 export const updateUserRole = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     if (!request.auth || !await isAdmin(request.auth?.uid)) {
         throw new HttpsError('permission-denied', 'Apenas administradores podem atualizar usuários.');
@@ -75,32 +56,25 @@ export const updateUserRole = onCall({ region: 'us-central1', ...corsOptions }, 
 
     const { uid, firstName, lastName, role } = request.data || {};
 
-    if (!uid) {
-        throw new HttpsError('invalid-argument', 'uid é obrigatório.');
-    }
+    if (!uid) throw new HttpsError('invalid-argument', 'uid é obrigatório.');
     if (!role || !['admin', 'support', 'owner', 'staff'].includes(role)) {
         throw new HttpsError('invalid-argument', 'role inválida.');
     }
 
     try {
-        // Atualiza Firestore
         const userDocRef = db.collection('users').doc(uid);
         const updatePayload: Record<string, any> = { role };
         if (typeof firstName === 'string') updatePayload.firstName = firstName;
         if (typeof lastName === 'string') updatePayload.lastName = lastName;
         await userDocRef.update(updatePayload);
 
-        // Sincroniza custom claim
         if (role === 'admin') {
             await admin.auth().setCustomUserClaims(uid, { admin: true });
         } else {
-            // Remove all custom claims if the role is not admin
             await admin.auth().setCustomUserClaims(uid, {});
         }
 
-        // Força atualização de token no cliente
         await admin.auth().revokeRefreshTokens(uid);
-
         return { success: true };
     } catch (error: any) {
         console.error('Error in updateUserRole:', error);
@@ -108,13 +82,27 @@ export const updateUserRole = onCall({ region: 'us-central1', ...corsOptions }, 
     }
 });
 
-/**
- * Cria o primeiro usuário administrador.
- * Esta função só pode ser executada se NENHUM administrador existir.
- */
+export const deleteUser = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
+    if (!request.auth || !await isAdmin(request.auth?.uid)) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem remover usuários.');
+    }
+    const { uid } = request.data;
+    if (!uid) throw new HttpsError('invalid-argument', 'uid é obrigatório para remover um usuário.');
+
+    try {
+        // Delete from Firestore
+        await db.collection('users').doc(uid).delete();
+        // Delete from Firebase Auth
+        await admin.auth().deleteUser(uid);
+        return { success: true, message: `Usuário ${uid} removido com sucesso.` };
+    } catch (error: any) {
+        console.error('Error deleting user:', error);
+        throw new HttpsError('internal', `Falha ao remover usuário: ${error.message}`);
+    }
+});
+
 export const setupAdminUser = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     const { email, password, firstName, lastName } = request.data;
-
     if (!email || !password || !firstName || !lastName) {
         throw new HttpsError('invalid-argument', 'Email, senha, nome e sobrenome são obrigatórios.');
     }
@@ -128,12 +116,7 @@ export const setupAdminUser = onCall({ region: 'us-central1', ...corsOptions }, 
 
     let userRecord;
     try {
-        userRecord = await admin.auth().createUser({
-            email,
-            password,
-            displayName: `${firstName} ${lastName}`,
-        });
-        
+        userRecord = await admin.auth().createUser({ email, password, displayName: `${firstName} ${lastName}` });
         await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
 
         const userDocRef = usersRef.doc(userRecord.uid);
@@ -147,20 +130,13 @@ export const setupAdminUser = onCall({ region: 'us-central1', ...corsOptions }, 
         });
         
         return { success: true, userId: userRecord.uid };
-
     } catch (error: any) {
-        if (userRecord) {
-            await admin.auth().deleteUser(userRecord.uid);
-        }
+        if (userRecord) await admin.auth().deleteUser(userRecord.uid);
         console.error("Error in setupAdminUser:", error);
         throw new HttpsError('internal', `Erro ao configurar admin: ${error.message}`);
     }
 });
 
-
-/**
- * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
- */
 export const createAdminUser = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     if (!request.auth || !await isAdmin(request.auth?.uid)) {
         throw new HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
@@ -176,11 +152,7 @@ export const createAdminUser = onCall({ region: 'us-central1', ...corsOptions },
 
     let userRecord;
     try {
-        userRecord = await admin.auth().createUser({
-            email,
-            password,
-            displayName: `${firstName} ${lastName}`,
-        });
+        userRecord = await admin.auth().createUser({ email, password, displayName: `${firstName} ${lastName}` });
         
         if (role === 'admin') {
             await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
@@ -197,70 +169,9 @@ export const createAdminUser = onCall({ region: 'us-central1', ...corsOptions },
         });
         
         return { success: true, userId: userRecord.uid, message: `Usuário ${email} criado com o perfil ${role}.` };
-
     } catch (error: any) {
-        if (userRecord) {
-            await admin.auth().deleteUser(userRecord.uid);
-        }
+        if (userRecord) await admin.auth().deleteUser(userRecord.uid);
         console.error("Error in createAdminUser:", error);
         throw new HttpsError('internal', `Erro ao criar usuário: ${error.message}`);
     }
 });
-
-
-/**
- * Gatilho que é disparado quando um novo usuário se registra pelo fluxo normal.
- * Garante que cada usuário tenha um documento correspondente no Firestore e uma loja padrão.
- * 
- * NOTA: Esta função está temporariamente desabilitada devido a problemas de compatibilidade
- * com Firebase Functions v5. A criação de usuários está sendo feita diretamente no frontend.
- */
-/*
-export const onusercreate = onUserCreated(async (event: any): Promise<void> => {
-    const user = event.data; // The user object from the event.
-    const userDocRef = db.collection('users').doc(user.uid);
-    
-    // Check if a document for this user already exists (e.g., created by admin setup).
-    const userDoc = await userDocRef.get();
-    if (userDoc.exists) {
-        console.log(`Document for user ${user.uid} already exists. Skipping creation.`);
-        return;
-    }
-    
-    const batch = db.batch();
-    
-    // 1. Create the user's document
-    const nameParts = user.displayName?.split(' ') || [];
-    const firstName = nameParts.shift() || 'Novo';
-    const lastName = nameParts.join(' ') || 'Usuário';
-
-    batch.set(userDocRef, {
-        id: user.uid,
-        firstName: firstName,
-        lastName: lastName,
-        email: user.email,
-        role: 'owner',
-        createdAt: FieldValue.serverTimestamp(),
-    });
-
-    // 2. Create a default shop for the new user
-    const newShopRef = db.collection('barberShops').doc();
-    batch.set(newShopRef, {
-        id: newShopRef.id,
-        name: `Meu Negócio`,
-        ownerId: user.uid,
-        status: 'active',
-        createdAt: FieldValue.serverTimestamp(),
-    });
-
-    try {
-        await batch.commit();
-        console.log(`User ${user.uid} and their default shop ${newShopRef.id} created successfully.`);
-    } catch (error) {
-        console.error(`Error creating user document and shop for ${user.uid}:`, error);
-        // Optional: Add more robust error handling, like sending an alert.
-    }
-});
-*/
-
-    

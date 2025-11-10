@@ -25,20 +25,30 @@ export default function CPanelUsersPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const { owners, team } = useMemo(() => {
+    if (isLoading) return { owners: [], team: [] };
     const ownersList = users?.filter(u => u.role === 'owner') || [];
     const teamList = users?.filter(u => u.role === 'admin' || u.role === 'support') || [];
-    return { owners: ownersList, team: teamList };
-  }, [users]);
+    
+    if (!searchTerm) {
+      return { owners: ownersList, team: teamList };
+    }
 
-  const filteredOwners = useMemo(() => {
-    if (!searchTerm) return owners;
     const lowercasedTerm = searchTerm.toLowerCase();
-    return owners.filter(user =>
+    const filteredOwners = ownersList.filter(user =>
         (user.firstName && user.firstName.toLowerCase().includes(lowercasedTerm)) ||
         (user.lastName && user.lastName.toLowerCase().includes(lowercasedTerm)) ||
         user.email.toLowerCase().includes(lowercasedTerm)
     );
-  }, [owners, searchTerm]);
+
+    const filteredTeam = teamList.filter(user =>
+        (user.firstName && user.firstName.toLowerCase().includes(lowercasedTerm)) ||
+        (user.lastName && user.lastName.toLowerCase().includes(lowercasedTerm)) ||
+        user.email.toLowerCase().includes(lowercasedTerm) ||
+        user.role.toLowerCase().includes(lowercasedTerm)
+    );
+
+    return { owners: filteredOwners, team: filteredTeam };
+  }, [users, searchTerm, isLoading]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -82,7 +92,7 @@ export default function CPanelUsersPage() {
             </CardHeader>
             <CardContent>
               {isLoading && <Skeleton className="h-[200px] w-full" />}
-              {!isLoading && <TeamTable users={filteredOwners} isLoading={isLoading} />}
+              {!isLoading && <TeamTable users={owners} isLoading={isLoading} />}
             </CardContent>
           </Card>
         </TabsContent>
