@@ -57,12 +57,12 @@ Use este método se a interface de setup falhar ou se você precisar **adicionar
 
 ### **Passo 3: Adicionar o Custom Claim (Crucial)**
 
-Para que o usuário tenha acesso "god-mode" nas regras de segurança, é **essencial** definir um Custom Claim.
+Para que o usuário tenha acesso "god-mode" nas regras de segurança, é **essencial** definir um Custom Claim. Este script foi projetado para ser executado localmente.
 
-1.  Abra o arquivo `add-admin-claim.js` na raiz do projeto.
-2.  **Cole o UID** do usuário na variável `userUid`.
-3.  Certifique-se de que sua variável de ambiente `GOOGLE_APPLICATION_CREDENTIALS` está configurada corretamente (veja as instruções no arquivo).
-4.  Execute o script no seu terminal:
+1.  **Baixe as Credenciais:** Vá para o Firebase Console > Configurações do Projeto > Contas de Serviço. Clique em "Gerar nova chave privada" e salve o arquivo.
+2.  **Posicione o Arquivo:** Renomeie o arquivo baixado para `firebase-admin.json` e coloque-o na raiz do seu projeto. O arquivo já está no `.gitignore` para sua segurança.
+3.  **Atualize o Script:** Abra o arquivo `add-admin-claim.js` na raiz do projeto e cole o UID do usuário na variável `userUid`.
+4.  **Execute o Script:** No seu terminal, execute o comando:
     ```bash
     node add-admin-claim.js
     ```

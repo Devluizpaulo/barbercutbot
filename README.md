@@ -18,6 +18,7 @@ Crie um arquivo `.env.local` na raiz do projeto. As credenciais do Firebase e do
 # Firebase Admin (Necessário para rodar o script de setup local)
 # Baixe o arquivo JSON no Console do Firebase > Config. do Projeto > Contas de Serviço
 # E cole o CONTEÚDO do JSON aqui.
+# Esta variável é usada pelo ambiente de build (Vercel) e pelo backend Next.js.
 GOOGLE_APPLICATION_CREDENTIALS='{ "type": "service_account", ... }'
 
 # Chaves da Stripe (Obtenha em dashboard.stripe.com/apikeys)

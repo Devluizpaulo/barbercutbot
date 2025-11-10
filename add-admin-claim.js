@@ -1,17 +1,29 @@
 // Script para adicionar a permissão de superusuário (custom claim) a um usuário
 const admin = require('firebase-admin');
+const path = require('path');
+const fs = require('fs');
 
-// INSTRUÇÕES:
-// 1. Vá para o Firebase Console > Project Settings > Service accounts
-// 2. Clique em "Generate new private key" e salve o arquivo JSON no seu computador.
-// 3. NÃO adicione este arquivo ao seu repositório Git.
-// 4. Defina a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS para o caminho deste arquivo.
-//    Ex (Linux/macOS): export GOOGLE_APPLICATION_CREDENTIALS="/home/user/Downloads/my-project-firebase-adminsdk.json"
-//    Ex (Windows): set GOOGLE_APPLICATION_CREDENTIALS="C:\Users\user\Downloads\my-project-firebase-adminsdk.json"
+// --- INSTRUÇÕES ---
+// 1. Vá para o Firebase Console > Project Settings > Service accounts.
+// 2. Clique em "Generate new private key" e salve o arquivo JSON.
+// 3. Renomeie o arquivo para "firebase-admin.json".
+// 4. Coloque este arquivo na raiz do seu projeto (no mesmo diretório deste script).
+// 5. NUNCA adicione este arquivo ao seu repositório Git. (Ele já está no .gitignore).
 
-// Inicializa o Firebase Admin SDK. Ele usará as credenciais da variável de ambiente.
+const serviceAccountPath = path.join(__dirname, 'firebase-admin.json');
+
+if (!fs.existsSync(serviceAccountPath)) {
+    console.error('❌ ERRO: Arquivo de credenciais "firebase-admin.json" não encontrado.');
+    console.error('Por favor, siga as instruções no topo deste arquivo para configurá-lo.');
+    process.exit(1);
+}
+
+const serviceAccount = require(serviceAccountPath);
+
+// Inicializa o Firebase Admin SDK com as credenciais do arquivo.
 admin.initializeApp({
-    projectId: 'barbercutbot'
+  credential: admin.credential.cert(serviceAccount),
+  projectId: 'barbercutbot'
 });
 
 // =========================================================================
