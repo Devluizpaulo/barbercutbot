@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -21,6 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu';
+import { EditUserDialog } from '../users/edit-user-dialog';
 
 interface TeamTableProps {
   users: UserProfile[];
@@ -28,6 +30,8 @@ interface TeamTableProps {
 }
 
 export function TeamTable({ users, isLoading }: TeamTableProps) {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   return (
     <Table>
       <TableHeader>
@@ -74,7 +78,7 @@ export function TeamTable({ users, isLoading }: TeamTableProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>Editar</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSelectedUser(user); setIsEditOpen(true); }}>Editar</DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive focus:text-destructive">Remover</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -87,6 +91,19 @@ export function TeamTable({ users, isLoading }: TeamTableProps) {
           </TableRow>
         )}
       </TableBody>
+      {selectedUser && (
+        <EditUserDialog
+          user={selectedUser}
+          open={isEditOpen}
+          onOpenChange={(open) => {
+            setIsEditOpen(open);
+            if (!open) {
+              setSelectedUser(null);
+            }
+          }}
+        />
+      )}
     </Table>
   );
 }
+

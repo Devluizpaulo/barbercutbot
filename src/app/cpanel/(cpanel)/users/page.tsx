@@ -15,10 +15,14 @@ import { useCPanel } from '@/app/cpanel/context';
 import { TeamTable } from '@/app/cpanel/(cpanel)/team/team-table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AddTeamMemberForm } from '@/app/cpanel/(cpanel)/team/add-team-member-form';
 
 export default function CPanelUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const { users, isLoading } = useCPanel();
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const { owners, team } = useMemo(() => {
     const ownersList = users?.filter(u => u.role === 'owner') || [];
@@ -89,8 +93,20 @@ export default function CPanelUsersPage() {
               <CardDescription>Usuários com perfis de "admin" e "support".</CardDescription>
             </CardHeader>
             <CardContent>
-               {isLoading && <Skeleton className="h-[200px] w-full" />}
-               {!isLoading && <TeamTable users={team} isLoading={isLoading} />}
+              <div className="flex justify-end mb-4">
+                <Button onClick={() => setIsAddOpen(true)}>Adicionar membro</Button>
+              </div>
+              {isLoading && <Skeleton className="h-[200px] w-full" />}
+              {!isLoading && <TeamTable users={team} isLoading={isLoading} />}
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar membro da equipe</DialogTitle>
+                    <DialogDescription>Crie um usuário com perfil de administrador ou suporte.</DialogDescription>
+                  </DialogHeader>
+                  <AddTeamMemberForm onSuccess={() => setIsAddOpen(false)} />
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </TabsContent>

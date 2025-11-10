@@ -43,7 +43,7 @@ interface AddTeamMemberFormProps {
 export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore(); // Just to initialize Firebase context
-  const functions = getFunctions();
+  const functions = getFunctions(undefined, 'us-central1');
 
   const form = useForm<AddTeamMemberFormValues>({
     resolver: zodResolver(formSchema),

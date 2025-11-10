@@ -7,6 +7,7 @@ import { Firestore, doc, getDoc } from 'firebase/firestore';
 import { Auth, User, onIdTokenChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { UserRole } from '@/lib/types';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 export type UserWithRole = User & { role: UserRole | 'unknown' };
 
@@ -63,6 +64,14 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
+    // Connect Functions emulator globally in dev
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && firebaseApp) {
+      try {
+        const functions = getFunctions(firebaseApp, 'us-central1');
+        connectFunctionsEmulator(functions, 'localhost', 5001);
+      } catch (_) {}
+    }
+
     if (!auth || !firestore) {
       setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth or Firestore service not provided.") });
       return;
