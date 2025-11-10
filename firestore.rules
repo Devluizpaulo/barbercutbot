@@ -12,11 +12,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
-      );
+      // Prioritize custom claims for performance and security.
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     // Checks if the user is the owner of a specific shop by looking at the ownerId field.
@@ -29,6 +26,7 @@ service cloud.firestore {
     // =============================================
 
     match /users/{userId} {
+      // A user can create their own document upon signup.
       allow create: if request.auth.uid == userId;
       // Users can read/write their own profile. Admins can do anything.
       allow read, write: if request.auth.uid == userId || isAdmin();
@@ -58,8 +56,8 @@ service cloud.firestore {
     }
     
     match /platform/{docId} {
-      // Any signed-in user can read platform settings (like emergency phone). Admins can write.
-      allow read: if isSignedIn() || isAdmin();
+      // Any signed-in user can read platform settings. Admins can read and write.
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
     
