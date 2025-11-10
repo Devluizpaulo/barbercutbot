@@ -12,8 +12,9 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Prioritize custom claims for performance and security.
-      // This is the single source of truth for admin access.
+      // Custom claim is the single, most secure source of truth for admin access.
+      // The frontend logic ensures the user's role is checked, but for security rules,
+      // claims are faster and cannot be tampered with on the client.
       return isSignedIn() && request.auth.token.admin == true;
     }
 
@@ -58,9 +59,8 @@ service cloud.firestore {
     }
     
     match /platform/{docId} {
-      // Any signed-in user can read platform settings. Admins can do anything.
-      allow read: if isSignedIn() || isAdmin();
-      allow write: if isAdmin();
+      // Admins have full access.
+      allow read, write: if isAdmin();
     }
     
     match /tickets/{ticketId} {

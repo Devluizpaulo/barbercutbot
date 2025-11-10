@@ -4,11 +4,12 @@ const path = require('path');
 const fs = require('fs');
 
 // --- INSTRUÇÕES ---
-// 1. Vá para o Firebase Console > Project Settings > Service accounts.
-// 2. Clique em "Generate new private key" e salve o arquivo JSON.
+// 1. Vá para o Firebase Console > Configurações do Projeto > Contas de Serviço.
+// 2. Clique em "Gerar nova chave privada" e salve o arquivo JSON.
 // 3. Renomeie o arquivo para "firebase-admin.json".
 // 4. Coloque este arquivo na raiz do seu projeto (no mesmo diretório deste script).
 // 5. NUNCA adicione este arquivo ao seu repositório Git. (Ele já está no .gitignore).
+// 6. Execute no seu terminal: `node add-admin-claim.js`
 
 const serviceAccountPath = path.join(__dirname, 'firebase-admin.json');
 
@@ -27,7 +28,8 @@ admin.initializeApp({
 });
 
 // =========================================================================
-// ⚠️ ALTERE AQUI: Cole o UID do usuário que você criou no Firebase Auth
+// ⚠️ UID do usuário que você criou no Firebase Auth
+//    Este é o UID do usuário `admin@barbercutbot.com` que está recebendo o erro.
 // =========================================================================
 const userUid = 'MyKmTvy3JER3nT3BOiI36cIkF4t2'; 
 // =========================================================================
@@ -39,16 +41,19 @@ async function addAdminClaim() {
     }
     
     try {
+        console.log(`Adicionando permissão de admin para o usuário: ${userUid}...`);
+
         // Define o custom claim { admin: true }
         await admin.auth().setCustomUserClaims(userUid, { admin: true });
         
         console.log('✅ Custom claim "admin" adicionado com sucesso!');
-        console.log(`\nUID do Usuário: ${userUid}`);
         
         // Verifica se o claim foi adicionado corretamente
         const user = await admin.auth().getUser(userUid);
         console.log('\n📋 Permissões atuais (Custom Claims):');
         console.log(user.customClaims);
+
+        console.log('\n🎉 Processo concluído! Faça logout e login novamente no painel de controle para que as alterações tenham efeito.');
         
         process.exit(0);
     } catch (error) {
