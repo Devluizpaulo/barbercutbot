@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -42,7 +43,6 @@ export default function CpanelLoginPage() {
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // client-side validation guard
     const newErrors: { email?: string; password?: string } = {};
     if (!isValidEmail(email)) newErrors.email = 'Informe um email válido.';
     if (password.length < 6) newErrors.password = 'A senha deve ter ao menos 6 caracteres.';
@@ -57,27 +57,35 @@ export default function CpanelLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Force token refresh to get the latest custom claims
+      // Force token refresh to get latest claims
       const idTokenResult = await user.getIdTokenResult(true);
-      const isAdminClaim = !!idTokenResult.claims.admin;
+      const hasAdminClaim = !!idTokenResult.claims.admin;
 
-      if (isAdminClaim) {
+      // Fallback check: Read the user's document from Firestore
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const hasAdminRoleInDb = userDoc.exists() && userDoc.data()?.role === 'admin';
+
+      if (hasAdminClaim || hasAdminRoleInDb) {
+        if (!hasAdminClaim && hasAdminRoleInDb) {
+            console.warn(`[Admin Login] User ${user.uid} has 'admin' role in DB but is missing the custom claim. Access granted via fallback.`);
+        }
+        
         await logLoginSuccess(firestore, user.uid, email, {
           userName: user.displayName || '',
           ...browserInfo,
         });
+
         toast({
           title: 'Login de Administrador',
           description: 'Bem-vindo ao painel de controle!',
         });
-        router.push('/cpanel');
-      } else {
-        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-        const reason = userDoc.exists() && userDoc.data()?.role === 'admin'
-          ? 'Usuário é admin no Firestore, mas não possui o Custom Claim de admin. Execute o script `add-admin-claim.js`.'
-          : 'Tentativa de acesso ao painel admin sem permissão.';
         
-        await logSecurityAlert(firestore, email, reason, {
+        // The /cpanel layout will handle the user and grant access
+        router.push('/cpanel');
+
+      } else {
+        await logSecurityAlert(firestore, email, 'Tentativa de acesso ao painel admin sem permissão (role ou claim).', {
           userId: user.uid,
           actualRole: userDoc.data()?.role || 'N/A',
           ...browserInfo,
@@ -86,7 +94,7 @@ export default function CpanelLoginPage() {
         toast({
           variant: 'destructive',
           title: 'Acesso Negado',
-          description: 'Você não tem as permissões necessárias (Custom Claim) para acessar esta área. Contate o suporte técnico.',
+          description: 'Você não tem as permissões necessárias para acessar esta área.',
           duration: 10000,
         });
       }

@@ -76,27 +76,22 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           return;
         }
 
-        // Keep loading true until we have fetched the role
         setUserAuthState(prevState => ({ ...prevState, isUserLoading: true }));
 
         try {
-          // Force refresh the token to get the latest custom claims.
           const idTokenResult = await firebaseUser.getIdTokenResult(true);
-          const isAdmin = !!idTokenResult.claims.admin;
-          
-          if (isAdmin) {
-             const userWithRole: UserWithRole = {
-              ...firebaseUser,
-              role: 'admin',
-            };
+          const hasAdminClaim = !!idTokenResult.claims.admin;
+
+          if (hasAdminClaim) {
+            const userWithRole: UserWithRole = { ...firebaseUser, role: 'admin' };
             setUserAuthState({ user: userWithRole, isUserLoading: false, userError: null });
             return;
           }
-
-          // If not an admin, check the /users collection in Firestore.
+          
           const userDocRef = doc(firestore, 'users', firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
           
+          // Fallback to role from DB if claim is missing
           const role = userDoc.exists() ? (userDoc.data()?.role || 'owner') : 'owner';
 
           const userWithRole: UserWithRole = {
@@ -108,7 +103,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
         } catch (error) {
            console.error("FirebaseProvider: Error processing user role:", error);
-           // Fallback to a user with an 'unknown' role if fetching fails.
            const userWithUnknownRole: UserWithRole = { ...firebaseUser, role: 'unknown' };
            setUserAuthState({ user: userWithUnknownRole, isUserLoading: false, userError: error as Error });
         }
