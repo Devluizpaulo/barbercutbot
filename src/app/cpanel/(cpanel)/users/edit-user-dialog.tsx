@@ -33,7 +33,8 @@ import {
 } from '@/components/ui/select';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { LoaderCircle } from 'lucide-react';
-import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
@@ -53,11 +54,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
   const firestore = useFirestore();
   const [saving, setSaving] = useState(false);
   const functions = getFunctions(undefined, 'us-central1');
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    try {
-      connectFunctionsEmulator(functions, 'localhost', 5001);
-    } catch (_) {}
-  }
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -83,9 +80,11 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
         lastName: values.lastName,
         role: values.role,
       });
+      toast({ title: 'Usuário atualizado', description: 'As permissões e dados foram salvos.' });
       onOpenChange(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Erro ao atualizar usuário:', e);
+      toast({ variant: 'destructive', title: 'Falha ao atualizar', description: e?.message || 'Erro interno.' });
     } finally {
       setSaving(false);
     }
