@@ -1,7 +1,7 @@
 
 import * as admin from 'firebase-admin';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
