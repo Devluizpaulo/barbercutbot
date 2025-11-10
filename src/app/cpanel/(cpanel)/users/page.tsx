@@ -91,6 +91,9 @@ export default function CPanelUsersPage() {
               <CardDescription>Lista de todos os usuários com perfil de "owner".</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex justify-end gap-2 mb-4">
+                <Button variant="secondary" onClick={() => window.location.reload()}>Recarregar</Button>
+              </div>
               {isLoading && <Skeleton className="h-[200px] w-full" />}
               {!isLoading && <TeamTable users={owners} isLoading={isLoading} />}
             </CardContent>
@@ -103,7 +106,8 @@ export default function CPanelUsersPage() {
               <CardDescription>Usuários com perfis de "admin" e "support".</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-end mb-4">
+              <div className="flex justify-end gap-2 mb-4">
+                <Button variant="secondary" onClick={() => window.location.reload()}>Recarregar</Button>
                 <Button onClick={() => setIsAddOpen(true)}>Adicionar membro</Button>
               </div>
               {isLoading && <Skeleton className="h-[200px] w-full" />}

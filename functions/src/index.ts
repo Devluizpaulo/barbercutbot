@@ -50,6 +50,39 @@ export const checkAdminExists = onCall({ region: 'us-central1', cors: true }, as
 });
 
 /**
+ * Remove um usuário (Auth + Firestore). Apenas administradores.
+ */
+export const deleteUser = onCall({ region: 'us-central1', cors: true }, async (request: CallableRequest) => {
+    if (!request.auth || !await isAdmin(request.auth?.uid)) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem remover usuários.');
+    }
+
+    const { uid } = request.data || {};
+    if (!uid) {
+        throw new HttpsError('invalid-argument', 'uid é obrigatório.');
+    }
+
+    try {
+        // Exclui do Auth primeiro
+        await admin.auth().deleteUser(uid);
+        // Exclui o documento do Firestore
+        await db.collection('users').doc(uid).delete();
+        // Log de auditoria
+        await db.collection('adminLogs').add({
+            action: 'deleteUser',
+            actorUid: request.auth?.uid || null,
+            targetUid: uid,
+            payload: {},
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in deleteUser:', error);
+        throw new HttpsError('internal', `Falha ao remover usuário: ${error.message}`);
+    }
+});
+
+/**
  * Atualiza os dados básicos do usuário e sincroniza o papel
  * com o custom claim de admin (promover/demover).
  */
@@ -70,6 +103,8 @@ export const updateUserRole = onCall({ region: 'us-central1', cors: true }, asyn
     try {
         // Atualiza Firestore
         const userDocRef = db.collection('users').doc(uid);
+        const beforeSnapshot = await userDocRef.get();
+        const beforeData = beforeSnapshot.exists ? beforeSnapshot.data() : null;
         const updatePayload: Record<string, any> = { role };
         if (typeof firstName === 'string') updatePayload.firstName = firstName;
         if (typeof lastName === 'string') updatePayload.lastName = lastName;
@@ -84,6 +119,18 @@ export const updateUserRole = onCall({ region: 'us-central1', cors: true }, asyn
 
         // Força atualização de token no cliente
         await admin.auth().revokeRefreshTokens(uid);
+
+        // Log de auditoria
+        await db.collection('adminLogs').add({
+            action: 'updateUserRole',
+            actorUid: request.auth?.uid || null,
+            targetUid: uid,
+            payload: {
+                before: beforeData || null,
+                after: updatePayload,
+            },
+            createdAt: FieldValue.serverTimestamp(),
+        });
 
         return { success: true };
     } catch (error: any) {
@@ -179,7 +226,20 @@ export const createAdminUser = onCall({ region: 'us-central1', cors: true }, asy
             role,
             createdAt: FieldValue.serverTimestamp(),
         });
-        
+        // Log de auditoria
+        await db.collection('adminLogs').add({
+            action: 'createAdminUser',
+            actorUid: request.auth?.uid || null,
+            targetUid: userRecord.uid,
+            payload: {
+                role,
+                email,
+                firstName,
+                lastName,
+            },
+            createdAt: FieldValue.serverTimestamp(),
+        });
+
         return { success: true, userId: userRecord.uid, message: `Usuário ${email} criado com o perfil ${role}.` };
 
     } catch (error: any) {

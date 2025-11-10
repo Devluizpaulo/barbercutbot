@@ -25,7 +25,7 @@ import {
 import { EditUserDialog } from '../users/edit-user-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { fnDeleteUser } from '@/services/functions';
 
 interface TeamTableProps {
   users: UserProfile[];
@@ -37,13 +37,11 @@ export function TeamTable({ users, isLoading }: TeamTableProps) {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
-  const functions = getFunctions(undefined, 'us-central1');
 
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
-      const deleteUserFunc = httpsCallable(functions, 'deleteUser');
-      await deleteUserFunc({ uid: userToDelete.id });
+      await fnDeleteUser({ uid: userToDelete.id });
       toast({ title: "Usuário Removido", description: `O usuário ${userToDelete.email} foi removido com sucesso.` });
     } catch (error: any) {
       toast({ variant: 'destructive', title: "Erro ao remover usuário", description: error.message });

@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import type { UserProfile, UserRole } from '@/lib/types';
 import { LoaderCircle } from 'lucide-react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { fnUpdateUserRole } from '@/services/functions';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -53,7 +53,6 @@ interface EditUserDialogProps {
 export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
   const firestore = useFirestore();
   const [saving, setSaving] = useState(false);
-  const functions = getFunctions(undefined, 'us-central1');
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -73,8 +72,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
   const onSubmit = async (values: FormValues) => {
     setSaving(true);
     try {
-      const callable = httpsCallable(functions, 'updateUserRole');
-      await callable({
+      await fnUpdateUserRole({
         uid: user.id,
         firstName: values.firstName,
         lastName: values.lastName,

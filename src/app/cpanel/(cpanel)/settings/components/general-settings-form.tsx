@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,6 +39,7 @@ type FormValues = z.infer<typeof formSchema>;
 export function GeneralSettingsForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [lastSavedAt, setLastSavedAt] = React.useState<Date | null>(null);
 
   const settingsRef = doc(firestore, 'platform', 'settings');
   const { data: initialData, isLoading } = useDoc<FormValues>(settingsRef);
@@ -52,12 +54,21 @@ export function GeneralSettingsForm() {
     disabled: isLoading, // Disable form while loading initial data
   });
 
-  const onSubmit = (values: FormValues) => {
-    setDocumentNonBlocking(settingsRef, values, { merge: true });
-    toast({
-      title: 'Configurações Salvas!',
-      description: 'As configurações gerais da plataforma foram atualizadas.',
-    });
+  const onSubmit = async (values: FormValues) => {
+    try {
+      await setDocumentNonBlocking(settingsRef, values, { merge: true });
+      toast({
+        title: 'Configurações Salvas!',
+        description: 'As configurações gerais da plataforma foram atualizadas.',
+      });
+      setLastSavedAt(new Date());
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Falha ao salvar',
+        description: error?.message || 'Verifique suas permissões de administrador e tente novamente.'
+      });
+    }
   };
 
   return (
@@ -65,10 +76,29 @@ export function GeneralSettingsForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <CardTitle>Configurações Gerais</CardTitle>
-            <CardDescription>
-              Informações globais que se aplicam a toda a plataforma.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle>Configurações Gerais</CardTitle>
+                <CardDescription>
+                  Informações globais que se aplicam a toda a plataforma.
+                </CardDescription>
+              </div>
+              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                {isLoading && (
+                  <span className="inline-flex items-center gap-1">
+                    <LoaderCircle className="h-3 w-3 animate-spin" /> Carregando...
+                  </span>
+                )}
+                {!isLoading && form.formState.isSubmitting && (
+                  <span className="inline-flex items-center gap-1">
+                    <LoaderCircle className="h-3 w-3 animate-spin" /> Salvando...
+                  </span>
+                )}
+                {!isLoading && !form.formState.isSubmitting && lastSavedAt && (
+                  <span>Salvo às {lastSavedAt.toLocaleTimeString()}</span>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField

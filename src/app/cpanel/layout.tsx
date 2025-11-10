@@ -3,11 +3,13 @@
 
 import { useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { useEffect } from 'react';
 import { CPanelProvider } from './context';
 import { CPanelNav } from './cnav';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { signOut } from 'firebase/auth';
 
 export default function CPanelLayout({
   children,
@@ -16,6 +18,7 @@ export default function CPanelLayout({
 }) {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const auth = useAuth();
 
   useEffect(() => {
     if (isUserLoading) {
@@ -23,15 +26,7 @@ export default function CPanelLayout({
     }
 
     if (!user) {
-      // If no user, they must go to the admin login.
       router.replace('/cpanel/login');
-      return;
-    }
-    
-    // If a user is logged in but is NOT an admin, they have no access here.
-    // Redirect them to their appropriate dashboard.
-    if (user.role !== 'admin') {
-      router.replace('/login'); // Redirect to the general login, which will handle their role.
       return;
     }
 
@@ -71,7 +66,26 @@ export default function CPanelLayout({
     );
   }
 
-  // This is a fallback loading state, typically seen during the brief moment of redirection.
+  // Logged-in but not admin: show friendly access denied screen.
+  if (user && user.role !== 'admin') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-secondary">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <h2 className="text-xl font-semibold">Acesso negado ao Painel Administrativo</h2>
+          <p className="text-muted-foreground">
+            Sua conta não possui permissões de administrador. Caso tenha sido promovido recentemente,
+            faça logout e login novamente para atualizar suas permissões.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="secondary" onClick={() => router.replace('/login')}>Ir para Login</Button>
+            <Button onClick={() => signOut(auth)}>Sair</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback loading state during redirections.
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary">
       <LoaderCircle className="h-12 w-12 animate-spin text-primary" />

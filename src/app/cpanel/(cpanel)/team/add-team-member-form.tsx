@@ -24,14 +24,17 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { fnCreateAdminUser } from '@/services/functions';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'O nome é obrigatório.'),
   lastName: z.string().min(1, 'O sobrenome é obrigatório.'),
   email: z.string().email('Email inválido.'),
   password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.'),
-  role: z.string().min(1, 'O perfil é obrigatório.'),
+  role: z.enum(['admin', 'support'], {
+    required_error: 'O perfil é obrigatório.',
+    invalid_type_error: 'Perfil inválido.'
+  }),
 });
 
 type AddTeamMemberFormValues = z.infer<typeof formSchema>;
@@ -43,7 +46,6 @@ interface AddTeamMemberFormProps {
 export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore(); // Just to initialize Firebase context
-  const functions = getFunctions(undefined, 'us-central1');
 
   const form = useForm<AddTeamMemberFormValues>({
     resolver: zodResolver(formSchema),
@@ -60,8 +62,7 @@ export function AddTeamMemberForm({ onSuccess }: AddTeamMemberFormProps) {
 
   const onSubmit = async (values: AddTeamMemberFormValues) => {
     try {
-      const createAdminUser = httpsCallable(functions, 'createAdminUser');
-      await createAdminUser(values);
+      await fnCreateAdminUser(values);
 
       toast({
         title: 'Membro Adicionado!',
