@@ -3,15 +3,17 @@ const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs');
 
-// --- INSTRUÇÕES ---
+// --- INSTRUÇÕES CRÍTICAS ---
 // 1. Vá para o Firebase Console > Configurações do Projeto > Contas de Serviço.
-// 2. Clique em "Gerar nova chave privada" e salve o arquivo JSON.
-// 3. Renomeie o arquivo para "firebase-admin.json".
+// 2. Clique no botão "Gerar nova chave privada". Um arquivo JSON será baixado.
+//    (Sempre gere uma nova chave para garantir que você não está usando uma chave antiga/revogada).
+// 3. Renomeie o arquivo baixado para "firebase-admin.json".
 // 4. Coloque este arquivo na raiz do seu projeto (no mesmo diretório deste script).
 // 5. NUNCA adicione este arquivo ao seu repositório Git. (Ele já está no .gitignore).
 // 6. Execute no seu terminal: `node add-admin-claim.js`
 
 const serviceAccountPath = path.join(__dirname, 'firebase-admin.json');
+const expectedProjectId = 'barbercutbot';
 
 if (!fs.existsSync(serviceAccountPath)) {
     console.error('❌ ERRO: Arquivo de credenciais "firebase-admin.json" não encontrado.');
@@ -21,10 +23,18 @@ if (!fs.existsSync(serviceAccountPath)) {
 
 const serviceAccount = require(serviceAccountPath);
 
+// Validação extra para evitar usar credenciais do projeto errado
+if (serviceAccount.project_id !== expectedProjectId) {
+    console.error(`❌ ERRO: As credenciais no arquivo 'firebase-admin.json' pertencem ao projeto '${serviceAccount.project_id}', mas o projeto esperado é '${expectedProjectId}'.`);
+    console.error('Por favor, baixe as credenciais do projeto correto.');
+    process.exit(1);
+}
+
+
 // Inicializa o Firebase Admin SDK com as credenciais do arquivo.
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: 'barbercutbot'
+  projectId: expectedProjectId
 });
 
 // =========================================================================

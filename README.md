@@ -16,8 +16,9 @@ Crie um arquivo `.env.local` na raiz do projeto. As credenciais do Firebase e do
 
 ```env
 # Firebase Admin (Necessário para rodar o script de setup local)
-# Baixe o arquivo JSON no Console do Firebase > Config. do Projeto > Contas de Serviço
-# E cole o CONTEÚDO do JSON aqui.
+# 1. Vá para o Firebase Console > Configurações do Projeto > Contas de Serviço.
+# 2. Clique em "Gerar nova chave privada" e salve o arquivo JSON.
+# 3. Cole o CONTEÚDO COMPLETO do JSON aqui, dentro de aspas simples.
 # Esta variável é usada pelo ambiente de build (Vercel) e pelo backend Next.js.
 GOOGLE_APPLICATION_CREDENTIALS='{ "type": "service_account", ... }'
 
@@ -112,7 +113,7 @@ firestore.rules                 # Regras de Segurança do Firestore
 ## 🔐 Segurança
 
 ### **Regras do Firestore (`firestore.rules`)**
-- **Acesso de Admin:** Um `match /{document=**}` concede acesso irrestrito a administradores (verificados via Custom Claim ou `role` no documento do usuário).
+- **Acesso de Admin:** Acesso irrestrito a administradores é concedido via **Custom Claim** (`request.auth.token.admin == true`). É a forma mais segura e performática.
 - **Isolamento de Tenant (Multi-Tenancy):** Donos de loja (`owner`) só podem ler e escrever nos documentos de sua própria loja (`isShopOwner(shopId)`).
 - **Otimização para Listagem:** Regras de `list` exigem que as consultas do frontend incluam filtros específicos (ex: `where('ownerId', '==', request.auth.uid)`), garantindo performance e segurança.
 - **Imutabilidade de Logs:** A coleção `adminLogs` permite apenas criação (`allow create`), tornando os registros de auditoria imutáveis.
@@ -128,7 +129,7 @@ firestore.rules                 # Regras de Segurança do Firestore
 
 Para detalhes aprofundados sobre a implementação, consulte a pasta `/docs`:
 
-- **[01-SETUP-INICIAL.md](./docs/01-SETUP-INICIAL.md)**: Guia completo para configurar o primeiro administrador.
+- **[01-SETUP-INICIAL.md](./docs/01-SETUP-INICIAL.md)**: Guia completo para configurar o primeiro administrador e solucionar problemas de acesso.
 - **[02-ARQUITETURA-AUTH.md](./docs/02-ARQUITETURA-AUTH.md)**: Explicação detalhada do fluxo de autenticação e layouts.
 - **[03-CRUD-LOGIC.md](./docs/03-CRUD-LOGIC.md)**: Detalhes sobre a estratégia de leitura e escrita de dados.
 - **[04-SECURITY-RULES.md](./docs/04-SECURITY-RULES.md)**: Análise das regras de segurança do Firestore.
