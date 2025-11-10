@@ -1,11 +1,26 @@
 
 import * as admin from 'firebase-admin';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { onCall, HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import type { UserRecord } from 'firebase-admin/auth';
 
 admin.initializeApp();
 const db = getFirestore();
+
+// =============================================
+// CORS Configuration
+// =============================================
+// Define allowed origins for CORS. This is crucial for Vercel deployment.
+const corsOptions = {
+    cors: [
+        'http://localhost:3000', 
+        'http://localhost:9002', 
+        'https://barbercutbot.vercel.app', 
+        'https://barbercutbot.web.app', 
+        'https://barbercutbot.firebaseapp.com'
+    ]
+};
+
 
 // =============================================
 // FUNÇÕES AUXILIARES DE SEGURANÇA
@@ -38,7 +53,7 @@ async function isAdmin(uid: string | undefined): Promise<boolean> {
  * Verifica se já existe um usuário com a role de 'admin'.
  * Chamada pela página /setup para decidir se o formulário deve ser exibido.
  */
-export const checkAdminExists = onCall(async (request: CallableRequest) => {
+export const checkAdminExists = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     try {
         const usersRef = db.collection('users');
         const adminQuery = await usersRef.where('role', '==', 'admin').limit(1).get();
@@ -50,10 +65,54 @@ export const checkAdminExists = onCall(async (request: CallableRequest) => {
 });
 
 /**
+ * Atualiza os dados básicos do usuário e sincroniza o papel
+ * com o custom claim de admin (promover/demover).
+ */
+export const updateUserRole = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
+    if (!request.auth || !await isAdmin(request.auth?.uid)) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem atualizar usuários.');
+    }
+
+    const { uid, firstName, lastName, role } = request.data || {};
+
+    if (!uid) {
+        throw new HttpsError('invalid-argument', 'uid é obrigatório.');
+    }
+    if (!role || !['admin', 'support', 'owner', 'staff'].includes(role)) {
+        throw new HttpsError('invalid-argument', 'role inválida.');
+    }
+
+    try {
+        // Atualiza Firestore
+        const userDocRef = db.collection('users').doc(uid);
+        const updatePayload: Record<string, any> = { role };
+        if (typeof firstName === 'string') updatePayload.firstName = firstName;
+        if (typeof lastName === 'string') updatePayload.lastName = lastName;
+        await userDocRef.update(updatePayload);
+
+        // Sincroniza custom claim
+        if (role === 'admin') {
+            await admin.auth().setCustomUserClaims(uid, { admin: true });
+        } else {
+            // Remove all custom claims if the role is not admin
+            await admin.auth().setCustomUserClaims(uid, {});
+        }
+
+        // Força atualização de token no cliente
+        await admin.auth().revokeRefreshTokens(uid);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in updateUserRole:', error);
+        throw new HttpsError('internal', `Falha ao atualizar usuário: ${error.message}`);
+    }
+});
+
+/**
  * Cria o primeiro usuário administrador.
  * Esta função só pode ser executada se NENHUM administrador existir.
  */
-export const setupAdminUser = onCall(async (request: CallableRequest) => {
+export const setupAdminUser = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     const { email, password, firstName, lastName } = request.data;
 
     if (!email || !password || !firstName || !lastName) {
@@ -102,7 +161,7 @@ export const setupAdminUser = onCall(async (request: CallableRequest) => {
 /**
  * Cria um novo membro da equipe com role de admin ou suporte (chamado pelo CPanel).
  */
-export const createAdminUser = onCall(async (request: CallableRequest) => {
+export const createAdminUser = onCall({ region: 'us-central1', ...corsOptions }, async (request: CallableRequest) => {
     if (!request.auth || !await isAdmin(request.auth?.uid)) {
         throw new HttpsError('permission-denied', 'Apenas administradores podem criar novos membros da equipe.');
     }
@@ -203,3 +262,5 @@ export const onusercreate = onUserCreated(async (event: any): Promise<void> => {
     }
 });
 */
+
+    
