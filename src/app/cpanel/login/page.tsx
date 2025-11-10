@@ -57,12 +57,13 @@ export default function CpanelLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
+      // Force token refresh to get the latest custom claims
+      const idTokenResult = await user.getIdTokenResult(true);
+      const isAdminClaim = !!idTokenResult.claims.admin;
 
-      if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+      if (isAdminClaim) {
         await logLoginSuccess(firestore, user.uid, email, {
-          userName: `${userDoc.data()?.firstName} ${userDoc.data()?.lastName}`,
+          userName: user.displayName || '',
           ...browserInfo,
         });
         toast({
@@ -71,9 +72,11 @@ export default function CpanelLoginPage() {
         });
         router.push('/cpanel');
       } else {
-        const reason = userDoc.exists()
-          ? 'Tentativa de acesso ao painel admin sem permissão'
-          : 'Usuário autenticado no Auth mas não encontrado no Firestore';
+        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+        const reason = userDoc.exists() && userDoc.data()?.role === 'admin'
+          ? 'Usuário é admin no Firestore, mas não possui o Custom Claim de admin. Execute o script `add-admin-claim.js`.'
+          : 'Tentativa de acesso ao painel admin sem permissão.';
+        
         await logSecurityAlert(firestore, email, reason, {
           userId: user.uid,
           actualRole: userDoc.data()?.role || 'N/A',
@@ -82,8 +85,9 @@ export default function CpanelLoginPage() {
         await auth.signOut();
         toast({
           variant: 'destructive',
-          title: 'Acesso Restrito',
-          description: 'Você não tem permissão para acessar esta área.',
+          title: 'Acesso Negado',
+          description: 'Você não tem as permissões necessárias (Custom Claim) para acessar esta área. Contate o suporte técnico.',
+          duration: 10000,
         });
       }
     } catch (error: any) {

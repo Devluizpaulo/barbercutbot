@@ -13,6 +13,7 @@ service cloud.firestore {
     
     function isAdmin() {
       // Prioritize custom claims for performance and security.
+      // This is the single source of truth for admin access.
       return isSignedIn() && request.auth.token.admin == true;
     }
 
@@ -33,6 +34,7 @@ service cloud.firestore {
     }
 
     match /barberShops/{shopId} {
+      // Only signed-in users can create a shop. The ownerId is validated by the client logic.
       allow create: if isSignedIn();
       // Admins or shop owners can read/update/delete a shop.
       allow read, update, delete: if isShopOwner(shopId) || isAdmin();
@@ -49,15 +51,15 @@ service cloud.firestore {
     // =============================================
 
     match /adminLogs/{logId} {
-      allow create: if isSignedIn(); // Log failed login attempts for existing users.
+      allow create: if isSignedIn(); // Allows logging failed login attempts for existing users.
       allow read, list: if isAdmin();
       // No one can update or delete logs.
       allow update, delete: if false;
     }
     
     match /platform/{docId} {
-      // Any signed-in user can read platform settings. Admins can read and write.
-      allow read: if isSignedIn();
+      // Any signed-in user can read platform settings. Admins can do anything.
+      allow read: if isSignedIn() || isAdmin();
       allow write: if isAdmin();
     }
     
